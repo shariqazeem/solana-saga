@@ -115,15 +115,19 @@ export function usePredictionMarkets() {
       setError(null);
 
       // Fetch all accounts owned by the program
+      console.log("Fetching accounts for program:", readOnlyProgram.programId.toString());
       const accounts = await connection.getProgramAccounts(readOnlyProgram.programId);
+      console.log(`Found ${accounts.length} total accounts`);
 
       const marketsData: Market[] = [];
+      let skippedCount = 0;
 
       // Try to decode each account as a Market, skipping any that fail
       for (const { pubkey, account: accountInfo } of accounts) {
         try {
           // Try to decode as Market account
           const data = readOnlyProgram.coder.accounts.decode("Market", accountInfo.data);
+          console.log(`Successfully decoded market: ${pubkey.toString()}`);
 
           // USDC has 6 decimals - use snake_case field names from actual IDL
           const yesPool = toNum(data.yes_pool) / Math.pow(10, USDC_DECIMALS);
@@ -181,14 +185,16 @@ export function usePredictionMarkets() {
             challengeDeadline: data.challenge_deadline ? toNum(data.challenge_deadline) : null,
             isFinalized: data.is_finalized || false,
           });
-        } catch (decodeError) {
+        } catch (decodeError: any) {
           // Skip accounts that aren't Market accounts or have incompatible structure
           // This is expected for old markets or non-market accounts (bets, vaults, etc.)
+          skippedCount++;
+          console.log(`Skipped account ${pubkey.toString()}: ${decodeError.message || 'decode failed'}`);
           continue;
         }
       }
 
-      console.log(`Loaded ${marketsData.length} markets`);
+      console.log(`Loaded ${marketsData.length} markets (skipped ${skippedCount} accounts)`);
       setMarkets(marketsData);
     } catch (error: any) {
       console.error("Error fetching markets:", error);
