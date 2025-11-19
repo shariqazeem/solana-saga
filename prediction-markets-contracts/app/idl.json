@@ -1,0 +1,768 @@
+{
+  "address": "sv1jTY2Rs2H7fXVVj3a6WoP6GD3X2j5tHwYkdfZQ9oP",
+  "metadata": {
+    "name": "rizqfi_contracts",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "close_committee",
+      "discriminator": [
+        243,
+        76,
+        237,
+        207,
+        29,
+        69,
+        42,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "committee",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  109,
+                  105,
+                  116,
+                  116,
+                  101,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "committee_vault",
+          "writable": true
+        },
+        {
+          "name": "authority_token_account",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "contribute",
+      "discriminator": [
+        82,
+        33,
+        68,
+        131,
+        32,
+        0,
+        205,
+        95
+      ],
+      "accounts": [
+        {
+          "name": "committee",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "committee"
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "member_token_account",
+          "writable": true
+        },
+        {
+          "name": "committee_vault",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_committee",
+      "discriminator": [
+        216,
+        137,
+        130,
+        24,
+        113,
+        11,
+        204,
+        15
+      ],
+      "accounts": [
+        {
+          "name": "committee",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  109,
+                  105,
+                  116,
+                  116,
+                  101,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "committee"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "monthly_contribution",
+          "type": "u64"
+        },
+        {
+          "name": "max_members",
+          "type": "u8"
+        },
+        {
+          "name": "payout_mode",
+          "type": {
+            "defined": {
+              "name": "PayoutMode"
+            }
+          }
+        },
+        {
+          "name": "rotation_type",
+          "type": {
+            "defined": {
+              "name": "RotationType"
+            }
+          }
+        },
+        {
+          "name": "frequency",
+          "type": {
+            "defined": {
+              "name": "Frequency"
+            }
+          }
+        },
+        {
+          "name": "start_date",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "distribute_payout",
+      "discriminator": [
+        196,
+        115,
+        224,
+        42,
+        243,
+        122,
+        71,
+        207
+      ],
+      "accounts": [
+        {
+          "name": "committee",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  109,
+                  105,
+                  116,
+                  116,
+                  101,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "committee.authority",
+                "account": "Committee"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient_member",
+          "writable": true
+        },
+        {
+          "name": "committee_vault",
+          "writable": true
+        },
+        {
+          "name": "recipient_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "join_committee",
+      "discriminator": [
+        76,
+        16,
+        18,
+        209,
+        205,
+        51,
+        194,
+        24
+      ],
+      "accounts": [
+        {
+          "name": "committee",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "committee"
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "member_token_account"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "record_missed_payment",
+      "discriminator": [
+        248,
+        253,
+        213,
+        113,
+        68,
+        75,
+        138,
+        81
+      ],
+      "accounts": [
+        {
+          "name": "member",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "start_new_round",
+      "discriminator": [
+        180,
+        48,
+        50,
+        160,
+        186,
+        163,
+        79,
+        185
+      ],
+      "accounts": [
+        {
+          "name": "committee",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "committee"
+              },
+              {
+                "kind": "account",
+                "path": "member.authority",
+                "account": "Member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Committee",
+      "discriminator": [
+        96,
+        136,
+        210,
+        244,
+        137,
+        110,
+        178,
+        104
+      ]
+    },
+    {
+      "name": "Member",
+      "discriminator": [
+        54,
+        19,
+        162,
+        21,
+        29,
+        166,
+        17,
+        198
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidMemberCount",
+      "msg": "Committee must have 2-20 members"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidContribution",
+      "msg": "Monthly contribution must be greater than 0"
+    },
+    {
+      "code": 6002,
+      "name": "CommitteeInactive",
+      "msg": "Committee is not active"
+    },
+    {
+      "code": 6003,
+      "name": "CommitteeFull",
+      "msg": "Committee is full"
+    },
+    {
+      "code": 6004,
+      "name": "MemberInactive",
+      "msg": "Member is not active"
+    },
+    {
+      "code": 6005,
+      "name": "AlreadyReceivedPayout",
+      "msg": "Member has already received payout"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidPayoutMode",
+      "msg": "Invalid payout mode for this operation"
+    },
+    {
+      "code": 6007,
+      "name": "NoContribution",
+      "msg": "Member has not contributed this round"
+    },
+    {
+      "code": 6008,
+      "name": "NotInJoiningPhase",
+      "msg": "Committee is not in joining phase"
+    },
+    {
+      "code": 6009,
+      "name": "NotInDepositPhase",
+      "msg": "Committee is not in deposit phase"
+    },
+    {
+      "code": 6010,
+      "name": "NotInPayoutPhase",
+      "msg": "Committee is not in payout phase"
+    },
+    {
+      "code": 6011,
+      "name": "AlreadyDepositedThisRound",
+      "msg": "Member already deposited this round"
+    },
+    {
+      "code": 6012,
+      "name": "NotAllDepositsReceived",
+      "msg": "Not all deposits received"
+    },
+    {
+      "code": 6013,
+      "name": "CommitteeNotCompleted",
+      "msg": "Committee not completed yet"
+    }
+  ],
+  "types": [
+    {
+      "name": "Committee",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "monthly_contribution",
+            "type": "u64"
+          },
+          {
+            "name": "max_members",
+            "type": "u8"
+          },
+          {
+            "name": "current_members",
+            "type": "u8"
+          },
+          {
+            "name": "current_round",
+            "type": "u32"
+          },
+          {
+            "name": "deposits_this_round",
+            "type": "u8"
+          },
+          {
+            "name": "next_payout_recipient",
+            "type": "u8"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "payout_mode",
+            "type": {
+              "defined": {
+                "name": "PayoutMode"
+              }
+            }
+          },
+          {
+            "name": "rotation_type",
+            "type": {
+              "defined": {
+                "name": "RotationType"
+              }
+            }
+          },
+          {
+            "name": "frequency",
+            "type": {
+              "defined": {
+                "name": "Frequency"
+              }
+            }
+          },
+          {
+            "name": "phase",
+            "type": {
+              "defined": {
+                "name": "CommitteePhase"
+              }
+            }
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "start_date",
+            "type": "i64"
+          },
+          {
+            "name": "next_round_date",
+            "type": "i64"
+          },
+          {
+            "name": "members_who_received_payout",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CommitteePhase",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Joining"
+          },
+          {
+            "name": "Deposit"
+          },
+          {
+            "name": "Payout"
+          },
+          {
+            "name": "Completed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Frequency",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Weekly"
+          },
+          {
+            "name": "Biweekly"
+          },
+          {
+            "name": "Monthly"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Member",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "committee",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_contributed",
+            "type": "u64"
+          },
+          {
+            "name": "rounds_participated",
+            "type": "u32"
+          },
+          {
+            "name": "has_received_payout",
+            "type": "bool"
+          },
+          {
+            "name": "has_deposited_current_round",
+            "type": "bool"
+          },
+          {
+            "name": "missed_payments",
+            "type": "u8"
+          },
+          {
+            "name": "joined_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayoutMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Auto"
+          },
+          {
+            "name": "Manual"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RotationType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fixed"
+          },
+          {
+            "name": "Random"
+          },
+          {
+            "name": "Bidding"
+          }
+        ]
+      }
+    }
+  ]
+}

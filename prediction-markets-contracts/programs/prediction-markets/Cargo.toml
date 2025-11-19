@@ -1,0 +1,20 @@
+[package]
+name = "prediction-markets"
+version = "0.1.0"
+description = "Solana Saga - Viral Prediction Market Game"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "prediction_markets"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.32.1"
+anchor-spl = "0.32.1"
