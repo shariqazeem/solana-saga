@@ -250,6 +250,14 @@ export function usePredictionMarkets() {
       console.log("User wallet:", wallet.publicKey.toString());
       console.log("Program ID:", program.programId.toString());
 
+      // Verify the market address matches the expected PDA
+      const [expectedMarketPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+      console.log("Expected market PDA for ID", marketId, ":", expectedMarketPda.toString());
+      console.log("Market PDA matches:", marketPubkey.equals(expectedMarketPda) ? "✓ YES" : "✗ NO - USING WRONG ADDRESS!");
+
       // Convert amount to USDC smallest units (6 decimals)
       const amountInSmallestUnits = new BN(amount * Math.pow(10, USDC_DECIMALS));
 
