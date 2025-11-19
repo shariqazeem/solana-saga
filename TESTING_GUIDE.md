@@ -1,205 +1,182 @@
-# 🧪 Testing Guide - Solana Saga Prediction Markets
+# 🧪 SOLANA SAGA - Complete Testing Guide
 
-## Prerequisites Completed ✅
-- ✅ Smart contracts deployed to Devnet: `EhMD2NdBfgsrJmXUgxWwpQrWbAockZ4GAs5G5NkwCmsa`
-- ✅ 5 demo markets created on-chain
-- ✅ Frontend configured with environment variables
-- ✅ Wallet connection functionality integrated
-
-## Step 1: Copy the IDL File
-
-The frontend needs the Anchor IDL to communicate with your deployed smart contract.
-
-```bash
-# From the root of the project
-cp prediction-markets-contracts/target/idl/prediction_markets.json frontend/lib/solana/idl/
-```
-
-**Verify the file exists:**
-```bash
-ls frontend/lib/solana/idl/prediction_markets.json
-```
-
-## Step 2: Start the Frontend Development Server
-
-```bash
-cd frontend
-npm run dev
-# or
-yarn dev
-```
-
-The app should start at `http://localhost:3000`
-
-## Step 3: Prepare Your Wallet
-
-### Get Devnet SOL
-1. Install Phantom or Solflare wallet if you haven't already
-2. Switch your wallet to **Devnet** network
-3. Get free Devnet SOL from faucet:
-   - Visit: https://faucet.solana.com/
-   - Or use CLI: `solana airdrop 2`
-
-### Get Devnet USDC (if needed)
-The markets use USDC for betting. You may need to:
-1. Create a USDC token account on Devnet
-2. Request test USDC tokens from: https://spl-token-faucet.com/
-
-## Step 4: Test Wallet Connection
-
-1. Open `http://localhost:3000`
-2. Navigate to **Markets** page
-3. Click **Connect Wallet** button (top-right)
-4. Select your wallet (Phantom/Solflare)
-5. Approve the connection
-6. **Expected Result**: Button shows your wallet address (abbreviated)
-
-### Troubleshooting:
-- If wallet doesn't connect, check browser console for errors
-- Ensure wallet is on **Devnet** network
-- Try refreshing the page
-
-## Step 5: View Live Markets
-
-1. On the Markets page, you should see the 5 demo markets we created
-2. **Currently showing**: Mock data (this is expected for now)
-3. **Next step**: We'll integrate real blockchain data
-
-### Expected Markets:
-1. "Will SOL hit $300 by Dec 20?"
-2. "Will Jupiter reach 10M daily transactions?"
-3. "Will Bonk flip Dogecoin this week?"
-4. "Will Solana NFT sales exceed 50k this week?"
-5. "Will any Solana DEX reach $1B volume today?"
-
-## Step 6: View Market Details
-
-1. Click on any market card or "View Details" button
-2. You should see:
-   - Market question and description
-   - Current YES/NO odds
-   - Trading volume and bettor count
-   - Time remaining
-   - Bet placement interface
-
-## Step 7: Place a Test Bet (Coming Soon)
-
-**NOTE**: The betting functionality requires integration of the blockchain hooks.
-
-Once integrated, the flow will be:
-1. Select a market
-2. Choose YES or NO
-3. Enter bet amount (in USDC)
-4. Click "Place Bet"
-5. Approve transaction in wallet
-6. Wait for confirmation
-7. View your bet in "My Bets" section
-
-## Step 8: Verify On-Chain Data
-
-You can verify your deployed contracts and markets on Solana Explorer:
-
-**Program:**
-- https://explorer.solana.com/address/EhMD2NdBfgsrJmXUgxWwpQrWbAockZ4GAs5G5NkwCmsa?cluster=devnet
-
-**Markets:**
-1. https://explorer.solana.com/address/DtnXvtwV72u5qgf5iUrdchCypxdrL7AjuM2RiXzp7dhF?cluster=devnet
-2. https://explorer.solana.com/address/2gkUDX1aZzH5wgXyrNhnsG4NziyyNqxZWVHh4kd8V1Mp?cluster=devnet
-3. https://explorer.solana.com/address/zuHSba5JDeMiyzjLVzWrApzrF5QRdgtdpHBRkQyyuwg?cluster=devnet
-4. https://explorer.solana.com/address/DPQ5LzMo1u8PBX8MSmR825CpmR1DtHPPguXLSBYHR44n?cluster=devnet
-5. https://explorer.solana.com/address/6EZi4mEzCSwt3ga7GjjGHa8BrDfxK6NopurBKQMwKWXG?cluster=devnet
-
-## Next Steps: Integrate Real Blockchain Data
-
-To complete the integration, we need to:
-
-### 1. Update Markets Page to Fetch Real Data
-```typescript
-// In app/markets/page.tsx
-import { usePredictionMarkets } from '@/lib/solana/hooks/usePredictionMarkets';
-
-export default function MarketsPage() {
-  const { markets, loading } = usePredictionMarkets();
-
-  // Use real markets data instead of MOCK_MARKETS
-}
-```
-
-### 2. Implement Bet Placement
-```typescript
-const { placeBet } = usePredictionMarkets();
-
-const handleBet = async (marketId: string, amount: number, prediction: boolean) => {
-  try {
-    await placeBet(marketId, amount, prediction);
-    // Show success message
-  } catch (error) {
-    // Handle error
-  }
-};
-```
-
-### 3. Add User Bets Display
-Show user's active and historical bets using the `userBets` from the hook.
-
-### 4. Implement Claim Winnings
-For resolved markets where user won, allow claiming with `claimWinnings` function.
-
-## Common Issues & Solutions
-
-### Issue: "Cannot find module IDL"
-**Solution**: Make sure you copied the IDL file to `frontend/lib/solana/idl/`
-
-### Issue: "Transaction failed"
-**Solution**:
-- Check you have enough Devnet SOL for transaction fees
-- Verify wallet is on Devnet network
-- Check browser console for specific error
-
-### Issue: "Wallet not connecting"
-**Solution**:
-- Refresh page
-- Clear browser cache
-- Check wallet extension is installed and unlocked
-- Ensure wallet is set to Devnet
-
-### Issue: "Markets not loading"
-**Solution**:
-- Check browser console for errors
-- Verify environment variables in `.env.local`
-- Ensure RPC endpoint is responsive
-- Check program ID matches deployed contract
-
-## Success Criteria
-
-✅ **Wallet Connection**: User can connect Phantom/Solflare wallet
-✅ **View Markets**: All 5 demo markets display correctly
-✅ **Market Details**: Can view individual market information
-🔲 **Place Bet**: Can place a bet and see transaction on explorer
-🔲 **View Bets**: Can see personal bet history
-🔲 **Claim Winnings**: Can claim winnings from won bets
-
-## Testing Checklist
-
-- [ ] Wallet connects successfully
-- [ ] Markets page loads without errors
-- [ ] Can navigate to individual market pages
-- [ ] Wallet button shows abbreviated address when connected
-- [ ] Can switch between different markets
-- [ ] Leaderboard page loads correctly
-- [ ] All pages maintain neon gaming theme
-- [ ] Responsive design works on mobile
-- [ ] No console errors in browser dev tools
-
-## Ready for Hackathon Submission
-
-Once testing is complete:
-1. ✅ Deploy to Vercel
-2. ✅ Record 2-3 minute demo video
-3. ✅ Set up Twitter account
-4. ✅ Post announcement
-5. ✅ Submit to Indie.fun
+This guide explains how the prediction market app works and how to test every feature.
 
 ---
 
-**Need Help?** Check the browser console for error messages and refer to the integration files in `frontend/lib/solana/`.
+## 📖 How The App Works
+
+**Solana Saga** is a prediction market where users bet real USDC on YES/NO outcomes.
+
+### **Market Lifecycle:**
+1. **Created** - Admin creates a new market with a question and end time
+2. **Active** - Users place bets (YES or NO) with USDC
+3. **Ended** - Time expires, no more bets allowed
+4. **Resolved** - Admin declares the outcome (YES or NO)
+5. **Claimed** - Winners claim their USDC winnings
+
+### **How Betting Works:**
+- Users bet USDC on either YES or NO
+- Odds are determined by the size of each pool (YES pool vs NO pool)
+- Example: If $100 is bet on YES and $50 on NO:
+  - YES odds: 67% (100/150)
+  - NO odds: 33% (50/150)
+- Winners split the entire pool proportionally to their bet size
+- Losers lose their entire bet
+
+### **Payout Calculation:**
+```
+Winner's Payout = (Their Bet / Winning Pool) × Total Pool
+```
+
+**Example:**
+- Total Pool: $150 ($100 YES, $50 NO)
+- Outcome: YES wins
+- Alice bet $60 on YES → Gets ($60/$100) × $150 = $90
+- Bob bet $40 on YES → Gets ($40/$100) × $150 = $60
+- Charlie bet $50 on NO → Loses everything
+
+---
+
+## 🎯 Complete Testing Flow
+
+### **Prerequisites**
+1. Have 2+ Solana wallets with Devnet SOL
+2. Get Devnet USDC from faucet: https://spl-token-faucet.com
+3. Run the app: `cd frontend && npm run dev`
+
+---
+
+## **STEP 1: Admin Creates Market**
+
+### Go to Admin Panel
+1. Go to http://localhost:3000
+2. Click **"Admin"** button
+3. Connect your **deployer wallet**
+
+### Create a Test Market
+1. Fill in:
+   - Question: "Will Bitcoin hit $100k by end of 2025?"
+   - Description: "Market resolves YES if BTC reaches $100,000"
+   - Category: Crypto
+   - Days Until End: 1 (for quick testing)
+2. Click **"Create Market"**
+3. Copy the market address from success message
+
+**Verify:**
+- ✅ Transaction succeeds
+- ✅ Market appears in Active Markets
+- ✅ Volume = $0, Bets = 0
+
+---
+
+## **STEP 2: Users Place Bets**
+
+### Wallet 1 Bets YES ($10)
+1. Connect Wallet 1
+2. Go to Markets → Click your market
+3. Enter $10, select YES
+4. Place Bet
+
+**Verify:**
+- ✅ Volume = $10, YES 100%, NO 0%, Bets = 1
+
+### Wallet 2 Bets NO ($5)
+1. Connect Wallet 2
+2. Same market, $5 on NO
+3. Place Bet
+
+**Verify:**
+- ✅ Volume = $15, YES ~67%, NO ~33%, Bets = 2
+
+### Wallet 1 Adds MORE YES ($15)
+1. Back to Wallet 1
+2. Bet $15 on YES
+
+**Verify:**
+- ✅ Volume = $30, YES ~83%, NO ~17%, Bets = 3
+
+---
+
+## **STEP 3: View My Bets**
+
+### Check Wallet 1
+1. Go to "/my-bets"
+2. See 2 active bets totaling $25
+
+### Check Wallet 2
+1. Go to "/my-bets"
+2. See 1 active bet of $5
+
+---
+
+## **STEP 4: Resolve Market**
+
+### As Admin
+1. Wait for market to end (or modify code for instant end)
+2. Go to "/admin"
+3. Click **"Resolve YES"**
+4. Approve transaction
+
+**Verify:**
+- ✅ Market moves to Resolved section
+- ✅ Shows "Outcome: YES"
+
+---
+
+## **STEP 5: Claim Winnings**
+
+### Wallet 1 (Winner) Claims
+1. Go to "/my-bets"
+2. See "Claimable Winnings" section
+3. Should show ~$30 total (entire pool)
+4. Click "Claim Winnings" for each bet
+5. Approve transactions
+
+**Verify:**
+- ✅ USDC arrives in wallet
+- ✅ Bets move to "Claimed" section
+- ✅ Stats update correctly
+
+### Wallet 2 (Loser) Checks
+1. Go to "/my-bets"
+2. See bet in "Lost Bets" section
+3. No claim button
+
+**Verify:**
+- ✅ Shows $5 lost
+- ✅ Cannot claim
+
+---
+
+## **Edge Cases to Test**
+
+1. **Min bet**: Try $0.50 → Fails
+2. **Max bet**: Try $10,001 → Fails
+3. **Ended market**: Try betting → Fails
+4. **Double claim**: Claim twice → Fails
+5. **No USDC account**: Auto-creates on first bet
+
+---
+
+## **All Features Work When:**
+
+✅ Create markets
+✅ Place bets
+✅ Odds update correctly
+✅ Resolve markets
+✅ Claim winnings
+✅ All stats accurate
+✅ Edge cases handled
+
+---
+
+## **Ready for Submission!**
+
+Record demo showing full flow:
+1. Create market
+2. Multiple bets
+3. Resolve
+4. Claim winnings
+
+Submit to Indie.fun! 🚀
