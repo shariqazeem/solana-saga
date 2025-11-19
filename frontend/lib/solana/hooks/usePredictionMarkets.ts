@@ -88,18 +88,18 @@ export function usePredictionMarkets() {
       const marketsData: Market[] = marketAccounts.map((account: any) => {
         const data = account.account;
 
-        // USDC has 6 decimals
-        const yesPool = data.yesPool.toNumber() / Math.pow(10, USDC_DECIMALS);
-        const noPool = data.noPool.toNumber() / Math.pow(10, USDC_DECIMALS);
-        const totalVolume = data.totalVolume.toNumber() / Math.pow(10, USDC_DECIMALS);
+        // USDC has 6 decimals - use snake_case field names from actual IDL
+        const yesPool = data.yes_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
+        const noPool = data.no_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
+        const totalVolume = data.total_volume.toNumber() / Math.pow(10, USDC_DECIMALS);
 
         // Calculate prices (percentage chance of winning)
         const totalPool = yesPool + noPool;
         const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
         const noPrice = 100 - yesPrice;
 
-        // Calculate time remaining
-        const endTime = data.endTime.toNumber();
+        // Calculate time remaining - use snake_case field names
+        const endTime = data.end_time.toNumber();
         const now = Math.floor(Date.now() / 1000);
         const secondsLeft = endTime - now;
         const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
@@ -131,12 +131,12 @@ export function usePredictionMarkets() {
           isResolved: status === "Resolved",
           outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
           endTime,
-          createdAt: data.createdAt.toNumber(),
+          createdAt: data.created_at.toNumber(),
           yesPrice,
           noPrice,
           endsIn,
-          bettors: data.uniqueBettors?.toNumber() || 0,
-          totalBetsCount: data.totalBetsCount?.toNumber() || 0,
+          bettors: data.unique_bettors?.toNumber() || 0,
+          totalBetsCount: data.total_bets_count?.toNumber() || 0,
           status,
         };
       });
@@ -172,7 +172,7 @@ export function usePredictionMarkets() {
           market: data.market.toString(),
           amount: data.amount.toNumber() / Math.pow(10, USDC_DECIMALS),
           prediction: data.prediction,
-          tokensReceived: data.tokensReceived.toNumber() / Math.pow(10, USDC_DECIMALS),
+          tokensReceived: data.tokens_received.toNumber() / Math.pow(10, USDC_DECIMALS),
           timestamp: data.timestamp.toNumber(),
           claimed: data.claimed,
           payout: data.payout.toNumber() / Math.pow(10, USDC_DECIMALS),
@@ -213,7 +213,7 @@ export function usePredictionMarkets() {
       const marketPubkey = new PublicKey(marketAddress);
       const marketAccount = await program.account.market.fetch(marketPubkey);
       const marketId = (marketAccount as any).id.toNumber();
-      const totalBetsCount = (marketAccount as any).totalBetsCount.toNumber();
+      const totalBetsCount = (marketAccount as any).total_bets_count.toNumber();
 
       // Convert amount to USDC smallest units (6 decimals)
       const amountInSmallestUnits = new BN(amount * Math.pow(10, USDC_DECIMALS));
@@ -352,15 +352,16 @@ export function usePredictionMarkets() {
       const marketPubkey = new PublicKey(marketAddress);
       const data = await program.account.market.fetch(marketPubkey);
 
-      const yesPool = (data as any).yesPool.toNumber() / Math.pow(10, USDC_DECIMALS);
-      const noPool = (data as any).noPool.toNumber() / Math.pow(10, USDC_DECIMALS);
-      const totalVolume = (data as any).totalVolume.toNumber() / Math.pow(10, USDC_DECIMALS);
+      // Use snake_case field names from actual IDL
+      const yesPool = (data as any).yes_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
+      const noPool = (data as any).no_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
+      const totalVolume = (data as any).total_volume.toNumber() / Math.pow(10, USDC_DECIMALS);
 
       const totalPool = yesPool + noPool;
       const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
       const noPrice = 100 - yesPrice;
 
-      const endTime = (data as any).endTime.toNumber();
+      const endTime = (data as any).end_time.toNumber();
       const now = Math.floor(Date.now() / 1000);
       const secondsLeft = endTime - now;
       const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
@@ -392,12 +393,12 @@ export function usePredictionMarkets() {
         isResolved: status === "Resolved",
         outcome: (data as any).outcome !== null && (data as any).outcome !== undefined ? (data as any).outcome : null,
         endTime,
-        createdAt: (data as any).createdAt.toNumber(),
+        createdAt: (data as any).created_at.toNumber(),
         yesPrice,
         noPrice,
         endsIn,
-        bettors: (data as any).uniqueBettors?.toNumber() || 0,
-        totalBetsCount: (data as any).totalBetsCount?.toNumber() || 0,
+        bettors: (data as any).unique_bettors?.toNumber() || 0,
+        totalBetsCount: (data as any).total_bets_count?.toNumber() || 0,
         status,
       };
     } catch (error: any) {
