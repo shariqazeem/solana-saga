@@ -6,7 +6,8 @@ import { WalletButton } from "@/components/WalletButton";
 import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import idl from "@/lib/solana/idl/prediction_markets.json";
 import { USDC_MINT } from "@/lib/solana/hooks/usePredictionMarkets";
 
@@ -52,35 +53,53 @@ export default function AdminPage() {
       );
       const program = new Program(idl as any, provider);
 
+      // Generate unique market ID based on timestamp
+      const marketId = Date.now();
+
       // Calculate end time
       const days = parseInt(daysUntilEnd);
       const endTime = Math.floor(Date.now() / 1000) + (days * 24 * 60 * 60);
 
       console.log("Creating market...");
+      console.log("Market ID:", marketId);
       console.log("Question:", question);
       console.log("End time:", new Date(endTime * 1000).toLocaleString());
 
+      // Derive market PDA
+      const [marketPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      // Derive vault PDA
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      console.log("Market PDA:", marketPda.toString());
+      console.log("Vault PDA:", vaultPda.toString());
+
       const tx = await program.methods
         .createMarket(
+          new BN(marketId),
           question,
           description,
-          category,
           new BN(endTime),
-          USDC_MINT
+          category
         )
+        .accounts({
+          market: marketPda,
+          vault: vaultPda,
+          usdcMint: USDC_MINT,
+          creator: wallet.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
         .rpc();
 
       console.log("Market created! TX:", tx);
-      setCreateSuccess(`Market created! Transaction: ${tx.slice(0, 8)}...`);
-
-      // Wait for confirmation and get market address
-      await new Promise(r => setTimeout(r, 3000));
-
-      const allMarkets = await program.account.market.all();
-      const latestMarket = allMarkets[allMarkets.length - 1];
-      console.log("Market address:", latestMarket.publicKey.toString());
-
-      setCreateSuccess(`Market created! Address: ${latestMarket.publicKey.toString()}`);
+      setCreateSuccess(`Market created! Address: ${marketPda.toString()}`);
 
       // Reset form
       setQuestion("");
@@ -89,6 +108,7 @@ export default function AdminPage() {
       setDaysUntilEnd("7");
 
       // Refresh markets list
+      await new Promise(r => setTimeout(r, 2000));
       await refetch();
     } catch (error: any) {
       console.error("Error creating market:", error);
