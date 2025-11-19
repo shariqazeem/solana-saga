@@ -47,7 +47,13 @@ pub mod prediction_markets {
         market.status = MarketStatus::Active;
         market.vault = ctx.accounts.vault.key();
         market.vault_bump = ctx.bumps.vault;
-        market.resolver = ctx.accounts.creator.key();
+        market.resolver = ctx.accounts.creator.key(); // Deprecated, kept for compatibility
+
+        // Decentralized resolution fields
+        market.resolution_proposer = None;
+        market.resolution_bond = 0;
+        market.challenge_deadline = None;
+        market.is_finalized = false;
 
         msg!("Market created: {} (ID: {})", market.question, market_id);
         Ok(())
@@ -136,23 +142,125 @@ pub mod prediction_markets {
         Ok(())
     }
 
-    /// Resolve market with outcome (only resolver can call)
+    /// Propose resolution for a market (DECENTRALIZED - anyone can propose with bond)
     pub fn resolve_market(
         ctx: Context<ResolveMarket>,
+        _market_id: u64,
         outcome: bool, // true = YES won, false = NO won
     ) -> Result<()> {
         let market = &mut ctx.accounts.market;
         let clock = Clock::get()?;
 
         require!(market.status == MarketStatus::Active, MarketError::MarketNotActive);
-        require!(ctx.accounts.resolver.key() == market.resolver, MarketError::UnauthorizedResolver);
         require!(clock.unix_timestamp >= market.end_time, MarketError::MarketNotEnded);
 
-        market.outcome = Some(outcome);
-        market.resolution_time = Some(clock.unix_timestamp);
-        market.status = MarketStatus::Resolved;
+        // Require minimum bond of 100 USDC
+        const MIN_RESOLUTION_BOND: u64 = 100_000_000; // 100 USDC (6 decimals)
+        require!(
+            ctx.accounts.proposer_token_account.amount >= MIN_RESOLUTION_BOND,
+            MarketError::InsufficientBond
+        );
 
-        msg!("Market {} resolved: {}", market.id, if outcome { "YES" } else { "NO" });
+        // If already proposed, require 2x the current bond to challenge
+        if let Some(_existing_proposer) = market.resolution_proposer {
+            let required_bond = market.resolution_bond.checked_mul(2)
+                .ok_or(MarketError::MathOverflow)?;
+
+            // Transfer 2x bond from new proposer to vault
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.proposer_token_account.to_account_info(),
+                to: ctx.accounts.vault.to_account_info(),
+                authority: ctx.accounts.proposer.to_account_info(),
+            };
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            token::transfer(cpi_ctx, required_bond)?;
+
+            // Update resolution with new proposer
+            market.resolution_proposer = Some(ctx.accounts.proposer.key());
+            market.outcome = Some(outcome);
+            market.resolution_bond = required_bond;
+            market.challenge_deadline = Some(clock.unix_timestamp + 24 * 60 * 60); // 24 hours
+            market.resolution_time = Some(clock.unix_timestamp);
+
+            msg!("Resolution challenged! New outcome: {}, bond: {}",
+                if outcome { "YES" } else { "NO" }, required_bond);
+        } else {
+            // First proposal - transfer initial bond
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.proposer_token_account.to_account_info(),
+                to: ctx.accounts.vault.to_account_info(),
+                authority: ctx.accounts.proposer.to_account_info(),
+            };
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            token::transfer(cpi_ctx, MIN_RESOLUTION_BOND)?;
+
+            // Set initial resolution
+            market.resolution_proposer = Some(ctx.accounts.proposer.key());
+            market.outcome = Some(outcome);
+            market.resolution_bond = MIN_RESOLUTION_BOND;
+            market.challenge_deadline = Some(clock.unix_timestamp + 24 * 60 * 60); // 24 hours
+            market.resolution_time = Some(clock.unix_timestamp);
+
+            msg!("Market {} resolution proposed: {} (24h challenge period)",
+                market.id, if outcome { "YES" } else { "NO" });
+        }
+
+        Ok(())
+    }
+
+    /// Finalize resolution after challenge period (anyone can call)
+    pub fn finalize_resolution(
+        ctx: Context<FinalizeResolution>,
+        _market_id: u64,
+    ) -> Result<()> {
+        let market = &mut ctx.accounts.market;
+        let clock = Clock::get()?;
+
+        require!(market.status == MarketStatus::Active, MarketError::MarketNotActive);
+        require!(market.outcome.is_some(), MarketError::NoResolutionProposed);
+        require!(!market.is_finalized, MarketError::AlreadyFinalized);
+
+        let challenge_deadline = market.challenge_deadline
+            .ok_or(MarketError::NoResolutionProposed)?;
+        require!(
+            clock.unix_timestamp >= challenge_deadline,
+            MarketError::ChallengePeriodActive
+        );
+
+        // Finalize the resolution
+        market.status = MarketStatus::Resolved;
+        market.is_finalized = true;
+
+        // Return bond to the final proposer
+        if market.resolution_bond > 0 {
+            let proposer = market.resolution_proposer
+                .ok_or(MarketError::NoResolutionProposed)?;
+
+            let market_id_bytes = market.id.to_le_bytes();
+            let vault_bump = &[market.vault_bump];
+            let seeds = &[
+                b"vault".as_ref(),
+                market_id_bytes.as_ref(),
+                vault_bump.as_ref(),
+            ];
+            let signer = &[&seeds[..]];
+
+            // Transfer bond back to proposer
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.vault.to_account_info(),
+                to: ctx.accounts.proposer_token_account.to_account_info(),
+                authority: ctx.accounts.vault.to_account_info(),
+            };
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+            token::transfer(cpi_ctx, market.resolution_bond)?;
+
+            msg!("Resolution finalized! Outcome: {}, proposer rewarded: {}",
+                if market.outcome.unwrap() { "YES" } else { "NO" }, proposer);
+        }
+
         Ok(())
     }
 
@@ -166,6 +274,7 @@ pub mod prediction_markets {
         let user_stats = &mut ctx.accounts.user_stats;
 
         require!(market.status == MarketStatus::Resolved, MarketError::MarketNotResolved);
+        require!(market.is_finalized, MarketError::ResolutionNotFinalized);
         require!(!bet.claimed, MarketError::AlreadyClaimed);
         require!(bet.user == ctx.accounts.user.key(), MarketError::NotBetOwner);
 
@@ -343,11 +452,53 @@ pub struct PlaceBet<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(market_id: u64)]
 pub struct ResolveMarket<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"market", market_id.to_le_bytes().as_ref()],
+        bump
+    )]
     pub market: Account<'info, Market>,
 
-    pub resolver: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"vault", market_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub proposer_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub proposer: Signer<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(market_id: u64)]
+pub struct FinalizeResolution<'info> {
+    #[account(
+        mut,
+        seeds = [b"market", market_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub market: Account<'info, Market>,
+
+    #[account(
+        mut,
+        seeds = [b"vault", market_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    /// CHECK: Proposer token account - derived from market.resolution_proposer
+    #[account(mut)]
+    pub proposer_token_account: AccountInfo<'info>,
+
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -421,7 +572,13 @@ pub struct Market {
     pub status: MarketStatus,
     pub vault: Pubkey,
     pub vault_bump: u8,
-    pub resolver: Pubkey,
+
+    // Decentralized resolution
+    pub resolution_proposer: Option<Pubkey>,  // Who proposed the current resolution
+    pub resolution_bond: u64,                  // Current bond amount staked
+    pub challenge_deadline: Option<i64>,       // When challenge period ends
+    pub is_finalized: bool,                    // True after challenge period with no disputes
+    pub resolver: Pubkey,                      // Deprecated, kept for compatibility
 }
 
 #[account]
@@ -495,4 +652,14 @@ pub enum MarketError {
     HasBets,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Insufficient bond for resolution")]
+    InsufficientBond,
+    #[msg("No resolution has been proposed yet")]
+    NoResolutionProposed,
+    #[msg("Resolution already finalized")]
+    AlreadyFinalized,
+    #[msg("Challenge period still active")]
+    ChallengePeriodActive,
+    #[msg("Resolution not finalized yet")]
+    ResolutionNotFinalized,
 }
