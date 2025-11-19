@@ -8,7 +8,7 @@ import {
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletButton } from "@/components/WalletButton";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { usePredictionMarkets, Market as MarketType } from "@/lib/solana/hooks/usePredictionMarkets";
 import { DEMO_MARKETS } from "@/lib/solana/config";
@@ -188,7 +188,7 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                 </h1>
               </Link>
 
-              <WalletMultiButton />
+              <WalletButton />
             </div>
           </div>
         </header>

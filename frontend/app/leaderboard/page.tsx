@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletButton } from "@/components/WalletButton";
 
 // Mock leaderboard data
 const MOCK_LEADERBOARD = {
@@ -93,7 +93,7 @@ export default function LeaderboardPage() {
                 </h1>
               </Link>
 
-              <WalletMultiButton />
+              <WalletButton />
             </div>
           </div>
         </header>
@@ -221,7 +221,7 @@ export default function LeaderboardPage() {
               <p className="text-slate-300 mb-6">
                 Connect your wallet to track your stats and compete for the <span className="neon-text-green font-bold">top spot!</span>
               </p>
-              <WalletMultiButton />
+              <WalletButton />
               <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-br from-[#FF1493]/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 -z-10" />
             </motion.div>
           </div>
