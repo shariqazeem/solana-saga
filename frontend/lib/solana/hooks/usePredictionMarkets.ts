@@ -237,14 +237,18 @@ export function usePredictionMarkets() {
     try {
       // marketPubkey is already the market PDA (from .env addresses)
       const marketPubkey = new PublicKey(marketAddress);
-      const marketAccount = await program.account.market.fetch(marketPubkey);
+
+      // Fetch fresh market data to get latest total_bets_count
+      const marketAccount = await program.account.market.fetch(marketPubkey, "confirmed");
       const marketId = toNum((marketAccount as any).id);
       const totalBetsCount = toNum((marketAccount as any).total_bets_count);
 
+      console.log("=== PLACE BET DEBUG ===");
       console.log("Market address:", marketPubkey.toString());
       console.log("Market ID:", marketId);
-      console.log("Total bets count:", totalBetsCount);
-      console.log("User:", wallet.publicKey.toString());
+      console.log("Total bets count (current):", totalBetsCount);
+      console.log("User wallet:", wallet.publicKey.toString());
+      console.log("Program ID:", program.programId.toString());
 
       // Convert amount to USDC smallest units (6 decimals)
       const amountInSmallestUnits = new BN(amount * Math.pow(10, USDC_DECIMALS));
@@ -277,12 +281,16 @@ export function usePredictionMarkets() {
       }
 
       // Derive PDAs - use marketPubkey directly (it's already the PDA)
-      const [betPda] = PublicKey.findProgramAddressSync(
+      const betCountBuffer = new BN(totalBetsCount).toArrayLike(Buffer, "le", 8);
+      console.log("Bet count buffer (hex):", betCountBuffer.toString('hex'));
+      console.log("Bet count buffer (decimal):", Array.from(betCountBuffer));
+
+      const [betPda, betBump] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("bet"),
           marketPubkey.toBuffer(), // Use marketPubkey (it's already the market PDA)
           wallet.publicKey.toBuffer(),
-          new BN(totalBetsCount).toArrayLike(Buffer, "le", 8),
+          betCountBuffer,
         ],
         program.programId
       );
@@ -297,9 +305,10 @@ export function usePredictionMarkets() {
         program.programId
       );
 
-      console.log("Derived bet PDA:", betPda.toString());
+      console.log("Derived bet PDA:", betPda.toString(), "bump:", betBump);
       console.log("User stats PDA:", userStatsPda.toString());
       console.log("Vault PDA:", vaultPda.toString());
+      console.log("=== END DEBUG ===\n");
 
       // Place bet using the market address (which is the market PDA)
       const tx = await program.methods
