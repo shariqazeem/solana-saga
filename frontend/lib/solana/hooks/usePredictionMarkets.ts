@@ -44,6 +44,11 @@ export interface Market {
   bettors: number;
   totalBetsCount: number;
   status: string;
+  // Decentralized resolution fields
+  resolutionProposer: string | null;
+  resolutionBond: number;
+  challengeDeadline: number | null;
+  isFinalized: boolean;
 }
 
 export interface Bet {
@@ -163,6 +168,11 @@ export function usePredictionMarkets() {
           bettors: toNum(data.unique_bettors),
           totalBetsCount: toNum(data.total_bets_count),
           status,
+          // Decentralized resolution fields
+          resolutionProposer: data.resolution_proposer ? data.resolution_proposer.toString() : null,
+          resolutionBond: toNum(data.resolution_bond) / Math.pow(10, USDC_DECIMALS),
+          challengeDeadline: data.challenge_deadline ? toNum(data.challenge_deadline) : null,
+          isFinalized: data.is_finalized || false,
         };
       });
 
@@ -377,6 +387,117 @@ export function usePredictionMarkets() {
     }
   };
 
+  // Propose or challenge a market resolution (DECENTRALIZED)
+  const resolveMarket = async (marketAddress: string, outcome: boolean): Promise<string> => {
+    if (!program || !wallet) {
+      throw new Error("Wallet not connected");
+    }
+
+    try {
+      const marketPubkey = new PublicKey(marketAddress);
+      const marketAccount = await program.account.market.fetch(marketPubkey);
+      const marketId = toNum((marketAccount as any).id);
+
+      // Get user's USDC token account
+      const userUsdcAccount = await getUserUsdcAccount();
+
+      // If user doesn't have USDC account, throw error
+      if (!userUsdcAccount.exists) {
+        throw new Error("You need a USDC account to propose resolutions");
+      }
+
+      // Check minimum bond requirement (100 USDC for first proposal)
+      const MIN_BOND = 100;
+      const accountInfo = await connection.getTokenAccountBalance(userUsdcAccount.address);
+      const balance = parseFloat(accountInfo.value.amount) / Math.pow(10, USDC_DECIMALS);
+
+      const existingProposer = (marketAccount as any).resolution_proposer;
+      const requiredBond = existingProposer ?
+        (toNum((marketAccount as any).resolution_bond) / Math.pow(10, USDC_DECIMALS)) * 2 :
+        MIN_BOND;
+
+      if (balance < requiredBond) {
+        throw new Error(`Insufficient USDC balance. Required: ${requiredBond} USDC, Available: ${balance.toFixed(2)} USDC`);
+      }
+
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      const tx = await program.methods
+        .resolveMarket(new BN(marketId), outcome)
+        .accounts({
+          market: marketPubkey,
+          vault: vaultPda,
+          proposerTokenAccount: userUsdcAccount.address,
+          proposer: wallet.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      console.log("Resolution proposed/challenged successfully:", tx);
+
+      // Refresh data
+      await Promise.all([fetchMarkets(), fetchUserBets()]);
+
+      return tx;
+    } catch (error: any) {
+      console.error("Error proposing resolution:", error);
+      throw new Error(error.message || "Failed to propose resolution");
+    }
+  };
+
+  // Finalize resolution after challenge period (anyone can call)
+  const finalizeResolution = async (marketAddress: string): Promise<string> => {
+    if (!program || !wallet) {
+      throw new Error("Wallet not connected");
+    }
+
+    try {
+      const marketPubkey = new PublicKey(marketAddress);
+      const marketAccount = await program.account.market.fetch(marketPubkey);
+      const marketId = toNum((marketAccount as any).id);
+
+      // Get proposer's wallet address
+      const proposerPubkey = (marketAccount as any).resolution_proposer;
+      if (!proposerPubkey) {
+        throw new Error("No resolution proposer found");
+      }
+
+      // Derive proposer's USDC token account
+      const proposerTokenAccount = await getAssociatedTokenAddress(
+        USDC_MINT,
+        proposerPubkey
+      );
+
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      const tx = await program.methods
+        .finalizeResolution(new BN(marketId))
+        .accounts({
+          market: marketPubkey,
+          vault: vaultPda,
+          proposerTokenAccount: proposerTokenAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      console.log("Resolution finalized successfully:", tx);
+
+      // Refresh data
+      await Promise.all([fetchMarkets(), fetchUserBets()]);
+
+      return tx;
+    } catch (error: any) {
+      console.error("Error finalizing resolution:", error);
+      throw new Error(error.message || "Failed to finalize resolution");
+    }
+  };
+
   // Get a single market by address
   const getMarket = useCallback(async (marketAddress: string): Promise<Market | null> => {
     if (!readOnlyProgram) return null;
@@ -434,6 +555,11 @@ export function usePredictionMarkets() {
         bettors: toNum((data as any).unique_bettors),
         totalBetsCount: toNum((data as any).total_bets_count),
         status,
+        // Decentralized resolution fields
+        resolutionProposer: (data as any).resolution_proposer ? (data as any).resolution_proposer.toString() : null,
+        resolutionBond: toNum((data as any).resolution_bond) / Math.pow(10, USDC_DECIMALS),
+        challengeDeadline: (data as any).challenge_deadline ? toNum((data as any).challenge_deadline) : null,
+        isFinalized: (data as any).is_finalized || false,
       };
     } catch (error: any) {
       console.error("Error fetching market:", error);
@@ -457,6 +583,8 @@ export function usePredictionMarkets() {
     error,
     placeBet,
     claimWinnings,
+    resolveMarket,
+    finalizeResolution,
     getMarket,
     getUserUsdcAccount,
     refetch: () => Promise.all([fetchMarkets(), fetchUserBets()]),

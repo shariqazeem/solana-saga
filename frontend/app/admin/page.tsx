@@ -13,7 +13,7 @@ import { USDC_MINT } from "@/lib/solana/hooks/usePredictionMarkets";
 export default function AdminPage() {
   const wallet = useAnchorWallet();
   const { connection } = useConnection();
-  const { markets, loading: marketsLoading, refetch } = usePredictionMarkets();
+  const { markets, loading: marketsLoading, refetch, resolveMarket: resolveMarketHook, finalizeResolution } = usePredictionMarkets();
 
   // Create Market Form
   const [question, setQuestion] = useState("");
@@ -98,7 +98,7 @@ export default function AdminPage() {
     }
   };
 
-  const resolveMarket = async (marketAddress: string, outcome: boolean) => {
+  const proposeResolution = async (marketAddress: string, outcome: boolean) => {
     if (!wallet) {
       setResolveError("Please connect your wallet");
       return;
@@ -109,38 +109,40 @@ export default function AdminPage() {
     setResolveSuccess(null);
 
     try {
-      const provider = new AnchorProvider(
-        connection,
-        wallet,
-        { commitment: "confirmed" }
-      );
-      const program = new Program(idl as any, provider);
-
-      const marketPubkey = new PublicKey(marketAddress);
-      const marketAccount = await program.account.market.fetch(marketPubkey);
-      const marketId = (marketAccount as any).id.toNumber();
-
-      console.log("Resolving market:", marketAddress);
-      console.log("Market ID:", marketId);
-      console.log("Outcome:", outcome ? "YES" : "NO");
-
-      const tx = await program.methods
-        .resolveMarket(new BN(marketId), outcome)
-        .accounts({
-          market: marketPubkey,
-          resolver: wallet.publicKey,
-        })
-        .rpc();
-
-      console.log("Market resolved! TX:", tx);
-      setResolveSuccess(`Market resolved to ${outcome ? "YES" : "NO"}! TX: ${tx.slice(0, 8)}...`);
+      const tx = await resolveMarketHook(marketAddress, outcome);
+      setResolveSuccess(`Resolution proposed: ${outcome ? "YES" : "NO"}! TX: ${tx.slice(0, 8)}... (24h challenge period started)`);
 
       // Refresh markets
       await new Promise(r => setTimeout(r, 2000));
       await refetch();
     } catch (error: any) {
-      console.error("Error resolving market:", error);
-      setResolveError(error.message || "Failed to resolve market");
+      console.error("Error proposing resolution:", error);
+      setResolveError(error.message || "Failed to propose resolution");
+    } finally {
+      setResolving(null);
+    }
+  };
+
+  const finalizeMarket = async (marketAddress: string) => {
+    if (!wallet) {
+      setResolveError("Please connect your wallet");
+      return;
+    }
+
+    setResolving(marketAddress);
+    setResolveError(null);
+    setResolveSuccess(null);
+
+    try {
+      const tx = await finalizeResolution(marketAddress);
+      setResolveSuccess(`Market finalized! TX: ${tx.slice(0, 8)}...`);
+
+      // Refresh markets
+      await new Promise(r => setTimeout(r, 2000));
+      await refetch();
+    } catch (error: any) {
+      console.error("Error finalizing resolution:", error);
+      setResolveError(error.message || "Failed to finalize resolution");
     } finally {
       setResolving(null);
     }
@@ -276,21 +278,85 @@ export default function AdminPage() {
 
                     {market.endsIn !== "Ended" ? (
                       <p className="text-yellow-400 text-sm">Market still active - wait for end time to resolve</p>
+                    ) : market.resolutionProposer === null ? (
+                      // No proposal yet - anyone can propose with 100 USDC bond
+                      <div>
+                        <p className="text-blue-400 text-sm mb-2">🔓 Decentralized Resolution: Anyone can propose outcome</p>
+                        <p className="text-gray-400 text-xs mb-3">Required bond: 100 USDC • 24h challenge period</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => proposeResolution(market.publicKey, true)}
+                            disabled={resolving === market.publicKey}
+                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                          >
+                            {resolving === market.publicKey ? "Proposing..." : "Propose YES (100 USDC)"}
+                          </button>
+                          <button
+                            onClick={() => proposeResolution(market.publicKey, false)}
+                            disabled={resolving === market.publicKey}
+                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                          >
+                            {resolving === market.publicKey ? "Proposing..." : "Propose NO (100 USDC)"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : market.challengeDeadline && Date.now() / 1000 < market.challengeDeadline ? (
+                      // Resolution proposed, challenge period active
+                      (() => {
+                        const timeLeft = market.challengeDeadline - Math.floor(Date.now() / 1000);
+                        const hoursLeft = Math.floor(timeLeft / 3600);
+                        const minsLeft = Math.floor((timeLeft % 3600) / 60);
+                        const requiredBond = market.resolutionBond * 2;
+
+                        return (
+                          <div>
+                            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-3">
+                              <p className="text-purple-400 font-bold mb-1">
+                                ⏳ Proposed Outcome: {market.outcome ? "YES" : "NO"}
+                              </p>
+                              <p className="text-gray-400 text-sm">
+                                Proposer: {market.resolutionProposer?.slice(0, 8)}...{market.resolutionProposer?.slice(-6)}
+                              </p>
+                              <p className="text-gray-400 text-sm">Bond: {market.resolutionBond} USDC</p>
+                              <p className="text-yellow-400 text-sm font-bold mt-2">
+                                Challenge Deadline: {hoursLeft}h {minsLeft}m remaining
+                              </p>
+                            </div>
+                            <p className="text-gray-400 text-xs mb-2">
+                              Think the outcome is wrong? Challenge with {requiredBond} USDC bond:
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => proposeResolution(market.publicKey, !market.outcome!)}
+                                disabled={resolving === market.publicKey}
+                                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                              >
+                                {resolving === market.publicKey ? "Challenging..." : `Challenge → ${market.outcome ? "NO" : "YES"} (${requiredBond} USDC)`}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()
                     ) : (
-                      <div className="flex gap-2">
+                      // Challenge period expired, ready to finalize
+                      <div>
+                        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-3">
+                          <p className="text-green-400 font-bold mb-1">
+                            ✅ Challenge Period Ended
+                          </p>
+                          <p className="text-gray-400 text-sm">
+                            Final Outcome: {market.outcome ? "YES" : "NO"}
+                          </p>
+                          <p className="text-gray-400 text-sm">
+                            Proposer: {market.resolutionProposer?.slice(0, 8)}...{market.resolutionProposer?.slice(-6)}
+                          </p>
+                        </div>
                         <button
-                          onClick={() => resolveMarket(market.publicKey, true)}
+                          onClick={() => finalizeMarket(market.publicKey)}
                           disabled={resolving === market.publicKey}
-                          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
                         >
-                          {resolving === market.publicKey ? "Resolving..." : "Resolve YES"}
-                        </button>
-                        <button
-                          onClick={() => resolveMarket(market.publicKey, false)}
-                          disabled={resolving === market.publicKey}
-                          className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
-                        >
-                          {resolving === market.publicKey ? "Resolving..." : "Resolve NO"}
+                          {resolving === market.publicKey ? "Finalizing..." : "Finalize Resolution (Anyone Can Call)"}
                         </button>
                       </div>
                     )}
