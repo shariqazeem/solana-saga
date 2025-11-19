@@ -66,6 +66,22 @@ export function usePredictionMarkets() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Read-only program for fetching data (doesn't require wallet)
+  const readOnlyProgram = useMemo(() => {
+    try {
+      const provider = new AnchorProvider(
+        connection,
+        {} as any, // Dummy wallet for read-only operations
+        { commitment: "confirmed" }
+      );
+      return new Program(idl as Idl, provider);
+    } catch (error) {
+      console.error("Error initializing read-only program:", error);
+      return null;
+    }
+  }, [connection]);
+
+  // Full program for write operations (requires wallet)
   const program = useMemo(() => {
     if (!wallet) return null;
 
@@ -87,12 +103,12 @@ export function usePredictionMarkets() {
 
   // Fetch all markets
   const fetchMarkets = useCallback(async () => {
-    if (!program) return;
+    if (!readOnlyProgram) return;
 
     try {
       setLoading(true);
       setError(null);
-      const marketAccounts = await program.account.market.all();
+      const marketAccounts = await readOnlyProgram.account.market.all();
 
       const marketsData: Market[] = marketAccounts.map((account: any) => {
         const data = account.account;
@@ -157,7 +173,7 @@ export function usePredictionMarkets() {
     } finally {
       setLoading(false);
     }
-  }, [program]);
+  }, [readOnlyProgram]);
 
   // Fetch user bets
   const fetchUserBets = useCallback(async () => {
@@ -355,11 +371,11 @@ export function usePredictionMarkets() {
 
   // Get a single market by address
   const getMarket = useCallback(async (marketAddress: string): Promise<Market | null> => {
-    if (!program) return null;
+    if (!readOnlyProgram) return null;
 
     try {
       const marketPubkey = new PublicKey(marketAddress);
-      const data = await program.account.market.fetch(marketPubkey);
+      const data = await readOnlyProgram.account.market.fetch(marketPubkey);
 
       // Use snake_case field names from actual IDL
       const yesPool = toNum((data as any).yes_pool) / Math.pow(10, USDC_DECIMALS);
@@ -414,16 +430,16 @@ export function usePredictionMarkets() {
       console.error("Error fetching market:", error);
       return null;
     }
-  }, [program]);
+  }, [readOnlyProgram]);
 
   useEffect(() => {
-    if (program) {
+    if (readOnlyProgram) {
       fetchMarkets();
-      if (wallet) {
-        fetchUserBets();
-      }
     }
-  }, [program, wallet, fetchMarkets, fetchUserBets]);
+    if (program && wallet) {
+      fetchUserBets();
+    }
+  }, [readOnlyProgram, program, wallet, fetchMarkets, fetchUserBets]);
 
   return {
     markets,
