@@ -120,22 +120,22 @@ export default function MarketsPage() {
     });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* Background */}
+    <div className="min-h-screen text-white" style={{background: '#050814'}}>
+      {/* Neon Background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f10_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f10_1px,transparent_1px)] bg-[size:64px_64px]" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{background: 'radial-gradient(circle, #00E5FF 0%, transparent 70%)'}} />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{background: 'radial-gradient(circle, #FF1493 0%, transparent 70%)'}} />
+        <div className="absolute inset-0 neon-grid opacity-20" />
       </div>
 
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-50">
+        <header className="border-b border-[#00E5FF]/20 backdrop-blur-md sticky top-0 z-50" style={{background: 'rgba(13, 18, 38, 0.8)'}}>
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <Link href="/">
-                <button className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+                <button className="flex items-center gap-2 text-slate-300 hover:neon-text transition-all font-orbitron">
                   <ArrowLeft className="w-5 h-5" />
                   <span className="font-semibold">Back to Home</span>
                 </button>
@@ -143,13 +143,13 @@ export default function MarketsPage() {
 
               <div className="flex items-center gap-3">
                 <Link href="/">
-                  <h1 className="text-2xl font-black bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-black bg-gradient-to-r from-[#00E5FF] via-[#FF1493] to-[#39FF14] bg-clip-text text-transparent font-orbitron">
                     SOLANA SAGA
                   </h1>
                 </Link>
               </div>
 
-              <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-bold hover:scale-105 transition-all">
+              <button className="neon-button px-6 py-2 rounded-lg">
                 Connect Wallet
               </button>
             </div>
@@ -165,13 +165,13 @@ export default function MarketsPage() {
               transition={{ duration: 0.6 }}
             >
               <div className="flex items-center gap-3 mb-4">
-                <Target className="w-10 h-10 text-emerald-400" />
-                <h1 className="text-4xl md:text-6xl font-black">
+                <Target className="w-10 h-10 neon-text animate-neon-pulse" />
+                <h1 className="text-4xl md:text-6xl font-black font-orbitron bg-gradient-to-r from-[#00E5FF] to-[#FF1493] bg-clip-text text-transparent">
                   Active Markets
                 </h1>
               </div>
-              <p className="text-xl text-slate-400 mb-8">
-                Choose your prediction and start winning. 247 markets live now.
+              <p className="text-xl text-slate-300 mb-8">
+                Choose your prediction and start winning. <span className="neon-text-green font-bold">247 markets live now.</span>
               </p>
 
               {/* Stats */}
@@ -191,13 +191,14 @@ export default function MarketsPage() {
             {/* Search */}
             <div className="mb-6">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 neon-text" />
                 <input
                   type="text"
                   placeholder="Search markets..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-800 rounded-xl pl-12 pr-4 py-4 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                  className="w-full glass-card rounded-xl pl-12 pr-4 py-4 text-white placeholder-slate-400 focus:border-[#00E5FF] focus:outline-none transition-all font-inter"
+                  style={{borderWidth: '2px'}}
                 />
               </div>
             </div>
@@ -208,10 +209,10 @@ export default function MarketsPage() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                  className={`px-6 py-2 rounded-lg font-bold whitespace-nowrap transition-all font-orbitron ${
                     selectedCategory === category
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                      : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                      ? "neon-button"
+                      : "neon-button-secondary"
                   }`}
                 >
                   {category}
@@ -221,8 +222,8 @@ export default function MarketsPage() {
 
             {/* Sort Options */}
             <div className="flex items-center gap-4">
-              <span className="text-slate-400 flex items-center gap-2">
-                <Filter className="w-4 h-4" />
+              <span className="text-slate-300 flex items-center gap-2 font-orbitron font-semibold">
+                <Filter className="w-4 h-4 neon-text" />
                 Sort by:
               </span>
               <div className="flex gap-2">
@@ -230,10 +231,10 @@ export default function MarketsPage() {
                   <button
                     key={sort}
                     onClick={() => setSortBy(sort)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
                       sortBy === sort
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-800 text-slate-400 hover:text-white"
+                        ? "bg-gradient-to-r from-[#39FF14] to-[#00FFA3] text-black shadow-lg shadow-green-500/50"
+                        : "glass-card text-slate-300 hover:border-[#00E5FF]"
                     }`}
                   >
                     {sort.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
@@ -269,14 +270,14 @@ export default function MarketsPage() {
 
 function StatBox({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-emerald-500/50 transition-all">
+    <div className="glass-card rounded-xl p-4 group">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+        <div className="p-2 bg-gradient-to-br from-[#00E5FF] to-[#1E90FF] rounded-lg animate-neon-pulse shadow-lg shadow-cyan-500/50">
           {icon}
         </div>
       </div>
-      <div className="text-2xl font-black mb-1">{value}</div>
-      <div className="text-sm text-slate-400">{label}</div>
+      <div className="text-2xl font-black mb-1 font-numbers neon-text">{value}</div>
+      <div className="text-sm text-slate-300">{label}</div>
     </div>
   );
 }
@@ -287,40 +288,40 @@ function MarketCard({ market, delay }: { market: any; delay: number }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
-      className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 transition-all hover:scale-[1.02] group"
+      className="glass-card rounded-2xl p-6 group relative overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-purple-500/20 text-purple-300 text-sm font-semibold rounded-full border border-purple-500/30">
+          <span className="px-3 py-1 bg-gradient-to-r from-[#00E5FF]/20 to-[#1E90FF]/20 text-[#00E5FF] text-sm font-bold rounded-full border border-[#00E5FF]/40 font-orbitron">
             {market.category}
           </span>
           {market.trending && (
-            <span className="px-3 py-1 bg-orange-500/20 text-orange-300 text-sm font-semibold rounded-full border border-orange-500/30 flex items-center gap-1">
+            <span className="px-3 py-1 bg-gradient-to-r from-[#FF6B00]/20 to-[#FF1493]/20 text-[#FF6B00] text-sm font-bold rounded-full border border-[#FF6B00]/40 flex items-center gap-1 animate-neon-pulse">
               <Flame className="w-3 h-3" />
               Hot
             </span>
           )}
         </div>
-        <span className="text-slate-400 text-sm flex items-center gap-1">
-          <Clock className="w-4 h-4" />
+        <span className="text-slate-300 text-sm flex items-center gap-1 font-numbers">
+          <Clock className="w-4 h-4 neon-text-magenta" />
           {market.endsIn}
         </span>
       </div>
 
       {/* Question */}
-      <h3 className="text-xl font-bold mb-6 group-hover:text-emerald-400 transition-colors">
+      <h3 className="text-xl font-bold mb-6 group-hover:neon-text transition-all">
         {market.question}
       </h3>
 
       {/* Stats */}
-      <div className="flex items-center gap-6 mb-6 text-sm text-slate-400">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" />
+      <div className="flex items-center gap-6 mb-6 text-sm text-slate-300">
+        <div className="flex items-center gap-2 font-numbers">
+          <TrendingUp className="w-4 h-4 neon-text-green" />
           <span>{market.volume}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" />
+        <div className="flex items-center gap-2 font-numbers">
+          <Users className="w-4 h-4 neon-text" />
           <span>{market.bettors} bettors</span>
         </div>
       </div>
@@ -328,29 +329,32 @@ function MarketCard({ market, delay }: { market: any; delay: number }) {
       {/* Betting Options */}
       <div className="grid grid-cols-2 gap-4">
         <Link href={`/markets/${market.id}`}>
-          <button className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl p-4 transition-all hover:scale-105 group">
-            <div className="text-sm text-slate-400 mb-1">YES</div>
-            <div className="text-3xl font-black text-emerald-400">{market.yesPrice}%</div>
-            <div className="text-xs text-slate-500 mt-1">Click to bet</div>
+          <button className="w-full bg-[#39FF14]/10 hover:bg-[#39FF14]/20 border-2 border-[#39FF14]/40 rounded-xl p-4 transition-all hover:scale-105 hover:shadow-lg hover:shadow-green-500/50 group/yes">
+            <div className="text-sm text-slate-300 mb-1 font-semibold">YES</div>
+            <div className="text-3xl font-black neon-text-green font-numbers">{market.yesPrice}%</div>
+            <div className="text-xs text-slate-400 mt-1">Click to bet</div>
           </button>
         </Link>
 
         <Link href={`/markets/${market.id}`}>
-          <button className="w-full bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl p-4 transition-all hover:scale-105">
-            <div className="text-sm text-slate-400 mb-1">NO</div>
-            <div className="text-3xl font-black text-red-400">{market.noPrice}%</div>
-            <div className="text-xs text-slate-500 mt-1">Click to bet</div>
+          <button className="w-full bg-[#FF0040]/10 hover:bg-[#FF0040]/20 border-2 border-[#FF0040]/40 rounded-xl p-4 transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 group/no">
+            <div className="text-sm text-slate-300 mb-1 font-semibold">NO</div>
+            <div className="text-3xl font-black text-[#FF0040] font-numbers" style={{textShadow: '0 0 10px rgba(255, 0, 64, 0.8)'}}>{market.noPrice}%</div>
+            <div className="text-xs text-slate-400 mt-1">Click to bet</div>
           </button>
         </Link>
       </div>
 
       {/* View Details */}
       <Link href={`/markets/${market.id}`}>
-        <button className="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 group">
+        <button className="w-full mt-4 py-3 neon-button-secondary rounded-lg font-semibold flex items-center justify-center gap-2 group/btn">
           View Details
-          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
         </button>
       </Link>
+
+      {/* Glow Effect */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00E5FF]/10 to-transparent rounded-full blur-2xl -z-10 group-hover:scale-150 transition-transform" />
     </motion.div>
   );
 }

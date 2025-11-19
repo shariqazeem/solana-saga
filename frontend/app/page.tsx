@@ -21,22 +21,35 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative">
-      {/* Animated Background */}
+    <div className="min-h-screen text-white overflow-x-hidden relative" style={{background: '#050814'}}>
+      {/* Neon Animated Background */}
       <div className="fixed inset-0 z-0">
+        {/* Cyan glow orb */}
         <div
-          className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl"
+          className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-40"
           style={{
+            background: 'radial-gradient(circle, #00E5FF 0%, transparent 70%)',
             transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
           }}
         />
+        {/* Magenta glow orb */}
         <div
-          className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/30 rounded-full blur-3xl"
+          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-40"
           style={{
+            background: 'radial-gradient(circle, #FF1493 0%, transparent 70%)',
             transform: `translate(${-mousePosition.x * 0.03}px, ${-mousePosition.y * 0.03}px)`,
           }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f10_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f10_1px,transparent_1px)] bg-[size:64px_64px]" />
+        {/* Blue accent orb */}
+        <div
+          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full blur-3xl opacity-30"
+          style={{
+            background: 'radial-gradient(circle, #1E90FF 0%, transparent 70%)',
+            transform: `translate(-50%, -50%) translate(${mousePosition.x * 0.015}px, ${mousePosition.y * 0.015}px)`,
+          }}
+        />
+        {/* Neon grid overlay */}
+        <div className="absolute inset-0 neon-grid opacity-30" />
       </div>
 
       {/* Content */}
@@ -50,11 +63,11 @@ export default function LandingPage() {
               transition={{ duration: 0.8 }}
             >
               <div className="inline-flex items-center gap-3 mb-4">
-                <Sparkles className="w-12 h-12 text-emerald-400" />
-                <h1 className="text-7xl md:text-9xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-emerald-400 bg-clip-text text-transparent">
+                <Sparkles className="w-12 h-12 neon-text animate-neon-pulse" />
+                <h1 className="text-7xl md:text-9xl font-black bg-gradient-to-r from-[#00E5FF] via-[#FF1493] to-[#39FF14] bg-clip-text text-transparent animate-holographic" style={{fontFamily: 'var(--font-orbitron)'}}>
                   SOLANA SAGA
                 </h1>
-                <Rocket className="w-12 h-12 text-purple-400" />
+                <Rocket className="w-12 h-12 neon-text-magenta animate-neon-pulse" />
               </div>
             </motion.div>
 
@@ -71,11 +84,11 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="text-xl md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto"
+              className="text-xl md:text-2xl text-slate-300 mb-12 max-w-3xl mx-auto"
             >
               The most addictive prediction market game on Solana.
               <br />
-              <span className="text-emerald-400 font-semibold">Bet on the future. Win real money.</span>
+              <span className="neon-text-green font-bold">Bet on the future. Win real money.</span>
             </motion.p>
 
             <motion.div
@@ -85,7 +98,7 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
             >
               <Link href="/markets">
-                <button className="group px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold text-lg shadow-lg hover:scale-105 transition-all">
+                <button className="group neon-button px-8 py-4 rounded-xl text-lg">
                   <span className="flex items-center gap-2">
                     Start Predicting
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -93,7 +106,7 @@ export default function LandingPage() {
                 </button>
               </Link>
               <Link href="/markets">
-                <button className="px-8 py-4 bg-slate-800 hover:bg-slate-700 border-2 border-emerald-500/30 hover:border-emerald-500 rounded-xl font-bold text-lg transition-all hover:scale-105">
+                <button className="neon-button-secondary px-8 py-4 rounded-xl text-lg">
                   View Markets
                 </button>
               </Link>
@@ -178,7 +191,7 @@ export default function LandingPage() {
         </section>
 
         {/* How It Works */}
-        <section className="py-24 px-4 bg-slate-900/50">
+        <section className="py-24 px-4" style={{background: 'rgba(13, 18, 38, 0.5)'}}>
           <div className="max-w-6xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -285,7 +298,7 @@ export default function LandingPage() {
               className="text-center mt-12"
             >
               <Link href="/markets">
-                <button className="group px-8 py-4 bg-slate-800 hover:bg-slate-700 border-2 border-purple-500/30 hover:border-purple-500 rounded-xl font-bold text-lg transition-all hover:scale-105">
+                <button className="group neon-button-secondary px-8 py-4 rounded-xl text-lg">
                   <span className="flex items-center gap-2">
                     View All 247 Markets
                     <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -297,7 +310,7 @@ export default function LandingPage() {
         </section>
 
         {/* Leaderboard Teaser */}
-        <section className="py-24 px-4 bg-slate-900/50">
+        <section className="py-24 px-4" style={{background: 'rgba(13, 18, 38, 0.5)'}}>
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -329,7 +342,7 @@ export default function LandingPage() {
               className="text-center mt-8"
             >
               <Link href="/leaderboard">
-                <button className="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-yellow-500/30 hover:border-yellow-500 rounded-lg font-semibold transition-all">
+                <button className="neon-button-secondary px-6 py-3 rounded-lg font-semibold">
                   View Full Leaderboard →
                 </button>
               </Link>
@@ -346,69 +359,70 @@ export default function LandingPage() {
             transition={{ duration: 0.8 }}
             className="max-w-4xl mx-auto text-center"
           >
-            <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-emerald-600 p-1 rounded-3xl">
-              <div className="bg-slate-900 rounded-3xl p-12">
-                <Rocket className="w-20 h-20 mx-auto mb-6 text-emerald-400" />
-                <h2 className="text-4xl md:text-6xl font-black mb-6">
+            <div className="relative rounded-3xl p-1 animate-neon-border" style={{borderWidth: '2px', borderStyle: 'solid'}}>
+              <div className="rounded-3xl p-12 relative overflow-hidden" style={{background: '#0D1226'}}>
+                <Rocket className="w-20 h-20 mx-auto mb-6 neon-text-magenta animate-float" />
+                <h2 className="text-4xl md:text-6xl font-black mb-6 font-heading bg-gradient-to-r from-[#00E5FF] via-[#FF1493] to-[#39FF14] bg-clip-text text-transparent">
                   Ready to Start Winning?
                 </h2>
-                <p className="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
+                <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
                   Join 12,500+ predictors making real money on Solana Saga.
                   <br />
-                  <span className="text-emerald-400 font-semibold">The future belongs to those who predict it.</span>
+                  <span className="neon-text-green font-bold">The future belongs to those who predict it.</span>
                 </p>
                 <Link href="/markets">
-                  <button className="px-12 py-6 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold text-2xl shadow-lg shadow-purple-500/50 hover:shadow-purple-500/80 transition-all hover:scale-105">
+                  <button className="neon-button px-12 py-6 rounded-xl text-2xl">
                     Launch App →
                   </button>
                 </Link>
+                <div className="absolute top-0 left-1/2 w-64 h-64 bg-gradient-to-br from-[#00E5FF]/20 to-transparent rounded-full blur-3xl -translate-x-1/2" />
               </div>
             </div>
           </motion.div>
         </section>
 
         {/* Footer */}
-        <footer className="py-12 px-4 border-t border-slate-800">
+        <footer className="py-12 px-4 border-t border-[#00E5FF]/20">
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-4 gap-8 mb-8">
               <div>
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-orbitron">
+                  <Sparkles className="w-5 h-5 neon-text" />
                   Solana Saga
                 </h3>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-300 text-sm">
                   The most fun prediction market game on Solana.
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Product</h4>
-                <ul className="space-y-2 text-slate-400 text-sm">
-                  <li><Link href="/markets" className="hover:text-emerald-400 transition-colors">Markets</Link></li>
-                  <li><Link href="/leaderboard" className="hover:text-emerald-400 transition-colors">Leaderboard</Link></li>
-                  <li><a href="#" className="hover:text-emerald-400 transition-colors">How It Works</a></li>
+                <h4 className="font-semibold mb-4 font-orbitron">Product</h4>
+                <ul className="space-y-2 text-slate-300 text-sm">
+                  <li><Link href="/markets" className="hover:neon-text transition-all">Markets</Link></li>
+                  <li><Link href="/leaderboard" className="hover:neon-text transition-all">Leaderboard</Link></li>
+                  <li><a href="#" className="hover:neon-text transition-all">How It Works</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Resources</h4>
-                <ul className="space-y-2 text-slate-400 text-sm">
-                  <li><a href="https://docs.solana.com" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">Docs</a></li>
-                  <li><a href="https://github.com/shariqazeem/RizqFi" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">GitHub</a></li>
-                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Blog</a></li>
+                <h4 className="font-semibold mb-4 font-orbitron">Resources</h4>
+                <ul className="space-y-2 text-slate-300 text-sm">
+                  <li><a href="https://docs.solana.com" target="_blank" rel="noopener noreferrer" className="hover:neon-text transition-all">Docs</a></li>
+                  <li><a href="https://github.com/shariqazeem/RizqFi" target="_blank" rel="noopener noreferrer" className="hover:neon-text transition-all">GitHub</a></li>
+                  <li><a href="#" className="hover:neon-text transition-all">Blog</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Community</h4>
-                <ul className="space-y-2 text-slate-400 text-sm">
-                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Twitter</a></li>
-                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Discord</a></li>
-                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Telegram</a></li>
+                <h4 className="font-semibold mb-4 font-orbitron">Community</h4>
+                <ul className="space-y-2 text-slate-300 text-sm">
+                  <li><a href="#" className="hover:neon-text transition-all">Twitter</a></li>
+                  <li><a href="#" className="hover:neon-text transition-all">Discord</a></li>
+                  <li><a href="#" className="hover:neon-text transition-all">Telegram</a></li>
                 </ul>
               </div>
             </div>
 
-            <div className="border-t border-slate-800 pt-8 text-center text-slate-500">
-              <p className="mb-2">Built with ❤️ for <span className="text-purple-400 font-semibold">Indie.fun Hackathon</span></p>
-              <p className="text-sm">Powered by Solana • Bringing Fun to Prediction Markets</p>
+            <div className="border-t border-[#00E5FF]/20 pt-8 text-center text-slate-400">
+              <p className="mb-2">Built with ❤️ for <span className="neon-text-magenta font-bold">Indie.fun Hackathon</span></p>
+              <p className="text-sm">Powered by <span className="neon-text-green">Solana</span> • Bringing Fun to Prediction Markets</p>
               <p className="text-xs mt-4">© 2025 Solana Saga. All rights reserved.</p>
             </div>
           </div>
@@ -422,12 +436,12 @@ export default function LandingPage() {
 
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 transition-all hover:scale-105">
-      <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 mb-4">
+    <div className="glass-card rounded-2xl p-6 group">
+      <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#1E90FF] mb-4 animate-neon-pulse shadow-lg shadow-cyan-500/50">
         {icon}
       </div>
-      <div className="text-3xl font-black mb-1">{value}</div>
-      <div className="text-slate-400">{label}</div>
+      <div className="text-3xl font-black mb-1 font-numbers neon-text">{value}</div>
+      <div className="text-slate-300">{label}</div>
     </div>
   );
 }
@@ -451,13 +465,15 @@ function FeatureCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.8, delay }}
-      className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 hover:border-emerald-500/50 transition-all hover:scale-105 group"
+      className="glass-card rounded-2xl p-8 group relative overflow-hidden"
     >
-      <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-br ${gradient} mb-6 group-hover:scale-110 transition-transform`}>
+      <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-br ${gradient} mb-6 group-hover:scale-110 transition-transform shadow-lg`}
+        style={{boxShadow: '0 0 20px rgba(0, 229, 255, 0.3)'}}>
         {icon}
       </div>
-      <h3 className="text-2xl font-bold mb-3">{title}</h3>
-      <p className="text-slate-400">{description}</p>
+      <h3 className="text-2xl font-bold mb-3" style={{fontFamily: 'var(--font-orbitron)'}}>{title}</h3>
+      <p className="text-slate-300">{description}</p>
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00E5FF] via-[#FF1493] to-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity" />
     </motion.div>
   );
 }
@@ -481,12 +497,12 @@ function Step({
       transition={{ duration: 0.8, delay }}
       className="relative"
     >
-      <div className="absolute -top-6 -left-6 w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-3xl font-black shadow-lg">
+      <div className="absolute -top-6 -left-6 w-16 h-16 rounded-full bg-gradient-to-br from-[#00E5FF] to-[#FF1493] flex items-center justify-center text-3xl font-black shadow-lg animate-neon-pulse font-numbers">
         {number}
       </div>
-      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 pt-12 hover:border-emerald-500/50 transition-all">
-        <h3 className="text-xl font-bold mb-3">{title}</h3>
-        <p className="text-slate-400">{description}</p>
+      <div className="glass-card rounded-2xl p-8 pt-12">
+        <h3 className="text-xl font-bold mb-3" style={{fontFamily: 'var(--font-orbitron)'}}>{title}</h3>
+        <p className="text-slate-300">{description}</p>
       </div>
     </motion.div>
   );
@@ -513,33 +529,35 @@ function MarketCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.8, delay }}
-      className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 transition-all hover:scale-[1.02] cursor-pointer group"
+      className="glass-card rounded-2xl p-6 cursor-pointer group relative overflow-hidden"
     >
       <div className="flex items-start justify-between mb-4">
-        <span className="px-3 py-1 bg-purple-500/20 text-purple-300 text-sm font-semibold rounded-full border border-purple-500/30">
+        <span className="px-3 py-1 bg-gradient-to-r from-[#00E5FF]/20 to-[#1E90FF]/20 text-[#00E5FF] text-sm font-bold rounded-full border border-[#00E5FF]/40 font-orbitron">
           {category}
         </span>
-        <span className="text-slate-400 text-sm flex items-center gap-1">
-          <TrendingUp className="w-4 h-4" />
+        <span className="text-slate-300 text-sm flex items-center gap-1 font-numbers">
+          <TrendingUp className="w-4 h-4 text-[#39FF14]" />
           {volume}
         </span>
       </div>
 
-      <h3 className="text-xl font-bold mb-6 group-hover:text-emerald-400 transition-colors">
+      <h3 className="text-xl font-bold mb-6 group-hover:neon-text transition-all">
         {question}
       </h3>
 
       <div className="grid grid-cols-2 gap-4">
-        <button className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl p-4 transition-all hover:scale-105">
-          <div className="text-sm text-slate-400 mb-1">YES</div>
-          <div className="text-2xl font-black text-emerald-400">{yesPrice}</div>
+        <button className="bg-[#39FF14]/10 hover:bg-[#39FF14]/20 border-2 border-[#39FF14]/40 rounded-xl p-4 transition-all hover:scale-105 hover:shadow-lg hover:shadow-green-500/50 group/yes">
+          <div className="text-sm text-slate-300 mb-1 font-semibold">YES</div>
+          <div className="text-2xl font-black neon-text-green font-numbers">{yesPrice}</div>
         </button>
 
-        <button className="bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl p-4 transition-all hover:scale-105">
-          <div className="text-sm text-slate-400 mb-1">NO</div>
-          <div className="text-2xl font-black text-red-400">{noPrice}</div>
+        <button className="bg-[#FF0040]/10 hover:bg-[#FF0040]/20 border-2 border-[#FF0040]/40 rounded-xl p-4 transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 group/no">
+          <div className="text-sm text-slate-300 mb-1 font-semibold">NO</div>
+          <div className="text-2xl font-black text-[#FF0040] font-numbers" style={{textShadow: '0 0 10px rgba(255, 0, 64, 0.8)'}}>{noPrice}</div>
         </button>
       </div>
+
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00E5FF]/10 to-transparent rounded-full blur-2xl -z-10 group-hover:scale-150 transition-transform" />
     </motion.div>
   );
 }
@@ -556,9 +574,9 @@ function LeaderboardEntry({
   earnings: string;
 }) {
   const getRankColor = (rank: number) => {
-    if (rank === 1) return "from-yellow-500 to-yellow-600";
-    if (rank === 2) return "from-slate-400 to-slate-500";
-    if (rank === 3) return "from-orange-600 to-orange-700";
+    if (rank === 1) return "from-[#FFD700] to-[#FFA500]";
+    if (rank === 2) return "from-[#C0C0C0] to-[#A8A8A8]";
+    if (rank === 3) return "from-[#CD7F32] to-[#B87333]";
     return "from-slate-600 to-slate-700";
   };
 
@@ -575,18 +593,18 @@ function LeaderboardEntry({
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: rank * 0.1 }}
-      className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 flex items-center gap-6 hover:border-emerald-500/50 transition-all"
+      className="glass-card rounded-xl p-6 flex items-center gap-6 group"
     >
-      <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${getRankColor(rank)} flex items-center justify-center text-2xl font-black`}>
+      <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${getRankColor(rank)} flex items-center justify-center text-2xl font-black shadow-lg animate-neon-pulse`}>
         {getRankEmoji(rank)}
       </div>
       <div className="flex-1">
-        <div className="font-bold text-xl mb-1">{name}</div>
-        <div className="text-slate-400 text-sm">Win Rate: {winRate}</div>
+        <div className="font-bold text-xl mb-1 font-orbitron">{name}</div>
+        <div className="text-slate-300 text-sm">Win Rate: <span className="neon-text-green">{winRate}</span></div>
       </div>
       <div className="text-right">
-        <div className="text-2xl font-black text-emerald-400">{earnings}</div>
-        <div className="text-slate-400 text-sm">This Week</div>
+        <div className="text-2xl font-black neon-text-green font-numbers">{earnings}</div>
+        <div className="text-slate-300 text-sm">This Week</div>
       </div>
     </motion.div>
   );
