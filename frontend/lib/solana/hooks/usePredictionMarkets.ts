@@ -3,7 +3,7 @@ import { Program, AnchorProvider, Idl, BN } from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useState, useEffect, useMemo } from "react";
 import { PROGRAM_ID, RPC_ENDPOINT } from "../config";
-import idl from "../../../prediction-markets-contracts/target/idl/prediction_markets.json";
+import idl from "../idl/prediction_markets.json";
 
 export interface Market {
   publicKey: string;
