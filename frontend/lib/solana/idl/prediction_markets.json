@@ -376,7 +376,7 @@
     {
       "name": "resolve_market",
       "docs": [
-        "Resolve market with outcome (only resolver can call)"
+        "Propose resolution for a market (DECENTRALIZED - anyone can propose with bond)"
       ],
       "discriminator": [
         155,
@@ -391,17 +391,148 @@
       "accounts": [
         {
           "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "_market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "_market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposer_token_account",
           "writable": true
         },
         {
-          "name": "resolver",
+          "name": "proposer",
+          "writable": true,
           "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
         {
+          "name": "_market_id",
+          "type": "u64"
+        },
+        {
           "name": "outcome",
           "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "finalize_resolution",
+      "docs": [
+        "Finalize resolution after challenge period (anyone can call)"
+      ],
+      "discriminator": [
+        142,
+        137,
+        74,
+        159,
+        116,
+        214,
+        106,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "_market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "_market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposer_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "_market_id",
+          "type": "u64"
         }
       ]
     }
@@ -527,6 +658,31 @@
       "code": 6015,
       "name": "MathOverflow",
       "msg": "Math overflow"
+    },
+    {
+      "code": 6016,
+      "name": "InsufficientBond",
+      "msg": "Insufficient bond for resolution proposal"
+    },
+    {
+      "code": 6017,
+      "name": "NoResolutionProposed",
+      "msg": "No resolution has been proposed"
+    },
+    {
+      "code": 6018,
+      "name": "AlreadyFinalized",
+      "msg": "Market resolution already finalized"
+    },
+    {
+      "code": 6019,
+      "name": "ChallengePeriodActive",
+      "msg": "Challenge period still active"
+    },
+    {
+      "code": 6020,
+      "name": "ResolutionNotFinalized",
+      "msg": "Resolution not finalized yet"
     }
   ],
   "types": [
@@ -666,6 +822,26 @@
           {
             "name": "resolver",
             "type": "pubkey"
+          },
+          {
+            "name": "resolution_proposer",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "resolution_bond",
+            "type": "u64"
+          },
+          {
+            "name": "challenge_deadline",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "is_finalized",
+            "type": "bool"
           }
         ]
       }
