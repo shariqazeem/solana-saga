@@ -1,7 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PredictionMarkets } from "../target/types/prediction_markets";
-import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
+// USDC Devnet mint address
+const USDC_DEVNET_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
 // Demo markets data
 const DEMO_MARKETS = [
@@ -49,34 +53,50 @@ async function createDemoMarkets() {
 
   for (let i = 0; i < DEMO_MARKETS.length; i++) {
     const market = DEMO_MARKETS[i];
+    const marketId = Date.now() + i; // Unique market ID based on timestamp
 
     try {
       console.log(`\n📊 Creating Market ${i + 1}/${DEMO_MARKETS.length}:`);
       console.log(`   Question: ${market.question}`);
       console.log(`   Category: ${market.category}`);
+      console.log(`   Market ID: ${marketId}`);
 
-      // Generate a new keypair for the market account
-      const marketKeypair = anchor.web3.Keypair.generate();
+      // Derive PDA addresses
+      const [marketPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), new anchor.BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
 
-      // Create market
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new anchor.BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      console.log(`   Market PDA: ${marketPda.toString()}`);
+
+      // Create market - match the function signature: market_id, question, description, end_time, category
       const tx = await program.methods
         .createMarket(
+          new anchor.BN(marketId),
           market.question,
           market.description,
-          market.category,
-          new anchor.BN(market.endTime)
+          new anchor.BN(market.endTime),
+          market.category
         )
         .accounts({
-          market: marketKeypair.publicKey,
+          market: marketPda,
+          vault: vaultPda,
+          usdcMint: USDC_DEVNET_MINT,
           creator: provider.wallet.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
-        .signers([marketKeypair])
         .rpc();
 
       console.log(`   ✅ Market created!`);
-      console.log(`   Market Address: ${marketKeypair.publicKey.toString()}`);
+      console.log(`   Market Address: ${marketPda.toString()}`);
       console.log(`   Transaction: ${tx}`);
+      console.log(`   View on Explorer: https://explorer.solana.com/tx/${tx}?cluster=devnet`);
 
       // Wait a bit between markets to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -89,7 +109,7 @@ async function createDemoMarkets() {
   console.log("\n\n🎉 Demo markets creation complete!");
   console.log("\n📝 Next steps:");
   console.log("1. Copy the market addresses above");
-  console.log("2. Update your frontend with these addresses");
+  console.log("2. Update your frontend .env.local with these addresses");
   console.log("3. Test betting on these markets!");
 }
 
