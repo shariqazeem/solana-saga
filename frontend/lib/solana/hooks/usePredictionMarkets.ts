@@ -15,6 +15,15 @@ import idl from "../idl/prediction_markets.json";
 export const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 const USDC_DECIMALS = 6;
 
+// Helper function to safely convert BN or number to number
+function toNum(value: any): number {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (value.toNumber) return value.toNumber();
+  if (value.toString) return parseInt(value.toString());
+  return 0;
+}
+
 export interface Market {
   publicKey: string;
   id: number;
@@ -89,9 +98,9 @@ export function usePredictionMarkets() {
         const data = account.account;
 
         // USDC has 6 decimals - use snake_case field names from actual IDL
-        const yesPool = data.yes_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
-        const noPool = data.no_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
-        const totalVolume = data.total_volume.toNumber() / Math.pow(10, USDC_DECIMALS);
+        const yesPool = toNum(data.yes_pool) / Math.pow(10, USDC_DECIMALS);
+        const noPool = toNum(data.no_pool) / Math.pow(10, USDC_DECIMALS);
+        const totalVolume = toNum(data.total_volume) / Math.pow(10, USDC_DECIMALS);
 
         // Calculate prices (percentage chance of winning)
         const totalPool = yesPool + noPool;
@@ -99,7 +108,7 @@ export function usePredictionMarkets() {
         const noPrice = 100 - yesPrice;
 
         // Calculate time remaining - use snake_case field names
-        const endTime = data.end_time.toNumber();
+        const endTime = toNum(data.end_time);
         const now = Math.floor(Date.now() / 1000);
         const secondsLeft = endTime - now;
         const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
@@ -120,7 +129,7 @@ export function usePredictionMarkets() {
 
         return {
           publicKey: account.publicKey.toString(),
-          id: data.id.toNumber(),
+          id: toNum(data.id),
           question: data.question,
           description: data.description,
           category: data.category,
@@ -131,12 +140,12 @@ export function usePredictionMarkets() {
           isResolved: status === "Resolved",
           outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
           endTime,
-          createdAt: data.created_at.toNumber(),
+          createdAt: toNum(data.created_at),
           yesPrice,
           noPrice,
           endsIn,
-          bettors: data.unique_bettors?.toNumber() || 0,
-          totalBetsCount: data.total_bets_count?.toNumber() || 0,
+          bettors: toNum(data.unique_bettors),
+          totalBetsCount: toNum(data.total_bets_count),
           status,
         };
       });
@@ -170,12 +179,12 @@ export function usePredictionMarkets() {
           publicKey: account.publicKey.toString(),
           user: data.user.toString(),
           market: data.market.toString(),
-          amount: data.amount.toNumber() / Math.pow(10, USDC_DECIMALS),
+          amount: toNum(data.amount) / Math.pow(10, USDC_DECIMALS),
           prediction: data.prediction,
-          tokensReceived: data.tokens_received.toNumber() / Math.pow(10, USDC_DECIMALS),
-          timestamp: data.timestamp.toNumber(),
+          tokensReceived: toNum(data.tokens_received) / Math.pow(10, USDC_DECIMALS),
+          timestamp: toNum(data.timestamp),
           claimed: data.claimed,
-          payout: data.payout.toNumber() / Math.pow(10, USDC_DECIMALS),
+          payout: toNum(data.payout) / Math.pow(10, USDC_DECIMALS),
         };
       });
 
@@ -212,8 +221,8 @@ export function usePredictionMarkets() {
     try {
       const marketPubkey = new PublicKey(marketAddress);
       const marketAccount = await program.account.market.fetch(marketPubkey);
-      const marketId = (marketAccount as any).id.toNumber();
-      const totalBetsCount = (marketAccount as any).total_bets_count.toNumber();
+      const marketId = toNum((marketAccount as any).id);
+      const totalBetsCount = toNum((marketAccount as any).total_bets_count);
 
       // Convert amount to USDC smallest units (6 decimals)
       const amountInSmallestUnits = new BN(amount * Math.pow(10, USDC_DECIMALS));
@@ -304,7 +313,7 @@ export function usePredictionMarkets() {
       const betAccount = await program.account.bet.fetch(betPubkey);
       const marketPubkey = (betAccount as any).market as PublicKey;
       const marketAccount = await program.account.market.fetch(marketPubkey);
-      const marketId = (marketAccount as any).id.toNumber();
+      const marketId = toNum((marketAccount as any).id);
 
       // Get user's USDC token account
       const userUsdcAccount = await getUserUsdcAccount();
@@ -353,15 +362,15 @@ export function usePredictionMarkets() {
       const data = await program.account.market.fetch(marketPubkey);
 
       // Use snake_case field names from actual IDL
-      const yesPool = (data as any).yes_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
-      const noPool = (data as any).no_pool.toNumber() / Math.pow(10, USDC_DECIMALS);
-      const totalVolume = (data as any).total_volume.toNumber() / Math.pow(10, USDC_DECIMALS);
+      const yesPool = toNum((data as any).yes_pool) / Math.pow(10, USDC_DECIMALS);
+      const noPool = toNum((data as any).no_pool) / Math.pow(10, USDC_DECIMALS);
+      const totalVolume = toNum((data as any).total_volume) / Math.pow(10, USDC_DECIMALS);
 
       const totalPool = yesPool + noPool;
       const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
       const noPrice = 100 - yesPrice;
 
-      const endTime = (data as any).end_time.toNumber();
+      const endTime = toNum((data as any).end_time);
       const now = Math.floor(Date.now() / 1000);
       const secondsLeft = endTime - now;
       const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
@@ -382,7 +391,7 @@ export function usePredictionMarkets() {
 
       return {
         publicKey: marketAddress,
-        id: (data as any).id.toNumber(),
+        id: toNum((data as any).id),
         question: (data as any).question,
         description: (data as any).description,
         category: (data as any).category,
@@ -393,12 +402,12 @@ export function usePredictionMarkets() {
         isResolved: status === "Resolved",
         outcome: (data as any).outcome !== null && (data as any).outcome !== undefined ? (data as any).outcome : null,
         endTime,
-        createdAt: (data as any).created_at.toNumber(),
+        createdAt: toNum((data as any).created_at),
         yesPrice,
         noPrice,
         endsIn,
-        bettors: (data as any).unique_bettors?.toNumber() || 0,
-        totalBetsCount: (data as any).total_bets_count?.toNumber() || 0,
+        bettors: toNum((data as any).unique_bettors),
+        totalBetsCount: toNum((data as any).total_bets_count),
         status,
       };
     } catch (error: any) {
