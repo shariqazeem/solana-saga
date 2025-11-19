@@ -67,9 +67,13 @@ export function usePredictionMarkets() {
         { commitment: "confirmed", preflightCommitment: "confirmed" }
       );
 
-      // For Anchor v0.30+, pass programId explicitly
-      const programId = new PublicKey(idl.address || PROGRAM_ID.toString());
-      return new Program(idl as any, programId, provider);
+      // For Anchor v0.32+, create Program with proper IDL casting
+      const programId = new PublicKey(idl.address);
+
+      // Cast the imported JSON to Idl type for Anchor v0.32
+      const typedIdl = idl as unknown as Idl;
+
+      return new Program(typedIdl, programId, provider);
     } catch (error) {
       console.error("Error initializing program:", error);
       return null;
