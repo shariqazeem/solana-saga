@@ -71,7 +71,7 @@ async function createDemoMarkets() {
 
       console.log(`   Market PDA: ${marketPda.toString()}`);
 
-      // Create market - Anchor will auto-derive PDAs based on seeds
+      // Create market - Anchor will auto-derive PDAs and include program accounts
       const tx = await program.methods
         .createMarket(
           new anchor.BN(marketId),
@@ -82,9 +82,6 @@ async function createDemoMarkets() {
         )
         .accounts({
           usdcMint: USDC_DEVNET_MINT,
-          creator: provider.wallet.publicKey,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
         })
         .rpc();
 
