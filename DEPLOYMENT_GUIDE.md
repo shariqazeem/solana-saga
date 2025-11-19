@@ -1,476 +1,606 @@
-# 🚀 Deployment Guide - Solana Saga
+# 🚀 Solana Saga - Complete Deployment Guide for M1 Mac
 
-Complete guide for deploying Solana Saga to production or running locally for demo/testing.
-
----
-
-## 📋 Table of Contents
-
-1. [Quick Start (Local)](#quick-start-local)
-2. [Deploy to Vercel (Recommended)](#deploy-to-vercel)
-3. [Deploy Smart Contracts](#deploy-smart-contracts)
-4. [Environment Variables](#environment-variables)
-5. [Troubleshooting](#troubleshooting)
+This guide will walk you through deploying your Solana prediction markets smart contracts to Devnet and connecting your Neon Arena frontend. **Follow each step carefully!**
 
 ---
 
-## 🏃 Quick Start (Local)
+## 📦 Part 1: Deploy Smart Contracts to Devnet
 
-### Prerequisites
-
-- **Node.js**: 18+ (check with `node -v`)
-- **npm**: 9+ (check with `npm -v`)
-- **Git**: Latest version
-
-### Steps
+### Step 1: Navigate to contracts directory
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/shariqazeem/RizqFi.git
-cd RizqFi/solana-saga/frontend
-
-# 2. Install dependencies
-npm install
-
-# 3. Start development server
-npm run dev
-
-# 4. Open browser
-# Visit http://localhost:3000
+cd ~/solana-saga/prediction-markets-contracts
 ```
 
-**That's it!** The app runs with mock data - no blockchain connection needed for demo.
-
----
-
-## 🌐 Deploy to Vercel (Recommended)
-
-Vercel is the easiest way to deploy a Next.js app. Free tier works perfectly!
-
-### Option 1: Deploy via GitHub (Recommended)
-
-1. **Push to GitHub**
-   ```bash
-   git push origin main
-   ```
-
-2. **Connect to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "Import Project"
-   - Select your GitHub repository
-   - Set root directory to `solana-saga/frontend`
-   - Click "Deploy"
-
-3. **Configure Build Settings**
-   - Framework Preset: Next.js
-   - Build Command: `npm run build`
-   - Output Directory: `.next`
-   - Install Command: `npm install`
-
-4. **Add Environment Variables** (if needed)
-   - See [Environment Variables](#environment-variables) section
-
-5. **Deploy!**
-   - Vercel will build and deploy automatically
-   - You'll get a URL like `solana-saga.vercel.app`
-
-### Option 2: Deploy via CLI
+### Step 2: Configure Solana CLI for Devnet
 
 ```bash
-# 1. Install Vercel CLI
-npm i -g vercel
-
-# 2. Login to Vercel
-vercel login
-
-# 3. Deploy (from frontend directory)
-cd solana-saga/frontend
-vercel
-
-# Follow prompts:
-# - Set up and deploy? Yes
-# - Which scope? [Your account]
-# - Link to existing project? No
-# - Project name? solana-saga
-# - Directory? ./
-# - Override settings? No
-
-# 4. Deploy to production
-vercel --prod
-```
-
----
-
-## 🔗 Deploy Smart Contracts
-
-### Prerequisites
-
-- **Rust**: Latest stable
-- **Solana CLI**: 1.18+
-- **Anchor**: 0.32.1+
-- **SOL tokens**: For devnet/mainnet deployment
-
-### Setup Solana CLI
-
-```bash
-# Install Solana CLI
-sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
-
-# Verify installation
-solana --version
-
-# Set to devnet
+# Set network to Devnet
 solana config set --url https://api.devnet.solana.com
 
-# Create wallet (or import existing)
-solana-keygen new --outfile ~/.config/solana/id.json
+# Verify configuration
+solana config get
 
-# Airdrop SOL for testing
-solana airdrop 2
-```
+# Check your wallet address
+solana address
 
-### Setup Anchor
-
-```bash
-# Install Anchor (via AVM)
-cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
-avm install 0.32.1
-avm use 0.32.1
-
-# Verify installation
-anchor --version
-# Should show: anchor-cli 0.32.1
-```
-
-### Deploy Prediction Markets Contract
-
-```bash
-# Navigate to contracts directory
-cd solana-saga/prediction-markets-contracts
-
-# Build the program
-anchor build
-
-# Get program ID
-solana address -k target/deploy/prediction_markets-keypair.json
-
-# Update Anchor.toml and lib.rs with new program ID
-# (Replace the ID in both files)
-
-# Rebuild
-anchor build
-
-# Deploy to devnet
-anchor deploy
-
-# Note the program ID from output
-# Example: Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS
-```
-
-### Initialize Program
-
-```bash
-# Run initialization script (if you have one)
-anchor run initialize
-
-# Or manually call initialize instruction via web app
-```
-
----
-
-## 🔧 Environment Variables
-
-### Frontend (.env.local)
-
-Create `solana-saga/frontend/.env.local`:
-
-```bash
-# Solana Network
-NEXT_PUBLIC_SOLANA_NETWORK=devnet
-# Options: devnet, testnet, mainnet-beta
-
-# Solana RPC URL
-NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
-# For better performance, use a private RPC:
-# - https://www.helius.dev/ (recommended, free tier available)
-# - https://www.quicknode.com/
-
-# Program IDs
-NEXT_PUBLIC_PREDICTION_MARKET_PROGRAM_ID=Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS
-# Replace with your actual deployed program ID
-
-# USDC Mint Address (Devnet)
-NEXT_PUBLIC_USDC_MINT=4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
-
-# Optional: Analytics
-NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
-
-# Optional: Sentry Error Tracking
-NEXT_PUBLIC_SENTRY_DSN=https://...
-
-# Optional: Feature Flags
-NEXT_PUBLIC_ENABLE_REAL_BETTING=false
-# Set to true when contracts are deployed
-```
-
-### Backend / Scripts (.env)
-
-If you add backend scripts, create `.env` in root:
-
-```bash
-# Solana
-SOLANA_NETWORK=devnet
-ANCHOR_WALLET=~/.config/solana/id.json
-PROGRAM_ID=Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS
-
-# Database (if needed)
-DATABASE_URL=postgresql://...
-
-# API Keys
-ORACLE_API_KEY=...
-```
-
----
-
-## 🎯 Production Deployment Checklist
-
-Before deploying to mainnet:
-
-### Smart Contracts
-- [ ] Full security audit completed
-- [ ] All tests passing (unit + integration)
-- [ ] Program authority set correctly
-- [ ] Upgrade authority configured
-- [ ] Fee structure finalized
-- [ ] Oracle integration tested
-
-### Frontend
-- [ ] All environment variables set
-- [ ] Error tracking enabled (Sentry)
-- [ ] Analytics enabled (Google Analytics)
-- [ ] Social meta tags configured
-- [ ] Custom domain configured
-- [ ] SSL enabled (automatic with Vercel)
-- [ ] Performance optimized (Lighthouse score 90+)
-
-### Legal & Compliance
-- [ ] Terms of Service added
-- [ ] Privacy Policy added
-- [ ] Disclaimer about gambling laws
-- [ ] Age verification (18+)
-- [ ] Geo-blocking if needed
-
----
-
-## 🚨 Troubleshooting
-
-### Build Errors
-
-**Error: "Cannot find module 'next'"**
-```bash
-# Solution: Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
-```
-
-**Error: "Port 3000 already in use"**
-```bash
-# Solution: Kill process or use different port
-lsof -ti:3000 | xargs kill -9
-# Or
-npm run dev -- -p 3001
-```
-
-**Error: "Failed to fetch fonts from Google"**
-```bash
-# Solution: This is a build environment issue, not a code issue
-# Option 1: Use local fonts instead
-# Option 2: Build will succeed in Vercel deployment
-```
-
-### Smart Contract Errors
-
-**Error: "Insufficient funds"**
-```bash
-# Solution: Airdrop more SOL
-solana airdrop 2
-# Check balance
+# Check your SOL balance
 solana balance
 ```
 
-**Error: "Program deploy failed"**
+### Step 3: Airdrop SOL for deployment
+
+You'll need approximately 4-5 SOL for deployment. Run these commands:
+
 ```bash
-# Solution: Increase compute units
-solana program deploy \
-  --program-id target/deploy/prediction_markets-keypair.json \
-  target/deploy/prediction_markets.so \
-  --max-len 500000
+solana airdrop 2
+sleep 5
+solana airdrop 2
+sleep 5
+solana airdrop 2
+
+# Verify balance (should be around 6 SOL)
+solana balance
 ```
 
-**Error: "Account does not exist"**
+**Note**: If airdrop fails with rate limit error, wait 2-3 minutes and try again, or use the [Solana Devnet Faucet](https://faucet.solana.com/).
+
+### Step 4: Build the program
+
 ```bash
-# Solution: Initialize the program first
-anchor run initialize
+anchor build
 ```
 
-### Wallet Connection Issues
+This will:
+- Compile your Rust smart contracts
+- Generate TypeScript types in `target/types/`
+- Create the program binary
 
-**Phantom not detected:**
-- Make sure Phantom extension is installed
-- Refresh page
-- Check browser console for errors
+**Expected output**: Should complete without errors. Takes 1-2 minutes.
 
-**Wrong network:**
-```javascript
-// Ensure app is configured for same network as wallet
-// In Phantom: Settings > Developer Settings > Change Network
-```
+### Step 5: Deploy to Devnet
 
----
-
-## 📊 Performance Optimization
-
-### Frontend
-
-1. **Enable Turbopack** (already configured)
-   ```json
-   "scripts": {
-     "dev": "next dev --turbopack"
-   }
-   ```
-
-2. **Image Optimization**
-   - Use Next.js `<Image>` component
-   - Serve images from CDN
-   - Use WebP format
-
-3. **Code Splitting**
-   - Already automatic with Next.js App Router
-   - Use dynamic imports for heavy components
-
-4. **Caching**
-   - Configure `Cache-Control` headers
-   - Use Vercel Edge Network
-   - Enable SWR for data fetching
-
-### Smart Contracts
-
-1. **Optimize Compute Units**
-   - Remove unnecessary logs
-   - Use efficient data structures
-   - Batch transactions when possible
-
-2. **Reduce Account Size**
-   - Use compact data types
-   - Remove unused fields
-   - Use zero-copy deserialization
-
----
-
-## 🌍 Custom Domain Setup
-
-### Vercel
-
-1. Go to Project Settings → Domains
-2. Add your domain (e.g., `solanasaga.com`)
-3. Configure DNS:
-   ```
-   Type: CNAME
-   Name: @
-   Value: cname.vercel-dns.com
-   ```
-4. Wait for DNS propagation (~24 hours)
-5. SSL certificate auto-generated
-
----
-
-## 🔐 Security Best Practices
-
-### Frontend
-- Never expose private keys
-- Validate all user inputs
-- Use Content Security Policy
-- Enable HTTPS only
-- Implement rate limiting
-
-### Smart Contracts
-- Use `require!` for all constraints
-- Validate signer authority
-- Check account ownership
-- Implement emergency pause
-- Set proper access controls
-
----
-
-## 📈 Monitoring
-
-### Frontend Monitoring
-
-**Vercel Analytics** (built-in):
-- Real-time page views
-- Web Vitals (CLS, FID, LCP)
-- Geographic distribution
-
-**Sentry** (errors):
 ```bash
-npm install @sentry/nextjs
-npx @sentry/wizard@latest -i nextjs
+anchor deploy
 ```
 
-### Smart Contract Monitoring
+**🔴 CRITICAL: Save the Program ID!**
 
-**Solana Explorer**:
-- Watch program transactions
-- Monitor account balances
-- Track error rates
+After deployment, you'll see output like:
 
-**Custom Monitoring**:
-```typescript
-// Set up webhooks for program events
-import { Connection } from '@solana/web3.js';
+```
+Program Id: AbC123XyZ789mN4pQ5rS6tU7vW8xY9zA1bC2dE3fG4h
+```
 
-const connection = new Connection(rpcUrl);
-connection.onProgramAccountChange(
-  programId,
-  (accountInfo) => {
-    // Log to monitoring service
-    console.log('Account changed:', accountInfo);
-  }
-);
+**📝 Copy and save this Program ID somewhere safe** - you'll need it in Part 3!
+
+### Step 6: Verify deployment
+
+```bash
+# Check program account (replace with YOUR Program ID)
+solana program show <YOUR_PROGRAM_ID>
+
+# You should see: "Program Id", "Owner", "Data Length", etc.
 ```
 
 ---
 
-## 📞 Support
+## 🎯 Part 2: Create 5 Demo Markets
 
-**Issues:**
-- GitHub Issues: [github.com/shariqazeem/RizqFi/issues](https://github.com/shariqazeem/RizqFi/issues)
-- Email: shariqshaukat786@gmail.com
+### Step 1: Run the demo markets script
 
-**Community:**
-- Twitter: [@SolanaSaga](#)
-- Discord: [Solana Saga Community](#)
-- Telegram: [t.me/solanasaga](#)
+Make sure you're still in the `prediction-markets-contracts` directory:
+
+```bash
+# Make sure you're in the right directory
+pwd
+# Should show: /Users/your-username/solana-saga/prediction-markets-contracts
+
+# Run the demo markets creation script
+anchor run create-demo-markets
+```
+
+This will create 5 demo markets:
+1. "Will SOL hit $300 by Dec 20?" (30 days)
+2. "Will Jupiter reach 10M daily transactions?" (14 days)
+3. "Will Bonk flip Dogecoin this week?" (7 days)
+4. "Will Solana NFT sales exceed 50k this week?" (7 days)
+5. "Will any Solana DEX reach $1B volume today?" (1 day)
+
+**🔴 CRITICAL: Save all 5 Market Addresses!**
+
+The script will output something like:
+
+```
+📊 Creating Market 1/5:
+   Question: Will SOL hit $300 by Dec 20?
+   Category: Price
+   ✅ Market created!
+   Market Address: DeFg456Abc789XyZ123mN4pQ5rS6tU7vW8xY9zA1bC2
+   Transaction: tx123abc...
+
+📊 Creating Market 2/5:
+   Question: Will Jupiter reach 10M daily transactions?
+   ...
+```
+
+**📝 Copy all 5 market addresses** and save them like this:
+
+```
+Market 1: DeFg456Abc...
+Market 2: Gh8Ij9Kl0M...
+Market 3: Nop1Qr2St3...
+Market 4: Uv4Wx5Yz6A...
+Market 5: Bcd7Ef8Gh9...
+```
 
 ---
 
-## 🎓 Additional Resources
+## 🔌 Part 3: Connect Frontend to Deployed Contracts
 
-**Solana:**
-- [Solana Docs](https://docs.solana.com)
-- [Solana Cookbook](https://solanacookbook.com)
-- [Anchor Book](https://book.anchor-lang.com)
+### Step 1: Navigate to frontend directory
 
-**Next.js:**
-- [Next.js Docs](https://nextjs.org/docs)
-- [Vercel Docs](https://vercel.com/docs)
+```bash
+cd ~/solana-saga/frontend
+```
 
-**Web3:**
-- [Solana Web3.js](https://solana-labs.github.io/solana-web3.js/)
-- [Wallet Adapter](https://github.com/solana-labs/wallet-adapter)
+### Step 2: Update environment variables
+
+Edit the `.env.local` file and update with YOUR values:
+
+```bash
+# Open the file in your favorite editor
+nano .env.local
+# or
+code .env.local
+# or
+vim .env.local
+```
+
+Replace the placeholder values:
+
+```env
+# Solana Configuration
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
+NEXT_PUBLIC_SOLANA_RPC_HOST=https://api.devnet.solana.com
+
+# 🔴 REPLACE with YOUR Program ID from Part 1, Step 5
+NEXT_PUBLIC_PROGRAM_ID=AbC123XyZ789mN4pQ5rS6tU7vW8xY9zA1bC2dE3fG4h
+
+# 🔴 REPLACE with YOUR 5 Market Addresses from Part 2, Step 1
+NEXT_PUBLIC_MARKET_1=DeFg456Abc789XyZ123mN4pQ5rS6tU7vW8xY9zA1bC2
+NEXT_PUBLIC_MARKET_2=Gh8Ij9Kl0Mn1Op2Qr3St4Uv5Wx6Yz7Ab8Cd9Ef0Gh1
+NEXT_PUBLIC_MARKET_3=Nop1Qr2St3Uv4Wx5Yz6Ab7Cd8Ef9Gh0Ij1Kl2Mn3Op
+NEXT_PUBLIC_MARKET_4=Uv4Wx5Yz6Ab7Cd8Ef9Gh0Ij1Kl2Mn3Op4Qr5St6Uv7
+NEXT_PUBLIC_MARKET_5=Bcd7Ef8Gh9Ij0Kl1Mn2Op3Qr4St5Uv6Wx7Yz8Ab9Cd
+```
+
+Save and close the file.
+
+### Step 3: Copy IDL to frontend
+
+The frontend needs the contract IDL (Interface Definition Language) to interact with your program:
+
+```bash
+# From the frontend directory
+mkdir -p lib/solana
+cp ../prediction-markets-contracts/target/idl/prediction_markets.json ./lib/solana/
+```
+
+Verify it was copied:
+
+```bash
+ls -la lib/solana/prediction_markets.json
+# Should show the file exists
+```
+
+### Step 4: Install dependencies (if needed)
+
+```bash
+npm install
+```
+
+### Step 5: Start the development server
+
+```bash
+npm run dev
+```
+
+You should see:
+
+```
+▲ Next.js 15.5.6
+- Local:        http://localhost:3000
+- Network:      http://192.168.x.x:3000
+
+✓ Starting...
+✓ Ready in 2.3s
+```
+
+**🎉 Your app is now running!** Open http://localhost:3000
 
 ---
 
-**Built for Indie.fun Hackathon 2025** 🎮
+## 🧪 Part 4: Test the Full Integration
 
-Good luck with your deployment! 🚀
+### Step 1: Open the app
+
+Navigate to `http://localhost:3000` in your browser (Chrome or Brave recommended).
+
+### Step 2: Connect your wallet
+
+1. Click "Connect Wallet" button in the top right
+2. Select **Phantom** or **Solflare**
+3. Approve the connection
+4. **🔴 IMPORTANT: Switch your wallet to Devnet**
+
+**To switch Phantom to Devnet:**
+- Click the Phantom extension
+- Settings (gear icon)
+- Developer Settings
+- Testnet Mode → **Enable**
+- Select "Devnet"
+
+**To switch Solflare to Devnet:**
+- Click settings
+- Network → Select "Devnet"
+
+### Step 3: Airdrop Devnet SOL to your wallet
+
+```bash
+# Get your wallet address (shown in the app after connecting)
+# Or check it with:
+solana address
+
+# Airdrop 2 SOL to your wallet
+solana airdrop 2 <YOUR_WALLET_ADDRESS>
+
+# Example:
+solana airdrop 2 8Bx...xyz
+```
+
+Check your wallet - you should now have ~2 SOL on Devnet.
+
+### Step 4: Browse markets
+
+1. Click "Explore Markets" or go to the Markets page
+2. You should see your 5 demo markets loaded from the blockchain
+3. Each market should show:
+   - Question
+   - Category badge
+   - YES/NO percentages
+   - Time remaining
+
+**🔴 If markets don't show:**
+- Check browser console (F12) for errors
+- Verify `.env.local` has correct addresses
+- Restart dev server: `npm run dev`
+
+### Step 5: Place your first bet!
+
+1. Select any market (click "View Details" or the YES/NO buttons)
+2. Select YES or NO side
+3. Enter amount: **0.1 SOL** (start small for testing)
+4. Click "Place Bet"
+5. Approve transaction in your wallet
+
+**Expected result:**
+- Transaction should complete in 1-2 seconds
+- Your wallet balance decreases by 0.1 SOL
+- Market pools update
+- You see success message
+
+### Step 6: View transaction on Solana Explorer
+
+After placing a bet, copy the transaction signature from the success message or console.
+
+Visit:
+```
+https://explorer.solana.com/tx/<TRANSACTION_SIGNATURE>?cluster=devnet
+```
+
+You should see:
+- Transaction details
+- Instructions
+- Account inputs
+- Success status
+
+---
+
+## 📊 Part 5: Monitoring & Debugging
+
+### View your Program on Solana Explorer
+
+```
+https://explorer.solana.com/address/<YOUR_PROGRAM_ID>?cluster=devnet
+```
+
+### View a Market account
+
+```
+https://explorer.solana.com/address/<MARKET_ADDRESS>?cluster=devnet
+```
+
+### Watch program logs in real-time
+
+Open a new terminal and run:
+
+```bash
+solana logs <YOUR_PROGRAM_ID>
+```
+
+Leave this running while you interact with the app to see all program activity!
+
+### Frontend console logs
+
+Open browser DevTools:
+- **Chrome/Brave**: Press F12 or Cmd+Option+I
+- Go to **Console** tab
+
+You'll see:
+- Wallet connection status
+- Transaction signatures
+- Market data fetches
+- Any errors
+
+---
+
+## 🐛 Common Issues & Solutions
+
+### Issue: "Program not deployed" or "Invalid program ID"
+
+**Symptoms**: Markets don't load, or you see errors about program not found.
+
+**Solution**:
+1. Check that `.env.local` has the correct Program ID
+2. Verify on Solana Explorer that program exists on Devnet
+3. Make sure Solana CLI is on Devnet: `solana config get`
+
+### Issue: "Insufficient funds" when placing bet
+
+**Symptoms**: Transaction fails with "insufficient lamports" error.
+
+**Solutions**:
+1. Check wallet balance: should have at least 0.5 SOL
+2. Airdrop more: `solana airdrop 2 <YOUR_WALLET_ADDRESS>`
+3. Make sure you're on Devnet (mainnet SOL won't work!)
+
+### Issue: "Transaction simulation failed"
+
+**Possible causes:**
+1. Market has already ended
+2. Invalid bet amount (too small or too large)
+3. Not enough SOL in wallet
+4. Wrong network (wallet on mainnet, app on devnet)
+
+**Solutions**:
+1. Check market end time hasn't passed
+2. Try amount between 0.1 - 1 SOL
+3. Airdrop more SOL
+4. Verify wallet network matches app network
+
+### Issue: "Cannot find module '@/lib/solana/config'"
+
+**Solution**:
+
+```bash
+# Make sure all integration files were created
+ls -la lib/solana/
+
+# You should see:
+# - config.ts
+# - prediction_markets.json
+# - hooks/usePredictionMarkets.ts
+
+# If missing, re-run git pull to get latest files
+```
+
+### Issue: Markets showing but data looks wrong
+
+**Symptoms**: Markets show placeholder data instead of real blockchain data.
+
+**Solution**:
+1. Open browser console (F12)
+2. Look for errors fetching market data
+3. Verify market addresses in `.env.local` are correct
+4. Try hard refresh: Cmd+Shift+R (Mac) or Ctrl+F5 (Windows)
+
+### Issue: Wallet connects but then disconnects
+
+**Solutions**:
+1. Make sure wallet is unlocked
+2. Make sure wallet is on Devnet (not mainnet)
+3. Try disconnecting and reconnecting
+4. Refresh the page and try again
+
+### Issue: "RPC request failed" or "429 Too Many Requests"
+
+**Symptoms**: Operations fail intermittently.
+
+**Solution**: Public RPC can be rate-limited. For better reliability:
+
+```env
+# In .env.local, use a better RPC endpoint:
+NEXT_PUBLIC_SOLANA_RPC_HOST=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
+
+# Get free API key at: https://www.helius.dev/
+```
+
+---
+
+## ✅ Success Checklist
+
+Before moving forward, verify:
+
+- [ ] Smart contract deployed to Devnet ✅
+- [ ] Program ID saved and added to `.env.local` ✅
+- [ ] 5 demo markets created ✅
+- [ ] All 5 market addresses saved and added to `.env.local` ✅
+- [ ] IDL file copied to `frontend/lib/solana/` ✅
+- [ ] Frontend dev server running ✅
+- [ ] Wallet connects successfully ✅
+- [ ] Wallet on Devnet (not mainnet) ✅
+- [ ] Markets load from blockchain ✅
+- [ ] Can place bets successfully ✅
+- [ ] Transactions visible on Solana Explorer ✅
+- [ ] No errors in browser console ✅
+
+---
+
+## 🎉 Next Steps: Deploy to Production
+
+Once everything works locally on Devnet, you're ready to deploy!
+
+### 1. Deploy Frontend to Vercel
+
+```bash
+cd frontend
+
+# Install Vercel CLI if you haven't
+npm i -g vercel
+
+# Deploy
+vercel
+
+# Follow prompts, then deploy to production:
+vercel --prod
+```
+
+**🔴 IMPORTANT**: Add environment variables in Vercel dashboard:
+- Go to your project → Settings → Environment Variables
+- Add all variables from `.env.local`
+- Redeploy for changes to take effect
+
+### 2. Create Demo Video (2-3 minutes)
+
+Record a walkthrough showing:
+- ✅ The stunning Neon Arena UI
+- ✅ Wallet connection
+- ✅ Browsing markets
+- ✅ Placing a bet (show the whole flow)
+- ✅ Transaction on Solana Explorer
+- ✅ Leaderboard with your bet
+
+**Tools**: QuickTime (Mac), OBS Studio (free), or Loom
+
+### 3. Set Up Twitter/X
+
+Create account and post launch announcement:
+
+```
+🎮 Introducing Solana Saga - The Neon Arena 🔥
+
+The most addictive prediction market game on @solana
+
+✨ Premium gaming UI with neon effects
+⚡️ Lightning-fast bets on Solana
+🏆 Real-time leaderboard
+💰 AMM-powered markets
+
+Built for @indie_fun hackathon
+
+Try it: [your-vercel-url]
+
+#Solana #Web3Gaming #PredictionMarkets
+```
+
+Attach your demo video!
+
+### 4. Submit to Indie.fun
+
+Prepare your submission:
+
+**Required**:
+- [ ] GitHub repo link (make repo public!)
+- [ ] Live demo URL (Vercel deployment)
+- [ ] 2-3 minute demo video
+- [ ] Description of unique features
+
+**Highlights for submission**:
+- 🎨 **Unique Neon Arena UI** - Premium gaming aesthetic (vs generic purple themes)
+- ⚡️ **Solana-powered** - Sub-second bet confirmations
+- 🤖 **AMM formula** - Decentralized market-making
+- 🏆 **Gamification** - Leaderboard, streaks, achievements
+- 📱 **Responsive** - Works on mobile & desktop
+
+### 5. Final QA Checklist
+
+- [ ] Test on mobile (iOS Safari, Android Chrome)
+- [ ] Test bet placement multiple times
+- [ ] Verify all pages load correctly
+- [ ] Check that markets show real data
+- [ ] Confirm transactions appear on explorer
+- [ ] Test wallet disconnect/reconnect
+- [ ] Check page load performance (Lighthouse)
+- [ ] Verify no console errors
+- [ ] Test on different browsers (Chrome, Firefox, Safari)
+
+---
+
+## 🚀 You're Ready to Win!
+
+Your Solana Saga app is now:
+- ✅ Fully functional on Devnet
+- ✅ Connected to real smart contracts
+- ✅ Featuring stunning Neon Arena UI
+- ✅ Ready for hackathon submission
+
+**The judges will love:**
+1. **Visual Impact**: Your Neon Arena theme stands out immediately
+2. **Technical Execution**: Real Solana integration, not just mock data
+3. **User Experience**: Smooth, fast, addictive betting flow
+4. **Completeness**: Full stack - contracts + beautiful frontend
+
+---
+
+## 💡 Tips for Winning
+
+1. **Make a great demo video** - This is what judges will watch first
+2. **Emphasize uniqueness** - Your gaming UI is a major differentiator
+3. **Show it works** - Real transactions on Devnet prove it's functional
+4. **Clear documentation** - Professional presentation matters
+5. **Social proof** - Twitter engagement can help
+
+---
+
+## 📞 Need Help?
+
+If you run into issues:
+
+1. **Check browser console** (F12 → Console tab)
+2. **Check Solana logs**: `solana logs <PROGRAM_ID>`
+3. **View transaction** on Solana Explorer
+4. **Verify all IDs** in `.env.local` are correct
+5. **Try restarting** dev server: `npm run dev`
+
+---
+
+## 🔗 Useful Resources
+
+- [Solana Devnet Faucet](https://faucet.solana.com/)
+- [Solana Explorer (Devnet)](https://explorer.solana.com/?cluster=devnet)
+- [Anchor Documentation](https://www.anchor-lang.com/)
+- [Solana Web3.js Docs](https://solana-labs.github.io/solana-web3.js/)
+- [Phantom Wallet](https://phantom.app/)
+- [Vercel Documentation](https://vercel.com/docs)
+
+---
+
+## 🏆 Final Words
+
+You've built something special. The Neon Arena UI combined with real Solana smart contracts creates a premium prediction markets experience.
+
+**Remember the key differentiators:**
+- **Visual Excellence**: Gaming-grade UI design
+- **Technical Depth**: Real blockchain integration
+- **User Experience**: Fast, fun, addictive
+- **Completeness**: Full-stack implementation
+
+**Now go win that $10K prize! 🚀💰**
+
+Good luck! 🍀
+
+---
+
+**Built for Indie.fun Hackathon 2025**
+**Deadline: December 12, 2025**
