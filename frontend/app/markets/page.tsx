@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 // Mock data for demo
 const MOCK_MARKETS = [
@@ -149,9 +150,7 @@ export default function MarketsPage() {
                 </Link>
               </div>
 
-              <button className="neon-button px-6 py-2 rounded-lg">
-                Connect Wallet
-              </button>
+              <WalletMultiButton />
             </div>
           </div>
         </header>

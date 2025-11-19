@@ -8,6 +8,7 @@ import {
 import { useState, use } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 // Mock market data (in real app, fetch from blockchain)
 const MOCK_MARKET = {
@@ -116,9 +117,7 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                 </h1>
               </Link>
 
-              <button className="neon-button px-6 py-2 rounded-lg">
-                Connect Wallet
-              </button>
+              <WalletMultiButton />
             </div>
           </div>
         </header>
