@@ -2,7 +2,9 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PredictionMarkets } from "../target/types/prediction_markets";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
+// Token Program ID constant
+const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 // USDC Devnet mint address
 const USDC_DEVNET_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
@@ -61,20 +63,15 @@ async function createDemoMarkets() {
       console.log(`   Category: ${market.category}`);
       console.log(`   Market ID: ${marketId}`);
 
-      // Derive PDA addresses
+      // Derive PDA addresses for display (Anchor will auto-derive them)
       const [marketPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("market"), new anchor.BN(marketId).toArrayLike(Buffer, "le", 8)],
         program.programId
       );
 
-      const [vaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), new anchor.BN(marketId).toArrayLike(Buffer, "le", 8)],
-        program.programId
-      );
-
       console.log(`   Market PDA: ${marketPda.toString()}`);
 
-      // Create market - match the function signature: market_id, question, description, end_time, category
+      // Create market - Anchor will auto-derive PDAs based on seeds
       const tx = await program.methods
         .createMarket(
           new anchor.BN(marketId),
@@ -84,8 +81,6 @@ async function createDemoMarkets() {
           market.category
         )
         .accounts({
-          market: marketPda,
-          vault: vaultPda,
           usdcMint: USDC_DEVNET_MINT,
           creator: provider.wallet.publicKey,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -103,6 +98,7 @@ async function createDemoMarkets() {
 
     } catch (error) {
       console.error(`   ❌ Error creating market ${i + 1}:`, error);
+      console.error(`   Error details:`, error);
     }
   }
 
