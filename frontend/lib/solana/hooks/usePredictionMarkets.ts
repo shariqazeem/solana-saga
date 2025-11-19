@@ -240,6 +240,17 @@ export function usePredictionMarkets() {
       const marketId = toNum((marketAccount as any).id);
       const totalBetsCount = toNum((marketAccount as any).total_bets_count);
 
+      // Derive the proper market PDA (must match the PDA from create_market)
+      const [marketPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      console.log("Market address from URL:", marketPubkey.toString());
+      console.log("Derived market PDA:", marketPda.toString());
+      console.log("Market ID:", marketId);
+      console.log("Total bets count:", totalBetsCount);
+
       // Convert amount to USDC smallest units (6 decimals)
       const amountInSmallestUnits = new BN(amount * Math.pow(10, USDC_DECIMALS));
 
@@ -270,11 +281,11 @@ export function usePredictionMarkets() {
         await connection.confirmTransaction(signature);
       }
 
-      // Derive PDAs
+      // Derive PDAs using the correct market PDA
       const [betPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("bet"),
-          marketPubkey.toBuffer(),
+          marketPda.toBuffer(), // Use derived marketPda, not marketPubkey
           wallet.publicKey.toBuffer(),
           new BN(totalBetsCount).toArrayLike(Buffer, "le", 8),
         ],
@@ -291,11 +302,15 @@ export function usePredictionMarkets() {
         program.programId
       );
 
-      // Place bet
+      console.log("Derived bet PDA:", betPda.toString());
+      console.log("User stats PDA:", userStatsPda.toString());
+      console.log("Vault PDA:", vaultPda.toString());
+
+      // Place bet using the derived market PDA
       const tx = await program.methods
         .placeBet(new BN(marketId), amountInSmallestUnits, prediction)
         .accounts({
-          market: marketPubkey,
+          market: marketPda, // Use derived marketPda
           bet: betPda,
           userStats: userStatsPda,
           vault: vaultPda,
