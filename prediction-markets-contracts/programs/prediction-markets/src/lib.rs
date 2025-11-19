@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("EhMD2NdBfgsrJmXUgxWwpQrWbAockZ4GAs5G5NkwCmsa");
 
 #[program]
 pub mod prediction_markets {
