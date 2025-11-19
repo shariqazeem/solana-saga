@@ -60,13 +60,19 @@ export function usePredictionMarkets() {
   const program = useMemo(() => {
     if (!wallet) return null;
 
-    const provider = new AnchorProvider(
-      connection,
-      wallet,
-      { commitment: "confirmed", preflightCommitment: "confirmed" }
-    );
+    try {
+      const provider = new AnchorProvider(
+        connection,
+        wallet,
+        { commitment: "confirmed", preflightCommitment: "confirmed" }
+      );
 
-    return new Program(idl as Idl, PROGRAM_ID, provider);
+      // Cast to any first to bypass type checking issues
+      return new Program(idl as any, provider);
+    } catch (error) {
+      console.error("Error initializing program:", error);
+      return null;
+    }
   }, [connection, wallet]);
 
   // Fetch all markets
