@@ -114,26 +114,15 @@ export function usePredictionMarkets() {
       setLoading(true);
       setError(null);
 
-      // Fetch all market accounts from the program
-      // Use getProgramAccounts to get raw account data
-      const accounts = await connection.getProgramAccounts(readOnlyProgram.programId, {
-        filters: [
-          {
-            // Filter for Market accounts by discriminator
-            // The discriminator is the first 8 bytes of sha256("account:Market")
-            memcmp: {
-              offset: 0,
-              bytes: "2w4CK1t8Hd6u", // Base58 of Market discriminator
-            },
-          },
-        ],
-      });
+      // Fetch all accounts owned by the program
+      const accounts = await connection.getProgramAccounts(readOnlyProgram.programId);
 
       const marketsData: Market[] = [];
 
-      // Manually decode each account, skipping any that fail
+      // Try to decode each account as a Market, skipping any that fail
       for (const { pubkey, account: accountInfo } of accounts) {
         try {
+          // Try to decode as Market account
           const data = readOnlyProgram.coder.accounts.decode("Market", accountInfo.data);
 
           // USDC has 6 decimals - use snake_case field names from actual IDL
@@ -193,11 +182,13 @@ export function usePredictionMarkets() {
             isFinalized: data.is_finalized || false,
           });
         } catch (decodeError) {
-          // Skip markets that can't be decoded (old structure)
-          console.warn(`Skipping market ${pubkey.toString()} - incompatible structure (likely created before decentralization)`);
+          // Skip accounts that aren't Market accounts or have incompatible structure
+          // This is expected for old markets or non-market accounts (bets, vaults, etc.)
+          continue;
         }
       }
 
+      console.log(`Loaded ${marketsData.length} markets`);
       setMarkets(marketsData);
     } catch (error: any) {
       console.error("Error fetching markets:", error);
