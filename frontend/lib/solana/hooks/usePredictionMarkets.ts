@@ -113,68 +113,90 @@ export function usePredictionMarkets() {
     try {
       setLoading(true);
       setError(null);
-      const marketAccounts = await readOnlyProgram.account.market.all();
 
-      const marketsData: Market[] = marketAccounts.map((account: any) => {
-        const data = account.account;
-
-        // USDC has 6 decimals - use snake_case field names from actual IDL
-        const yesPool = toNum(data.yes_pool) / Math.pow(10, USDC_DECIMALS);
-        const noPool = toNum(data.no_pool) / Math.pow(10, USDC_DECIMALS);
-        const totalVolume = toNum(data.total_volume) / Math.pow(10, USDC_DECIMALS);
-
-        // Calculate prices (percentage chance of winning)
-        const totalPool = yesPool + noPool;
-        const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
-        const noPrice = 100 - yesPrice;
-
-        // Calculate time remaining - use snake_case field names
-        const endTime = toNum(data.end_time);
-        const now = Math.floor(Date.now() / 1000);
-        const secondsLeft = endTime - now;
-        const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
-        const hoursLeft = Math.floor(secondsLeft / (60 * 60));
-
-        let endsIn = "";
-        if (secondsLeft < 0) endsIn = "Ended";
-        else if (daysLeft > 0) endsIn = `${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
-        else if (hoursLeft > 0) endsIn = `${hoursLeft} hour${hoursLeft > 1 ? "s" : ""}`;
-        else endsIn = "Soon";
-
-        let status = "Active";
-        if (data.status && typeof data.status === 'object') {
-          if ('active' in data.status) status = "Active";
-          else if ('resolved' in data.status) status = "Resolved";
-          else if ('cancelled' in data.status) status = "Cancelled";
-        }
-
-        return {
-          publicKey: account.publicKey.toString(),
-          id: toNum(data.id),
-          question: data.question,
-          description: data.description,
-          category: data.category,
-          creator: data.creator.toString(),
-          yesPool,
-          noPool,
-          totalVolume,
-          isResolved: status === "Resolved",
-          outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
-          endTime,
-          createdAt: toNum(data.created_at),
-          yesPrice,
-          noPrice,
-          endsIn,
-          bettors: toNum(data.unique_bettors),
-          totalBetsCount: toNum(data.total_bets_count),
-          status,
-          // Decentralized resolution fields
-          resolutionProposer: data.resolution_proposer ? data.resolution_proposer.toString() : null,
-          resolutionBond: toNum(data.resolution_bond) / Math.pow(10, USDC_DECIMALS),
-          challengeDeadline: data.challenge_deadline ? toNum(data.challenge_deadline) : null,
-          isFinalized: data.is_finalized || false,
-        };
+      // Fetch all market accounts from the program
+      // Use getProgramAccounts to get raw account data
+      const accounts = await connection.getProgramAccounts(readOnlyProgram.programId, {
+        filters: [
+          {
+            // Filter for Market accounts by discriminator
+            // The discriminator is the first 8 bytes of sha256("account:Market")
+            memcmp: {
+              offset: 0,
+              bytes: "2w4CK1t8Hd6u", // Base58 of Market discriminator
+            },
+          },
+        ],
       });
+
+      const marketsData: Market[] = [];
+
+      // Manually decode each account, skipping any that fail
+      for (const { pubkey, account: accountInfo } of accounts) {
+        try {
+          const data = readOnlyProgram.coder.accounts.decode("Market", accountInfo.data);
+
+          // USDC has 6 decimals - use snake_case field names from actual IDL
+          const yesPool = toNum(data.yes_pool) / Math.pow(10, USDC_DECIMALS);
+          const noPool = toNum(data.no_pool) / Math.pow(10, USDC_DECIMALS);
+          const totalVolume = toNum(data.total_volume) / Math.pow(10, USDC_DECIMALS);
+
+          // Calculate prices (percentage chance of winning)
+          const totalPool = yesPool + noPool;
+          const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
+          const noPrice = 100 - yesPrice;
+
+          // Calculate time remaining
+          const endTime = toNum(data.end_time);
+          const now = Math.floor(Date.now() / 1000);
+          const secondsLeft = endTime - now;
+          const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
+          const hoursLeft = Math.floor(secondsLeft / (60 * 60));
+
+          let endsIn = "";
+          if (secondsLeft < 0) endsIn = "Ended";
+          else if (daysLeft > 0) endsIn = `${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
+          else if (hoursLeft > 0) endsIn = `${hoursLeft} hour${hoursLeft > 1 ? "s" : ""}`;
+          else endsIn = "Soon";
+
+          let status = "Active";
+          if (data.status && typeof data.status === 'object') {
+            if ('active' in data.status) status = "Active";
+            else if ('resolved' in data.status) status = "Resolved";
+            else if ('cancelled' in data.status) status = "Cancelled";
+          }
+
+          marketsData.push({
+            publicKey: pubkey.toString(),
+            id: toNum(data.id),
+            question: data.question,
+            description: data.description,
+            category: data.category,
+            creator: data.creator.toString(),
+            yesPool,
+            noPool,
+            totalVolume,
+            isResolved: status === "Resolved",
+            outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
+            endTime,
+            createdAt: toNum(data.created_at),
+            yesPrice,
+            noPrice,
+            endsIn,
+            bettors: toNum(data.unique_bettors),
+            totalBetsCount: toNum(data.total_bets_count),
+            status,
+            // Decentralized resolution fields
+            resolutionProposer: data.resolution_proposer ? data.resolution_proposer.toString() : null,
+            resolutionBond: toNum(data.resolution_bond) / Math.pow(10, USDC_DECIMALS),
+            challengeDeadline: data.challenge_deadline ? toNum(data.challenge_deadline) : null,
+            isFinalized: data.is_finalized || false,
+          });
+        } catch (decodeError) {
+          // Skip markets that can't be decoded (old structure)
+          console.warn(`Skipping market ${pubkey.toString()} - incompatible structure (likely created before decentralization)`);
+        }
+      }
 
       setMarkets(marketsData);
     } catch (error: any) {
@@ -183,7 +205,7 @@ export function usePredictionMarkets() {
     } finally {
       setLoading(false);
     }
-  }, [readOnlyProgram]);
+  }, [readOnlyProgram, connection]);
 
   // Fetch user bets
   const fetchUserBets = useCallback(async () => {
@@ -201,6 +223,7 @@ export function usePredictionMarkets() {
 
       const betsData: Bet[] = betAccounts.map((account: any) => {
         const data = account.account;
+
         return {
           publicKey: account.publicKey.toString(),
           user: data.user.toString(),
