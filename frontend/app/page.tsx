@@ -100,14 +100,19 @@ export default function LandingPage() {
               <Link href="/markets">
                 <button className="group neon-button px-8 py-4 rounded-xl text-lg">
                   <span className="flex items-center gap-2">
-                    Start Predicting
+                    Browse Markets
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </button>
               </Link>
-              <Link href="/markets">
+              <Link href="/my-bets">
                 <button className="neon-button-secondary px-8 py-4 rounded-xl text-lg">
-                  View Markets
+                  My Bets
+                </button>
+              </Link>
+              <Link href="/admin">
+                <button className="neon-button-secondary px-8 py-4 rounded-xl text-lg">
+                  Admin
                 </button>
               </Link>
             </motion.div>
