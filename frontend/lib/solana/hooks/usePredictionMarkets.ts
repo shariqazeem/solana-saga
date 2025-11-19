@@ -383,7 +383,8 @@ export function usePredictionMarkets() {
 
     try {
       const marketPubkey = new PublicKey(marketAddress);
-      const data = await readOnlyProgram.account.market.fetch(marketPubkey);
+      // Use "confirmed" commitment to get latest data
+      const data = await readOnlyProgram.account.market.fetch(marketPubkey, "confirmed");
 
       // Use snake_case field names from actual IDL
       const yesPool = toNum((data as any).yes_pool) / Math.pow(10, USDC_DECIMALS);

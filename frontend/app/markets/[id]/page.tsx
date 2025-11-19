@@ -102,10 +102,14 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
       setBetAmount("");
       setSelectedSide(null);
 
+      // Wait for transaction to be fully processed
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Refresh market data
       const updatedMarket = await getMarket(market.publicKey);
       if (updatedMarket) {
         setMarket(updatedMarket);
+        console.log("Market updated:", updatedMarket);
       }
     } catch (err: any) {
       console.error("Error placing bet:", err);
