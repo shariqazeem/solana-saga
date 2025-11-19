@@ -288,44 +288,25 @@ export function usePredictionMarkets() {
         await connection.confirmTransaction(signature);
       }
 
-      // Derive PDAs - use marketPubkey directly (it's already the PDA)
-      const betCountBuffer = new BN(totalBetsCount).toArrayLike(Buffer, "le", 8);
-      console.log("Bet count buffer (hex):", betCountBuffer.toString('hex'));
-      console.log("Bet count buffer (decimal):", Array.from(betCountBuffer));
-
-      const [betPda, betBump] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("bet"),
-          marketPubkey.toBuffer(), // Use marketPubkey (it's already the market PDA)
-          wallet.publicKey.toBuffer(),
-          betCountBuffer,
-        ],
-        program.programId
-      );
-
+      // Derive user stats PDA (always needed)
       const [userStatsPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("user_stats"), wallet.publicKey.toBuffer()],
         program.programId
       );
 
-      const [vaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
-        program.programId
-      );
-
-      console.log("Derived bet PDA:", betPda.toString(), "bump:", betBump);
       console.log("User stats PDA:", userStatsPda.toString());
-      console.log("Vault PDA:", vaultPda.toString());
       console.log("=== END DEBUG ===\n");
+      console.log("Note: Letting Anchor auto-derive bet PDA and vault PDA from on-chain state to avoid race conditions");
 
-      // Place bet using the market address (which is the market PDA)
+      // Place bet - let Anchor auto-derive bet and vault PDAs from on-chain market state
+      // This prevents race conditions with stale total_bets_count
       const tx = await program.methods
         .placeBet(new BN(marketId), amountInSmallestUnits, prediction)
         .accounts({
           market: marketPubkey,
-          bet: betPda,
+          // bet: auto-derived by Anchor from market.total_bets_count
           userStats: userStatsPda,
-          vault: vaultPda,
+          // vault: auto-derived by Anchor from market_id
           userTokenAccount: userUsdcAccount.address,
           user: wallet.publicKey,
           tokenProgram: TOKEN_PROGRAM_ID,
