@@ -81,30 +81,54 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
         origin: { y: 0.6 }
       });
 
-      setSuccess(`Bet placed successfully! Transaction: ${signature.slice(0, 8)}...`);
+      setSuccess(`Bet placed successfully! Transaction: ${signature.slice(0, 8)}... Refreshing market data...`);
       setBetAmount("");
       setSelectedSide(null);
 
-      // Wait for transaction to be fully confirmed (5 seconds to ensure blockchain state updates)
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Aggressively refresh market data
+      console.log("=== Starting market data refresh ===");
+      console.log("Current market state:", {
+        volume: market.totalVolume,
+        bettors: market.bettors,
+        totalBets: market.totalBetsCount
+      });
 
-      // Refresh market data multiple times with polling to ensure we get latest state
-      let attempts = 0;
-      const maxAttempts = 3;
-      while (attempts < maxAttempts) {
+      // Wait longer initially for blockchain to finalize (8 seconds)
+      await new Promise(resolve => setTimeout(resolve, 8000));
+
+      // Aggressive polling with increasing delays
+      for (let attempt = 1; attempt <= 6; attempt++) {
+        console.log(`Refresh attempt ${attempt}/6...`);
+
         const updatedMarket = await getMarket(market.publicKey);
         if (updatedMarket) {
-          setMarket(updatedMarket);
-          console.log(`Market updated (attempt ${attempts + 1}):`, updatedMarket);
+          console.log(`Attempt ${attempt} fetched data:`, {
+            volume: updatedMarket.totalVolume,
+            bettors: updatedMarket.bettors,
+            totalBets: updatedMarket.totalBetsCount,
+            status: updatedMarket.status,
+            endsIn: updatedMarket.endsIn
+          });
 
-          // Check if the market data has actually updated (has volume now)
-          if (updatedMarket.totalVolume > market.totalVolume || attempts === maxAttempts - 1) {
+          // Always update the state with latest data
+          setMarket(updatedMarket);
+
+          // Check if data has actually changed
+          if (updatedMarket.totalBetsCount > market.totalBetsCount) {
+            console.log("✓ Market data successfully updated!");
+            setSuccess(`Bet placed successfully! Market updated.`);
             break;
           }
+
+          // On last attempt, show message to refresh
+          if (attempt === 6) {
+            setSuccess(`Bet placed successfully! Please refresh the page if stats don't update.`);
+          }
         }
-        attempts++;
-        if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Wait before next attempt with increasing delay
+        if (attempt < 6) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
         }
       }
     } catch (err: any) {
@@ -171,6 +195,20 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
               <span className="font-semibold">Back to Markets</span>
             </button>
           </Link>
+          <button
+            onClick={async () => {
+              setLoading(true);
+              const refreshedMarket = await getMarket(id);
+              if (refreshedMarket) {
+                setMarket(refreshedMarket);
+              }
+              setLoading(false);
+            }}
+            className="flex items-center gap-2 px-4 py-2 glass-card rounded-lg hover:border-[#00F3FF] transition-all font-orbitron text-sm"
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>Refresh Data</span>
+          </button>
         </div>
 
         {/* Main Content */}
