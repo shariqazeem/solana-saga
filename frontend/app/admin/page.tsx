@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
 export default function AdminPage() {
   const wallet = useAnchorWallet();
   const { connection } = useConnection();
-  const { markets, loading: marketsLoading, refetch, resolveMarket: resolveMarketHook } = usePredictionMarkets();
+  const { markets, loading: marketsLoading, refetch, resolveMarket: resolveMarketHook, finalizeResolution } = usePredictionMarkets();
 
   // Create Market Form
   const [question, setQuestion] = useState("");
@@ -121,7 +121,7 @@ export default function AdminPage() {
     }
   };
 
-  // CREATOR-ONLY: Instant resolution (simplified)
+  // TEMPORARY: Works with old deployed contract (propose + try to finalize)
   const resolveMarketSimple = async (marketAddress: string, outcome: boolean) => {
     if (!wallet) {
       setResolveError("Please connect your wallet");
@@ -133,18 +133,36 @@ export default function AdminPage() {
     setResolveSuccess(null);
 
     try {
-      setResolveSuccess(`Resolving market as ${outcome ? "YES" : "NO"}...`);
-      const tx = await resolveMarketHook(marketAddress, outcome);
-      console.log("Market resolved:", tx);
+      // Step 1: Propose resolution (locks 100 USDC bond)
+      setResolveSuccess(`Proposing ${outcome ? "YES" : "NO"} as outcome... (requires 100 USDC bond)`);
+      const tx1 = await resolveMarketHook(marketAddress, outcome);
+      console.log("Resolution proposed:", tx1);
 
-      setResolveSuccess(`✓ Market instantly resolved as ${outcome ? "YES" : "NO"}! Users can now claim winnings.`);
+      // Wait for blockchain
+      await new Promise(r => setTimeout(r, 3000));
+
+      // Step 2: Try to auto-finalize (will fail if 24h not passed - that's ok!)
+      setResolveSuccess(`Trying to finalize immediately...`);
+      try {
+        const tx2 = await finalizeResolution(marketAddress);
+        console.log("Resolution finalized:", tx2);
+        setResolveSuccess(`✓ Market resolved as ${outcome ? "YES" : "NO"}! Users can claim winnings now.`);
+      } catch (finalizeError: any) {
+        // Expected error if challenge period not over
+        if (finalizeError.message?.includes("challenge") || finalizeError.message?.includes("24")) {
+          setResolveSuccess(`✓ ${outcome ? "YES" : "NO"} proposed! Will auto-finalize after 24h challenge period. Bond will be returned.`);
+        } else {
+          console.error("Unexpected finalize error:", finalizeError);
+          setResolveSuccess(`✓ ${outcome ? "YES" : "NO"} proposed! Come back in 24h to finalize.`);
+        }
+      }
 
       // Refresh markets
       await new Promise(r => setTimeout(r, 2000));
       await refetch();
     } catch (error: any) {
       console.error("Error resolving market:", error);
-      setResolveError(error.message || "Failed to resolve market");
+      setResolveError(error.message || "Failed to propose resolution");
     } finally {
       setResolving(null);
     }
@@ -361,7 +379,7 @@ export default function AdminPage() {
                                 </button>
                               </div>
                               <p className="text-xs text-slate-500 text-center mt-2">
-                                Creator-only instant resolution
+                                Requires 100 USDC bond (returned after 24h)
                               </p>
                             </div>
                           ) : (

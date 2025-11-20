@@ -402,7 +402,7 @@ export function usePredictionMarkets() {
     }
   };
 
-  // Resolve market (CREATOR-ONLY - instant resolution)
+  // Resolve market - TEMPORARY: Works with old deployed contract (with bonds)
   const resolveMarket = async (marketAddress: string, outcome: boolean): Promise<string> => {
     if (!program || !wallet) {
       throw new Error("Wallet not connected");
@@ -419,15 +419,39 @@ export function usePredictionMarkets() {
         throw new Error("Only the market creator can resolve this market");
       }
 
+      // Get user's USDC token account
+      const userUsdcAccount = await getUserUsdcAccount();
+
+      // If user doesn't have USDC account, throw error
+      if (!userUsdcAccount.exists) {
+        throw new Error("You need a USDC account with at least 100 USDC to resolve");
+      }
+
+      // Check balance for bond (100 USDC minimum)
+      const accountInfo = await connection.getTokenAccountBalance(userUsdcAccount.address);
+      const balance = parseFloat(accountInfo.value.amount) / Math.pow(10, USDC_DECIMALS);
+      if (balance < 100) {
+        throw new Error(`Need 100 USDC bond to resolve. Your balance: ${balance.toFixed(2)} USDC`);
+      }
+
+      // OLD CONTRACT INTERFACE: Needs vault and proposer token account
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
       const tx = await program.methods
         .resolveMarket(new BN(marketId), outcome)
         .accounts({
           market: marketPubkey,
-          creator: wallet.publicKey,
+          vault: vaultPda,
+          proposerTokenAccount: userUsdcAccount.address,
+          proposer: wallet.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
         })
         .rpc();
 
-      console.log("Market resolved successfully:", tx);
+      console.log("Resolution proposed (100 USDC bond locked):", tx);
 
       // Refresh data
       await Promise.all([fetchMarkets(), fetchUserBets()]);
@@ -436,6 +460,56 @@ export function usePredictionMarkets() {
     } catch (error: any) {
       console.error("Error resolving market:", error);
       throw new Error(error.message || "Failed to resolve market");
+    }
+  };
+
+  // Finalize resolution after 24h challenge period (TEMPORARY - for old contract)
+  const finalizeResolution = async (marketAddress: string): Promise<string> => {
+    if (!program || !wallet) {
+      throw new Error("Wallet not connected");
+    }
+
+    try {
+      const marketPubkey = new PublicKey(marketAddress);
+      const marketAccount = await (program as any).account.market.fetch(marketPubkey);
+      const marketId = toNum((marketAccount as any).id);
+
+      // Get proposer's wallet address
+      const proposerPubkey = (marketAccount as any).resolutionProposer;
+      if (!proposerPubkey) {
+        throw new Error("No resolution proposed yet");
+      }
+
+      // Derive proposer's USDC token account
+      const proposerTokenAccount = await getAssociatedTokenAddress(
+        USDC_MINT,
+        proposerPubkey
+      );
+
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      const tx = await program.methods
+        .finalizeResolution(new BN(marketId))
+        .accounts({
+          market: marketPubkey,
+          vault: vaultPda,
+          proposerTokenAccount: proposerTokenAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      console.log("Resolution finalized successfully:", tx);
+
+      // Refresh data
+      await Promise.all([fetchMarkets(), fetchUserBets()]);
+
+      return tx;
+    } catch (error: any) {
+      console.error("Error finalizing resolution:", error);
+      throw new Error(error.message || "Failed to finalize resolution");
     }
   };
 
@@ -526,6 +600,7 @@ export function usePredictionMarkets() {
     placeBet,
     claimWinnings,
     resolveMarket,
+    finalizeResolution,
     getMarket,
     getUserUsdcAccount,
     refetch: () => Promise.all([fetchMarkets(), fetchUserBets()]),
