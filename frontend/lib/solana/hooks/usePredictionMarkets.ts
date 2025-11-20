@@ -209,7 +209,7 @@ export function usePredictionMarkets() {
     if (!program || !wallet) return;
 
     try {
-      const betAccounts = await program.account.bet.all([
+      const betAccounts = await (program as any).account.bet.all([
         {
           memcmp: {
             offset: 8 + 32, // Discriminator (8) + market pubkey (32)
@@ -269,7 +269,7 @@ export function usePredictionMarkets() {
       const marketPubkey = new PublicKey(marketAddress);
 
       // Fetch fresh market data to get latest total_bets_count
-      const marketAccount = await program.account.market.fetch(marketPubkey, "confirmed");
+      const marketAccount = await (program as any).account.market.fetch(marketPubkey, "confirmed");
       const marketId = toNum((marketAccount as any).id);
       const totalBetsCount = toNum((marketAccount as any).total_bets_count);
 
@@ -314,7 +314,7 @@ export function usePredictionMarkets() {
           )
         );
 
-        const signature = await wallet.signAndSendTransaction(transaction);
+        const signature = await (wallet as any).signAndSendTransaction(transaction);
         await connection.confirmTransaction(signature);
       }
 
@@ -364,9 +364,9 @@ export function usePredictionMarkets() {
 
     try {
       const betPubkey = new PublicKey(betAddress);
-      const betAccount = await program.account.bet.fetch(betPubkey);
+      const betAccount = await (program as any).account.bet.fetch(betPubkey);
       const marketPubkey = (betAccount as any).market as PublicKey;
-      const marketAccount = await program.account.market.fetch(marketPubkey);
+      const marketAccount = await (program as any).account.market.fetch(marketPubkey);
       const marketId = toNum((marketAccount as any).id);
 
       // Get user's USDC token account
@@ -415,7 +415,7 @@ export function usePredictionMarkets() {
 
     try {
       const marketPubkey = new PublicKey(marketAddress);
-      const marketAccount = await program.account.market.fetch(marketPubkey);
+      const marketAccount = await (program as any).account.market.fetch(marketPubkey);
       const marketId = toNum((marketAccount as any).id);
 
       // Get user's USDC token account
@@ -476,7 +476,7 @@ export function usePredictionMarkets() {
 
     try {
       const marketPubkey = new PublicKey(marketAddress);
-      const marketAccount = await program.account.market.fetch(marketPubkey);
+      const marketAccount = await (program as any).account.market.fetch(marketPubkey);
       const marketId = toNum((marketAccount as any).id);
 
       // Get proposer's wallet address
@@ -525,7 +525,7 @@ export function usePredictionMarkets() {
     try {
       const marketPubkey = new PublicKey(marketAddress);
       // Use "confirmed" commitment to get latest data
-      const data = await readOnlyProgram.account.market.fetch(marketPubkey, "confirmed");
+      const data = await (readOnlyProgram as any).account.market.fetch(marketPubkey, "confirmed");
 
       // Use snake_case field names from actual IDL
       const yesPool = toNum((data as any).yes_pool) / Math.pow(10, USDC_DECIMALS);

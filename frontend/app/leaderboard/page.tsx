@@ -66,89 +66,52 @@ export default function LeaderboardPage() {
   const leaderboardData = getLeaderboardData();
 
   return (
-    <div className="min-h-screen text-white" style={{background: '#050814'}}>
-      {/* Neon Background */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{background: 'radial-gradient(circle, #FFD700 0%, transparent 70%)'}} />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{background: 'radial-gradient(circle, #FF1493 0%, transparent 70%)'}} />
-        <div className="absolute inset-0 neon-grid opacity-20" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="border-b border-[#00E5FF]/20 backdrop-blur-md sticky top-0 z-50" style={{background: 'rgba(13, 18, 38, 0.8)'}}>
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/markets">
-                <button className="flex items-center gap-2 text-slate-300 hover:neon-text transition-all font-orbitron">
-                  <ArrowLeft className="w-5 h-5" />
-                  <span className="font-semibold">Back to Markets</span>
-                </button>
-              </Link>
-
-              <Link href="/">
-                <h1 className="text-2xl font-black bg-gradient-to-r from-[#00E5FF] via-[#FF1493] to-[#39FF14] bg-clip-text text-transparent font-orbitron">
-                  SOLANA SAGA
-                </h1>
-              </Link>
-
-              <WalletButton />
-            </div>
-          </div>
-        </header>
-
+    <div className="min-h-screen py-12 px-4">
+      <div className="max-w-7xl mx-auto">
         {/* Hero Section */}
-        <section className="py-12 px-4">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
-              <Trophy className="w-20 h-20 mx-auto mb-6 animate-neon-pulse" style={{color: '#FFD700', filter: 'drop-shadow(0 0 20px #FFD700)'}} />
-              <h1 className="text-5xl md:text-7xl font-black mb-4 font-orbitron bg-gradient-to-r from-[#FFD700] via-[#FF1493] to-[#39FF14] bg-clip-text text-transparent">
-                Leaderboard
-              </h1>
-              <p className="text-xl text-slate-300 mb-8">
-                The best predictors on <span className="neon-text-green font-bold">Solana Saga</span>
-              </p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <Trophy className="w-20 h-20 mx-auto mb-6 animate-neon-pulse" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 20px #FFD700)' }} />
+          <h1 className="text-5xl md:text-7xl font-black mb-4 font-orbitron bg-gradient-to-r from-[#FFD700] via-[#FF1493] to-[#39FF14] bg-clip-text text-transparent">
+            Leaderboard
+          </h1>
+          <p className="text-xl text-slate-300 mb-8">
+            The best predictors on <span className="neon-text-green font-bold">Solana Saga</span>
+          </p>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatBox icon={<Users />} label="Total Predictors" value="12,543" color="from-blue-500 to-cyan-500" />
-                <StatBox icon={<Target />} label="Total Bets" value="89,234" color="from-purple-500 to-pink-500" />
-                <StatBox icon={<DollarSign />} label="Total Volume" value="$4.2M" color="from-emerald-500 to-green-500" />
-                <StatBox icon={<Flame />} label="Active Today" value="3,421" color="from-orange-500 to-red-500" />
-              </div>
-            </motion.div>
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            <StatBox icon={<Users />} label="Total Predictors" value="12,543" color="from-blue-500 to-cyan-500" />
+            <StatBox icon={<Target />} label="Total Bets" value="89,234" color="from-purple-500 to-pink-500" />
+            <StatBox icon={<DollarSign />} label="Total Volume" value="$4.2M" color="from-emerald-500 to-green-500" />
+            <StatBox icon={<Flame />} label="Active Today" value="3,421" color="from-orange-500 to-red-500" />
           </div>
-        </section>
+        </motion.div>
 
         {/* Timeframe Selector */}
-        <section className="px-4 mb-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex justify-center gap-4">
-              {TIMEFRAMES.map((timeframe) => (
-                <button
-                  key={timeframe}
-                  onClick={() => setSelectedTimeframe(timeframe)}
-                  className={`px-8 py-3 rounded-xl font-bold text-lg transition-all font-orbitron ${
-                    selectedTimeframe === timeframe
-                      ? "bg-gradient-to-r from-[#FFD700] to-[#FF6B00] text-black shadow-xl shadow-yellow-500/50 scale-105"
-                      : "neon-button-secondary"
+        <section className="mb-8">
+          <div className="flex justify-center gap-4">
+            {TIMEFRAMES.map((timeframe) => (
+              <button
+                key={timeframe}
+                onClick={() => setSelectedTimeframe(timeframe)}
+                className={`px-8 py-3 rounded-xl font-bold text-lg transition-all font-orbitron ${selectedTimeframe === timeframe
+                    ? "bg-gradient-to-r from-[#FFD700] to-[#FF6B00] text-black shadow-xl shadow-yellow-500/50 scale-105"
+                    : "neon-button-secondary"
                   }`}
-                >
-                  {timeframe}
-                </button>
-              ))}
-            </div>
+              >
+                {timeframe}
+              </button>
+            ))}
           </div>
         </section>
 
         {/* Top 3 Podium */}
-        <section className="px-4 mb-12">
+        <section className="mb-12">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-3 gap-6 items-end">
               {/* 2nd Place */}
@@ -177,11 +140,11 @@ export default function LeaderboardPage() {
         </section>
 
         {/* Full Leaderboard */}
-        <section className="px-4 pb-24">
+        <section className="pb-24">
           <div className="max-w-5xl mx-auto">
             <div className="glass-card rounded-2xl overflow-hidden">
               {/* Table Header */}
-              <div className="px-6 py-4 border-b border-[#00E5FF]/20" style={{background: 'rgba(0, 229, 255, 0.05)'}}>
+              <div className="px-6 py-4 border-b border-[#00E5FF]/20" style={{ background: 'rgba(0, 229, 255, 0.05)' }}>
                 <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-slate-300 font-orbitron">
                   <div className="col-span-1">Rank</div>
                   <div className="col-span-4">User</div>
@@ -207,21 +170,23 @@ export default function LeaderboardPage() {
         </section>
 
         {/* Your Rank (if connected) */}
-        <section className="px-4 pb-24">
+        <section className="pb-24">
           <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1 }}
               className="glass-card rounded-2xl p-8 text-center relative overflow-hidden animate-neon-border"
-              style={{borderWidth: '2px'}}
+              style={{ borderWidth: '2px' }}
             >
               <Zap className="w-12 h-12 mx-auto mb-4 neon-text animate-neon-pulse" />
               <h3 className="text-2xl font-bold mb-2 font-orbitron neon-text-magenta">Want to see your rank?</h3>
               <p className="text-slate-300 mb-6">
                 Connect your wallet to track your stats and compete for the <span className="neon-text-green font-bold">top spot!</span>
               </p>
-              <WalletButton />
+              <div className="flex justify-center">
+                <WalletButton />
+              </div>
               <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-br from-[#FF1493]/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 -z-10" />
             </motion.div>
           </div>
@@ -262,9 +227,9 @@ function PodiumCard({ rank, user, delay, isWinner = false }: {
   };
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="w-8 h-8" style={{color: '#FFD700', filter: 'drop-shadow(0 0 10px #FFD700)'}} />;
-    if (rank === 2) return <Medal className="w-8 h-8" style={{color: '#C0C0C0', filter: 'drop-shadow(0 0 10px #C0C0C0)'}} />;
-    if (rank === 3) return <Award className="w-8 h-8" style={{color: '#CD7F32', filter: 'drop-shadow(0 0 10px #CD7F32)'}} />;
+    if (rank === 1) return <Crown className="w-8 h-8" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 10px #FFD700)' }} />;
+    if (rank === 2) return <Medal className="w-8 h-8" style={{ color: '#C0C0C0', filter: 'drop-shadow(0 0 10px #C0C0C0)' }} />;
+    if (rank === 3) return <Award className="w-8 h-8" style={{ color: '#CD7F32', filter: 'drop-shadow(0 0 10px #CD7F32)' }} />;
     return null;
   };
 
@@ -273,13 +238,12 @@ function PodiumCard({ rank, user, delay, isWinner = false }: {
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay }}
-      className={`glass-card rounded-2xl p-6 hover:scale-105 transition-all relative overflow-hidden ${
-        isWinner
+      className={`glass-card rounded-2xl p-6 hover:scale-105 transition-all relative overflow-hidden ${isWinner
           ? "border-2 border-[#FFD700] shadow-xl shadow-yellow-500/50 md:-translate-y-8 animate-neon-pulse"
           : rank === 2
-          ? "border-2 border-[#C0C0C0] shadow-xl shadow-slate-400/30"
-          : "border-2 border-[#CD7F32] shadow-xl shadow-orange-600/30"
-      }`}
+            ? "border-2 border-[#C0C0C0] shadow-xl shadow-slate-400/30"
+            : "border-2 border-[#CD7F32] shadow-xl shadow-orange-600/30"
+        }`}
     >
       <div className={`w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br ${getRankColor(rank)} flex items-center justify-center text-4xl font-black relative shadow-lg`}>
         {rank === 1 && (
@@ -310,7 +274,7 @@ function PodiumCard({ rank, user, delay, isWinner = false }: {
         <div className="flex justify-between">
           <span className="text-slate-300">Streak:</span>
           <span className="font-bold flex items-center gap-1 font-numbers">
-            <Flame className="w-3 h-3" style={{color: '#FF6B00', filter: 'drop-shadow(0 0 5px #FF6B00)'}} />
+            <Flame className="w-3 h-3" style={{ color: '#FF6B00', filter: 'drop-shadow(0 0 5px #FF6B00)' }} />
             {user.streak}
           </span>
         </div>
@@ -357,7 +321,7 @@ function LeaderboardRow({ user, delay }: { user: any; delay: number }) {
         </div>
 
         <div className="col-span-2 text-center">
-          <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#FF6B00]/20 rounded-lg font-bold font-numbers border border-[#FF6B00]/30" style={{color: '#FF6B00'}}>
+          <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#FF6B00]/20 rounded-lg font-bold font-numbers border border-[#FF6B00]/30" style={{ color: '#FF6B00' }}>
             <Flame className="w-4 h-4" />
             {user.streak}
           </div>

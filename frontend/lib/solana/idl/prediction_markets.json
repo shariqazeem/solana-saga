@@ -224,6 +224,83 @@
       ]
     },
     {
+      "name": "finalize_resolution",
+      "docs": [
+        "Finalize resolution after challenge period (anyone can call)"
+      ],
+      "discriminator": [
+        191,
+        74,
+        94,
+        214,
+        45,
+        150,
+        152,
+        125
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposer_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "_market_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "place_bet",
       "docs": [
         "Place a bet on a market (YES or NO)"
@@ -456,83 +533,6 @@
         {
           "name": "outcome",
           "type": "bool"
-        }
-      ]
-    },
-    {
-      "name": "finalize_resolution",
-      "docs": [
-        "Finalize resolution after challenge period (anyone can call)"
-      ],
-      "discriminator": [
-        191,
-        74,
-        94,
-        214,
-        45,
-        150,
-        152,
-        125
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  97,
-                  114,
-                  107,
-                  101,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "market_id"
-              }
-            ]
-          }
-        },
-        {
-          "name": "vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "market_id"
-              }
-            ]
-          }
-        },
-        {
-          "name": "proposer_token_account",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "_market_id",
-          "type": "u64"
         }
       ]
     }
