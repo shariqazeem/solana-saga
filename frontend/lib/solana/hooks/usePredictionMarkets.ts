@@ -8,7 +8,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { PROGRAM_ID, RPC_ENDPOINT, DEMO_MARKETS } from "../config";
+import { PROGRAM_ID, RPC_ENDPOINT } from "../config";
 import idl from "../idl/prediction_markets.json";
 
 // USDC Devnet mint address

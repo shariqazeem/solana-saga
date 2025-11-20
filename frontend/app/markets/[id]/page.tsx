@@ -11,7 +11,6 @@ import confetti from "canvas-confetti";
 import { WalletButton } from "@/components/WalletButton";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { usePredictionMarkets, Market as MarketType } from "@/lib/solana/hooks/usePredictionMarkets";
-import { DEMO_MARKETS } from "@/lib/solana/config";
 
 export default function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -26,31 +25,15 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Map ID to market address
-  const getMarketAddress = () => {
-    const idNum = parseInt(id);
-    if (idNum >= 1 && idNum <= 5) {
-      return DEMO_MARKETS[idNum - 1];
-    }
-    return null;
-  };
-
-  // Fetch market data
+  // Fetch market data - id is the market public key
   useEffect(() => {
     const fetchMarketData = async () => {
-      const marketAddress = getMarketAddress();
-      if (!marketAddress) {
-        setError("Market not found");
-        setLoading(false);
-        return;
-      }
-
       try {
-        const marketData = await getMarket(marketAddress);
+        const marketData = await getMarket(id);
         if (marketData) {
           setMarket(marketData);
         } else {
-          setError("Failed to load market data");
+          setError("Market not found");
         }
       } catch (err: any) {
         console.error("Error fetching market:", err);

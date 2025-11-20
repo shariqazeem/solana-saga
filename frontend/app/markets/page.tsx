@@ -5,120 +5,63 @@ import {
   TrendingUp, Clock, Users, DollarSign, Filter, Search,
   Flame, Star, Zap, ArrowLeft, Target, ChevronRight
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { MarketCard } from "@/components/MarketCard";
+import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
 
-// Mock data for demo
-const MOCK_MARKETS = [
-  {
-    id: 1,
-    question: "Will SOL hit $300 by Dec 20?",
-    category: "Price",
-    yesPrice: 35,
-    noPrice: 65,
-    volume: "$45,230",
-    endsIn: "2 days",
-    bettors: 342,
-    trending: true,
-  },
-  {
-    id: 2,
-    question: "Will Jupiter reach 10M daily transactions?",
-    category: "Volume",
-    yesPrice: 62,
-    noPrice: 38,
-    volume: "$38,450",
-    endsIn: "5 days",
-    bettors: 289,
-    trending: true,
-  },
-  {
-    id: 3,
-    question: "Raydium or Orca: which DEX wins this week?",
-    category: "Ecosystem",
-    yesPrice: 48,
-    noPrice: 52,
-    volume: "$52,100",
-    endsIn: "3 days",
-    bettors: 456,
-    trending: false,
-  },
-  {
-    id: 4,
-    question: "Will Bonk flip Dogecoin this week?",
-    category: "Meme",
-    yesPrice: 12,
-    noPrice: 88,
-    volume: "$67,890",
-    endsIn: "6 days",
-    bettors: 523,
-    trending: true,
-  },
-  {
-    id: 5,
-    question: "Will Solana NFT sales exceed 50k this week?",
-    category: "NFTs",
-    yesPrice: 71,
-    noPrice: 29,
-    volume: "$29,340",
-    endsIn: "4 days",
-    bettors: 198,
-    trending: false,
-  },
-  {
-    id: 6,
-    question: "Will any Solana DEX reach $1B volume today?",
-    category: "Volume",
-    yesPrice: 55,
-    noPrice: 45,
-    volume: "$41,230",
-    endsIn: "12 hours",
-    bettors: 367,
-    trending: false,
-  },
-  {
-    id: 7,
-    question: "Will Tensor overtake Magic Eden in NFT volume?",
-    category: "NFTs",
-    yesPrice: 42,
-    noPrice: 58,
-    volume: "$33,890",
-    endsIn: "1 week",
-    bettors: 245,
-    trending: false,
-  },
-  {
-    id: 8,
-    question: "Will Solana Mobile sell 100k phones this year?",
-    category: "Ecosystem",
-    yesPrice: 68,
-    noPrice: 32,
-    volume: "$28,450",
-    endsIn: "30 days",
-    bettors: 412,
-    trending: false,
-  },
-];
-
-const CATEGORIES = ["All", "Price", "Volume", "Ecosystem", "NFTs", "Meme"];
+const CATEGORIES = ["All", "crypto", "sports", "politics", "entertainment", "other"];
 
 export default function MarketsPage() {
+  const { markets, loading } = usePredictionMarkets();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("trending");
 
-  const filteredMarkets = MOCK_MARKETS
-    .filter(market =>
-      (selectedCategory === "All" || market.category === selectedCategory) &&
-      market.question.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === "trending") return b.bettors - a.bettors;
-      if (sortBy === "volume") return parseInt(b.volume.replace(/[$,]/g, "")) - parseInt(a.volume.replace(/[$,]/g, ""));
-      if (sortBy === "ending-soon") return 0; // Would sort by actual time
-      return 0;
-    });
+  // Calculate stats from real data
+  const stats = useMemo(() => {
+    const activeMarkets = markets.filter(m => m.status === "Active");
+    const totalVolume = activeMarkets.reduce((sum, m) => sum + m.totalVolume, 0);
+    const totalBettors = activeMarkets.reduce((sum, m) => sum + m.bettors, 0);
+    const trendingCount = activeMarkets.filter(m => m.bettors > 10).length;
+
+    return {
+      activeCount: activeMarkets.length,
+      totalVolume: `$${totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      totalBettors: totalBettors.toLocaleString(),
+      trendingCount
+    };
+  }, [markets]);
+
+  const filteredMarkets = useMemo(() => {
+    return markets
+      .filter(market => market.status === "Active")
+      .filter(market =>
+        (selectedCategory === "All" || market.category === selectedCategory) &&
+        market.question.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => {
+        if (sortBy === "trending") return b.bettors - a.bettors;
+        if (sortBy === "volume") return b.totalVolume - a.totalVolume;
+        if (sortBy === "ending-soon") {
+          const timeA = a.endTime - Math.floor(Date.now() / 1000);
+          const timeB = b.endTime - Math.floor(Date.now() / 1000);
+          return timeA - timeB;
+        }
+        return 0;
+      })
+      .map(market => ({
+        id: market.publicKey,
+        question: market.question,
+        category: market.category,
+        yesPrice: market.yesPrice,
+        noPrice: market.noPrice,
+        volume: `$${market.totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+        endsIn: market.endsIn,
+        bettors: market.bettors,
+        trending: market.bettors > 10,
+      }));
+  }, [markets, selectedCategory, searchQuery, sortBy]);
 
   return (
     <div className="min-h-screen">
@@ -138,15 +81,15 @@ export default function MarketsPage() {
               </h1>
             </div>
             <p className="text-xl text-slate-400 mb-8">
-              Choose your prediction and start winning. <span className="text-[#00FF9D] font-bold">247 markets live now.</span>
+              Choose your prediction and start winning. <span className="text-[#00FF9D] font-bold">{stats.activeCount} markets live now.</span>
             </p>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatBox icon={<Target />} label="Active Markets" value="247" />
-              <StatBox icon={<TrendingUp />} label="24h Volume" value="$1.2M" />
-              <StatBox icon={<Users />} label="Active Bettors" value="12.5K" />
-              <StatBox icon={<Flame />} label="Trending" value="42" />
+              <StatBox icon={<Target />} label="Active Markets" value={stats.activeCount.toString()} />
+              <StatBox icon={<TrendingUp />} label="Total Volume" value={stats.totalVolume} />
+              <StatBox icon={<Users />} label="Total Bettors" value={stats.totalBettors} />
+              <StatBox icon={<Flame />} label="Trending" value={stats.trendingCount.toString()} />
             </div>
           </motion.div>
 
@@ -206,17 +149,33 @@ export default function MarketsPage() {
           </div>
 
           {/* Markets Grid */}
-          <div className="grid md:grid-cols-2 gap-6 pb-24">
-            {filteredMarkets.map((market, index) => (
-              <MarketCard key={market.id} {...market} delay={index * 0.05} />
-            ))}
-          </div>
-
-          {filteredMarkets.length === 0 && (
+          {loading ? (
+            <div className="text-center py-24">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#00F3FF] mb-4"></div>
+              <p className="text-slate-400">Loading markets...</p>
+            </div>
+          ) : filteredMarkets.length === 0 ? (
             <div className="text-center py-24">
               <Target className="w-16 h-16 mx-auto mb-4 text-slate-700" />
               <h3 className="text-2xl font-bold mb-2">No markets found</h3>
-              <p className="text-slate-500">Try adjusting your filters or search query</p>
+              <p className="text-slate-500">
+                {markets.length === 0
+                  ? "Create your first market in the admin panel to get started!"
+                  : "Try adjusting your filters or search query"}
+              </p>
+              {markets.length === 0 && (
+                <Link href="/admin">
+                  <button className="mt-6 px-6 py-3 neon-button rounded-xl font-bold font-orbitron">
+                    Create Market
+                  </button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6 pb-24">
+              {filteredMarkets.map((market, index) => (
+                <MarketCard key={market.id} {...market} delay={index * 0.05} />
+              ))}
             </div>
           )}
         </div>

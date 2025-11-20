@@ -2,57 +2,33 @@
 
 import { motion } from "framer-motion";
 import { MarketCard } from "../MarketCard";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Target } from "lucide-react";
 import Link from "next/link";
-
-const MOCK_MARKETS = [
-    {
-        id: 1,
-        question: "Will SOL hit $300 by Dec 20?",
-        category: "Price",
-        yesPrice: 35,
-        noPrice: 65,
-        volume: "$45,230",
-        endsIn: "2 days",
-        bettors: 342,
-        trending: true,
-    },
-    {
-        id: 2,
-        question: "Will Jupiter reach 10M daily transactions?",
-        category: "Volume",
-        yesPrice: 62,
-        noPrice: 38,
-        volume: "$38,450",
-        endsIn: "5 days",
-        bettors: 289,
-        trending: true,
-    },
-    {
-        id: 3,
-        question: "Raydium or Orca: which DEX wins this week?",
-        category: "Ecosystem",
-        yesPrice: 48,
-        noPrice: 52,
-        volume: "$52,100",
-        endsIn: "3 days",
-        bettors: 456,
-        trending: false,
-    },
-    {
-        id: 4,
-        question: "Will Bonk flip Dogecoin this week?",
-        category: "Meme",
-        yesPrice: 12,
-        noPrice: 88,
-        volume: "$67,890",
-        endsIn: "6 days",
-        bettors: 523,
-        trending: true,
-    },
-];
+import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { useMemo } from "react";
 
 export function HotMarkets() {
+    const { markets, loading } = usePredictionMarkets();
+
+    // Get top 4 trending active markets (sorted by bettors)
+    const trendingMarkets = useMemo(() => {
+        return markets
+            .filter(m => m.status === "Active")
+            .sort((a, b) => b.bettors - a.bettors)
+            .slice(0, 4)
+            .map(market => ({
+                id: market.publicKey,
+                question: market.question,
+                category: market.category,
+                yesPrice: market.yesPrice,
+                noPrice: market.noPrice,
+                volume: `$${market.totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+                endsIn: market.endsIn,
+                bettors: market.bettors,
+                trending: market.bettors > 10,
+            }));
+    }, [markets]);
+
     return (
         <section className="py-24 px-4">
             <div className="max-w-7xl mx-auto">
@@ -73,11 +49,29 @@ export function HotMarkets() {
                     </Link>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                    {MOCK_MARKETS.map((market, index) => (
-                        <MarketCard key={market.id} {...market} delay={index * 0.1} />
-                    ))}
-                </div>
+                {loading ? (
+                    <div className="text-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#00F3FF] mb-4"></div>
+                        <p className="text-slate-400">Loading markets...</p>
+                    </div>
+                ) : trendingMarkets.length === 0 ? (
+                    <div className="text-center py-12 glass-card rounded-2xl">
+                        <Target className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+                        <h3 className="text-xl font-bold mb-2">No active markets yet</h3>
+                        <p className="text-slate-500 mb-6">Be the first to create a prediction market!</p>
+                        <Link href="/admin">
+                            <button className="px-6 py-3 neon-button rounded-xl font-bold font-orbitron">
+                                Create Market
+                            </button>
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {trendingMarkets.map((market, index) => (
+                            <MarketCard key={market.id} {...market} delay={index * 0.1} />
+                        ))}
+                    </div>
+                )}
             </div>
         </section>
     );
