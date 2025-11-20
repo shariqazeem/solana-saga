@@ -114,87 +114,77 @@ export function usePredictionMarkets() {
       setLoading(true);
       setError(null);
 
-      // Fetch all accounts owned by the program
-      console.log("Fetching accounts for program:", readOnlyProgram.programId.toString());
-      const accounts = await connection.getProgramAccounts(readOnlyProgram.programId);
-      console.log(`Found ${accounts.length} total accounts`);
+      console.log("Fetching markets for program:", readOnlyProgram.programId.toString());
 
-      const marketsData: Market[] = [];
-      let skippedCount = 0;
+      // Use Anchor's built-in account fetching which handles discriminators properly
+      const marketAccounts = await (readOnlyProgram as any).account.market.all();
+      console.log(`Found ${marketAccounts.length} market accounts`);
 
-      // Try to decode each account as a Market, skipping any that fail
-      for (const { pubkey, account: accountInfo } of accounts) {
-        try {
-          // Try to decode as Market account
-          const data = readOnlyProgram.coder.accounts.decode("Market", accountInfo.data);
-          console.log(`Successfully decoded market: ${pubkey.toString()}`);
+      const marketsData: Market[] = marketAccounts.map((account: any) => {
+        const data = account.account;
+        const pubkey = account.publicKey;
 
-          // USDC has 6 decimals - use snake_case field names from actual IDL
-          const yesPool = toNum(data.yes_pool) / Math.pow(10, USDC_DECIMALS);
-          const noPool = toNum(data.no_pool) / Math.pow(10, USDC_DECIMALS);
-          const totalVolume = toNum(data.total_volume) / Math.pow(10, USDC_DECIMALS);
+        console.log(`Processing market: ${pubkey.toString()}`);
 
-          // Calculate prices (percentage chance of winning)
-          const totalPool = yesPool + noPool;
-          const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
-          const noPrice = 100 - yesPrice;
+        // USDC has 6 decimals - use snake_case field names from actual IDL
+        const yesPool = toNum(data.yes_pool) / Math.pow(10, USDC_DECIMALS);
+        const noPool = toNum(data.no_pool) / Math.pow(10, USDC_DECIMALS);
+        const totalVolume = toNum(data.total_volume) / Math.pow(10, USDC_DECIMALS);
 
-          // Calculate time remaining
-          const endTime = toNum(data.end_time);
-          const now = Math.floor(Date.now() / 1000);
-          const secondsLeft = endTime - now;
-          const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
-          const hoursLeft = Math.floor(secondsLeft / (60 * 60));
+        // Calculate prices (percentage chance of winning)
+        const totalPool = yesPool + noPool;
+        const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
+        const noPrice = 100 - yesPrice;
 
-          let endsIn = "";
-          if (secondsLeft < 0) endsIn = "Ended";
-          else if (daysLeft > 0) endsIn = `${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
-          else if (hoursLeft > 0) endsIn = `${hoursLeft} hour${hoursLeft > 1 ? "s" : ""}`;
-          else endsIn = "Soon";
+        // Calculate time remaining
+        const endTime = toNum(data.end_time);
+        const now = Math.floor(Date.now() / 1000);
+        const secondsLeft = endTime - now;
+        const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
+        const hoursLeft = Math.floor(secondsLeft / (60 * 60));
 
-          let status = "Active";
-          if (data.status && typeof data.status === 'object') {
-            if ('active' in data.status) status = "Active";
-            else if ('resolved' in data.status) status = "Resolved";
-            else if ('cancelled' in data.status) status = "Cancelled";
-          }
+        let endsIn = "";
+        if (secondsLeft < 0) endsIn = "Ended";
+        else if (daysLeft > 0) endsIn = `${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
+        else if (hoursLeft > 0) endsIn = `${hoursLeft} hour${hoursLeft > 1 ? "s" : ""}`;
+        else endsIn = "Soon";
 
-          marketsData.push({
-            publicKey: pubkey.toString(),
-            id: toNum(data.id),
-            question: data.question,
-            description: data.description,
-            category: data.category,
-            creator: data.creator.toString(),
-            yesPool,
-            noPool,
-            totalVolume,
-            isResolved: status === "Resolved",
-            outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
-            endTime,
-            createdAt: toNum(data.created_at),
-            yesPrice,
-            noPrice,
-            endsIn,
-            bettors: toNum(data.unique_bettors),
-            totalBetsCount: toNum(data.total_bets_count),
-            status,
-            // Decentralized resolution fields
-            resolutionProposer: data.resolution_proposer ? data.resolution_proposer.toString() : null,
-            resolutionBond: toNum(data.resolution_bond) / Math.pow(10, USDC_DECIMALS),
-            challengeDeadline: data.challenge_deadline ? toNum(data.challenge_deadline) : null,
-            isFinalized: data.is_finalized || false,
-          });
-        } catch (decodeError: any) {
-          // Skip accounts that aren't Market accounts or have incompatible structure
-          // This is expected for old markets or non-market accounts (bets, vaults, etc.)
-          skippedCount++;
-          console.log(`Skipped account ${pubkey.toString()}: ${decodeError.message || 'decode failed'}`);
-          continue;
+        let status = "Active";
+        if (data.status && typeof data.status === 'object') {
+          if ('active' in data.status) status = "Active";
+          else if ('resolved' in data.status) status = "Resolved";
+          else if ('cancelled' in data.status) status = "Cancelled";
         }
-      }
 
-      console.log(`Loaded ${marketsData.length} markets (skipped ${skippedCount} accounts)`);
+        return {
+          publicKey: pubkey.toString(),
+          id: toNum(data.id),
+          question: data.question,
+          description: data.description,
+          category: data.category,
+          creator: data.creator.toString(),
+          yesPool,
+          noPool,
+          totalVolume,
+          isResolved: status === "Resolved",
+          outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
+          endTime,
+          createdAt: toNum(data.created_at),
+          yesPrice,
+          noPrice,
+          endsIn,
+          bettors: toNum(data.unique_bettors),
+          totalBetsCount: toNum(data.total_bets_count),
+          status,
+          // Decentralized resolution fields
+          resolutionProposer: data.resolution_proposer ? data.resolution_proposer.toString() : null,
+          resolutionBond: toNum(data.resolution_bond) / Math.pow(10, USDC_DECIMALS),
+          challengeDeadline: data.challenge_deadline ? toNum(data.challenge_deadline) : null,
+          isFinalized: data.is_finalized || false,
+        };
+      });
+
+      console.log(`Loaded ${marketsData.length} markets`);
       setMarkets(marketsData);
     } catch (error: any) {
       console.error("Error fetching markets:", error);
@@ -202,7 +192,7 @@ export function usePredictionMarkets() {
     } finally {
       setLoading(false);
     }
-  }, [readOnlyProgram, connection]);
+  }, [readOnlyProgram]);
 
   // Fetch user bets
   const fetchUserBets = useCallback(async () => {
