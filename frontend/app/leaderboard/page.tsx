@@ -65,17 +65,18 @@ export default function LeaderboardPage() {
           const data = account.account;
           return {
             user: data.user.toString(),
-            totalBets: data.total_bets.toNumber ? data.total_bets.toNumber() : data.total_bets,
-            totalWagered: (data.total_wagered.toNumber ? data.total_wagered.toNumber() : data.total_wagered) / 1e6,
-            totalWon: (data.total_won.toNumber ? data.total_won.toNumber() : data.total_won) / 1e6,
-            winCount: data.win_count,
-            lossCount: data.loss_count,
-            netProfit: (data.net_profit.toNumber ? data.net_profit.toNumber() : data.net_profit) / 1e6,
-            currentStreak: data.current_streak,
-            bestStreak: data.best_streak,
+            totalBets: data.totalBets || data.total_bets || 0,
+            totalWagered: ((data.totalWagered || data.total_wagered || 0).toNumber ? (data.totalWagered || data.total_wagered).toNumber() : (data.totalWagered || data.total_wagered)) / 1e6,
+            totalWon: ((data.totalWon || data.total_won || 0).toNumber ? (data.totalWon || data.total_won).toNumber() : (data.totalWon || data.total_won)) / 1e6,
+            winCount: data.winCount || data.win_count || 0,
+            lossCount: data.lossCount || data.loss_count || 0,
+            netProfit: ((data.netProfit || data.net_profit || 0).toNumber ? (data.netProfit || data.net_profit).toNumber() : (data.netProfit || data.net_profit)) / 1e6,
+            currentStreak: data.currentStreak || data.current_streak || 0,
+            bestStreak: data.bestStreak || data.best_streak || 0,
           };
         });
 
+        console.log('Fetched UserStats:', stats);
         setUserStats(stats);
       } catch (error) {
         console.error("Error fetching user stats:", error);
@@ -85,6 +86,10 @@ export default function LeaderboardPage() {
     };
 
     fetchUserStats();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchUserStats, 30000);
+    return () => clearInterval(interval);
   }, [connection]);
 
   // Transform user stats into leaderboard entries
