@@ -1,26 +1,35 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Orbitron, Rajdhani } from "next/font/google";
 import "./globals.css";
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { Providers } from "./providers";
 import { Toaster } from "react-hot-toast";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { Background } from "@/components/Background";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
+const orbitron = Orbitron({ subsets: ["latin"], variable: "--font-orbitron" });
+const rajdhani = Rajdhani({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ["latin"],
+  variable: "--font-rajdhani"
+});
 
 export const metadata: Metadata = {
-  title: "Solana Saga - Viral Prediction Market Game",
-  description: "The most addictive prediction market game on Solana. Bet on the future. Win real money. Built for Indie.fun Hackathon 2025.",
-  keywords: ["Solana", "Prediction Markets", "DeFi", "Gaming", "Betting", "Crypto"],
+  title: "Solana Saga | Next-Gen Prediction Markets",
+  description: "Experience the future of prediction markets. Bet on crypto, sports, and culture with lightning-fast Solana settlements.",
+  keywords: ["Solana", "Prediction Markets", "DeFi", "Gaming", "Web3", "Crypto Betting"],
   openGraph: {
-    title: "Solana Saga - Predict. Compete. Dominate.",
-    description: "The most addictive prediction market game on Solana",
+    title: "Solana Saga - Predict. Win. Dominate.",
+    description: "The most immersive prediction market on Solana.",
     type: "website",
+    images: ['/og-image.jpg'],
   },
   twitter: {
     card: "summary_large_image",
     title: "Solana Saga",
-    description: "Predict. Compete. Dominate. The most fun prediction markets on Solana.",
+    description: "Predict. Win. Dominate.",
   },
 };
 
@@ -30,30 +39,38 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans`}>
+    <html lang="en" className="dark">
+      <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} font-sans antialiased bg-[#02040A] text-white min-h-screen flex flex-col`}>
         <Providers>
-          {children}
+          <Background />
+          <Navbar />
+          <main className="flex-grow pt-20 relative z-10">
+            {children}
+          </main>
+          <Footer />
           <Toaster
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
               style: {
-                background: 'rgba(15, 23, 42, 0.9)',
-                backdropFilter: 'blur(20px)',
+                background: 'rgba(5, 10, 20, 0.9)',
+                backdropFilter: 'blur(12px)',
                 color: '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
+                border: '1px solid rgba(0, 243, 255, 0.2)',
+                borderRadius: '8px',
                 padding: '16px',
+                fontFamily: 'var(--font-inter)',
               },
               success: {
-                duration: 4000,
                 iconTheme: {
-                  primary: '#10b981',
-                  secondary: '#fff',
+                  primary: '#00FF9D',
+                  secondary: '#000',
                 },
               },
               error: {
-                duration: 5000,
+                iconTheme: {
+                  primary: '#FF3366',
+                  secondary: '#fff',
+                },
               },
             }}
           />

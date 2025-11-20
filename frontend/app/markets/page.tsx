@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { MarketCard } from "@/components/MarketCard";
 
 // Mock data for demo
 const MOCK_MARKETS = [
@@ -120,237 +121,120 @@ export default function MarketsPage() {
     });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* Background */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f10_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f10_1px,transparent_1px)] bg-[size:64px_64px]" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/">
-                <button className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
-                  <ArrowLeft className="w-5 h-5" />
-                  <span className="font-semibold">Back to Home</span>
-                </button>
-              </Link>
-
-              <div className="flex items-center gap-3">
-                <Link href="/">
-                  <h1 className="text-2xl font-black bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
-                    SOLANA SAGA
-                  </h1>
-                </Link>
-              </div>
-
-              <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-bold hover:scale-105 transition-all">
-                Connect Wallet
-              </button>
+    <div className="min-h-screen">
+      {/* Header Section */}
+      <section className="py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <Target className="w-10 h-10 text-[#00F3FF] animate-pulse" />
+              <h1 className="text-4xl md:text-6xl font-black font-heading bg-gradient-to-r from-[#00F3FF] to-[#FF00FF] bg-clip-text text-transparent">
+                ACTIVE MARKETS
+              </h1>
             </div>
-          </div>
-        </header>
+            <p className="text-xl text-slate-400 mb-8">
+              Choose your prediction and start winning. <span className="text-[#00FF9D] font-bold">247 markets live now.</span>
+            </p>
 
-        {/* Hero Section */}
-        <section className="py-12 px-4">
-          <div className="max-w-7xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <Target className="w-10 h-10 text-emerald-400" />
-                <h1 className="text-4xl md:text-6xl font-black">
-                  Active Markets
-                </h1>
-              </div>
-              <p className="text-xl text-slate-400 mb-8">
-                Choose your prediction and start winning. 247 markets live now.
-              </p>
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatBox icon={<Target />} label="Active Markets" value="247" />
+              <StatBox icon={<TrendingUp />} label="24h Volume" value="$1.2M" />
+              <StatBox icon={<Users />} label="Active Bettors" value="12.5K" />
+              <StatBox icon={<Flame />} label="Trending" value="42" />
+            </div>
+          </motion.div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <StatBox icon={<Target />} label="Active Markets" value="247" />
-                <StatBox icon={<TrendingUp />} label="24h Volume" value="$1.2M" />
-                <StatBox icon={<Users />} label="Active Bettors" value="12.5K" />
-                <StatBox icon={<Flame />} label="Trending" value="42" />
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Filters & Search */}
-        <section className="px-4 mb-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Search */}
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          {/* Filters & Search */}
+          <div className="glass-panel p-6 rounded-2xl mb-8">
+            <div className="flex flex-col md:flex-row gap-6 justify-between items-center">
+              {/* Search */}
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00F3FF]" />
                 <input
                   type="text"
                   placeholder="Search markets..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-800 rounded-xl pl-12 pr-4 py-4 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-[#00F3FF] focus:outline-none transition-all"
                 />
+              </div>
+
+              {/* Sort Options */}
+              <div className="flex items-center gap-4">
+                <span className="text-slate-400 flex items-center gap-2 font-bold text-sm">
+                  <Filter className="w-4 h-4" />
+                  SORT BY:
+                </span>
+                <div className="flex gap-2">
+                  {["trending", "volume", "ending-soon"].map((sort) => (
+                    <button
+                      key={sort}
+                      onClick={() => setSortBy(sort)}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${sortBy === sort
+                          ? "bg-[#00FF9D] text-black shadow-[0_0_10px_rgba(0,255,157,0.4)]"
+                          : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        }`}
+                    >
+                      {sort.replace("-", " ")}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Category Filters */}
-            <div className="flex items-center gap-4 mb-6 overflow-x-auto pb-2">
+            <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {CATEGORIES.map((category) => (
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
-                    selectedCategory === category
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                      : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
-                  }`}
+                  className={`px-6 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all ${selectedCategory === category
+                      ? "bg-[#00F3FF] text-black shadow-[0_0_15px_rgba(0,243,255,0.4)]"
+                      : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5"
+                    }`}
                 >
                   {category}
                 </button>
               ))}
             </div>
-
-            {/* Sort Options */}
-            <div className="flex items-center gap-4">
-              <span className="text-slate-400 flex items-center gap-2">
-                <Filter className="w-4 h-4" />
-                Sort by:
-              </span>
-              <div className="flex gap-2">
-                {["trending", "volume", "ending-soon"].map((sort) => (
-                  <button
-                    key={sort}
-                    onClick={() => setSortBy(sort)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      sortBy === sort
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-800 text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    {sort.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
-        </section>
 
-        {/* Markets Grid */}
-        <section className="px-4 pb-24">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-6">
-              {filteredMarkets.map((market, index) => (
-                <MarketCard key={market.id} market={market} delay={index * 0.05} />
-              ))}
-            </div>
-
-            {filteredMarkets.length === 0 && (
-              <div className="text-center py-24">
-                <Target className="w-16 h-16 mx-auto mb-4 text-slate-600" />
-                <h3 className="text-2xl font-bold mb-2">No markets found</h3>
-                <p className="text-slate-400">Try adjusting your filters or search query</p>
-              </div>
-            )}
+          {/* Markets Grid */}
+          <div className="grid md:grid-cols-2 gap-6 pb-24">
+            {filteredMarkets.map((market, index) => (
+              <MarketCard key={market.id} {...market} delay={index * 0.05} />
+            ))}
           </div>
-        </section>
-      </div>
+
+          {filteredMarkets.length === 0 && (
+            <div className="text-center py-24">
+              <Target className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+              <h3 className="text-2xl font-bold mb-2">No markets found</h3>
+              <p className="text-slate-500">Try adjusting your filters or search query</p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
 
 function StatBox({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-emerald-500/50 transition-all">
+    <div className="glass-card rounded-xl p-4 group hover:border-[#00F3FF]/30 transition-colors">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+        <div className="p-2 bg-[#00F3FF]/10 rounded-lg text-[#00F3FF] group-hover:scale-110 transition-transform">
           {icon}
         </div>
       </div>
-      <div className="text-2xl font-black mb-1">{value}</div>
-      <div className="text-sm text-slate-400">{label}</div>
+      <div className="text-2xl font-black mb-1 font-numbers text-white">{value}</div>
+      <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">{label}</div>
     </div>
-  );
-}
-
-function MarketCard({ market, delay }: { market: any; delay: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
-      className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 transition-all hover:scale-[1.02] group"
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-purple-500/20 text-purple-300 text-sm font-semibold rounded-full border border-purple-500/30">
-            {market.category}
-          </span>
-          {market.trending && (
-            <span className="px-3 py-1 bg-orange-500/20 text-orange-300 text-sm font-semibold rounded-full border border-orange-500/30 flex items-center gap-1">
-              <Flame className="w-3 h-3" />
-              Hot
-            </span>
-          )}
-        </div>
-        <span className="text-slate-400 text-sm flex items-center gap-1">
-          <Clock className="w-4 h-4" />
-          {market.endsIn}
-        </span>
-      </div>
-
-      {/* Question */}
-      <h3 className="text-xl font-bold mb-6 group-hover:text-emerald-400 transition-colors">
-        {market.question}
-      </h3>
-
-      {/* Stats */}
-      <div className="flex items-center gap-6 mb-6 text-sm text-slate-400">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" />
-          <span>{market.volume}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          <span>{market.bettors} bettors</span>
-        </div>
-      </div>
-
-      {/* Betting Options */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link href={`/markets/${market.id}`}>
-          <button className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl p-4 transition-all hover:scale-105 group">
-            <div className="text-sm text-slate-400 mb-1">YES</div>
-            <div className="text-3xl font-black text-emerald-400">{market.yesPrice}%</div>
-            <div className="text-xs text-slate-500 mt-1">Click to bet</div>
-          </button>
-        </Link>
-
-        <Link href={`/markets/${market.id}`}>
-          <button className="w-full bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl p-4 transition-all hover:scale-105">
-            <div className="text-sm text-slate-400 mb-1">NO</div>
-            <div className="text-3xl font-black text-red-400">{market.noPrice}%</div>
-            <div className="text-xs text-slate-500 mt-1">Click to bet</div>
-          </button>
-        </Link>
-      </div>
-
-      {/* View Details */}
-      <Link href={`/markets/${market.id}`}>
-        <button className="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 group">
-          View Details
-          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </button>
-      </Link>
-    </motion.div>
   );
 }

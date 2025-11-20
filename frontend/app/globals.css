@@ -1,179 +1,223 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
   :root {
+    /* Deep Space Palette */
+    --deep-space: #02040A;
+    --midnight: #050A14;
+    --starlight: #FFFFFF;
+    --void: #000000;
+
+    /* Neon Accents */
+    --neon-cyan: #00F3FF;
+    --neon-magenta: #FF00FF;
+    --toxic-green: #00FF9D;
+    --alert-red: #FF3366;
+    --plasma-orange: #FF8C00;
+    --electric-violet: #BC13FE;
+
+    /* Glassmorphism */
+    --glass-bg: rgba(2, 4, 10, 0.6);
+    --glass-border: rgba(0, 243, 255, 0.15);
+    --glass-highlight: rgba(255, 255, 255, 0.05);
+    
+    /* Typography */
     --font-inter: 'Inter', sans-serif;
-    --font-space-grotesk: 'Space Grotesk', sans-serif;
+    --font-orbitron: 'Orbitron', sans-serif;
+    --font-rajdhani: 'Rajdhani', sans-serif;
   }
 
   body {
     font-family: var(--font-inter);
+    background-color: var(--deep-space);
+    color: var(--starlight);
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
-    font-family: var(--font-space-grotesk);
+    font-family: var(--font-orbitron);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .font-numbers {
+    font-family: var(--font-rajdhani);
+    font-variant-numeric: tabular-nums;
   }
 }
 
-
-/* Smooth animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slideUp {
-  animation: slideUp 0.6s ease-out;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Custom scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: var(--deep-space);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 5px;
+  background: var(--midnight);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--neon-cyan);
 }
 
-/* Wallet adapter custom styling */
-.wallet-adapter-button {
-  background-color: #059669 !important;
-  border-radius: 0.75rem !important;
-  font-weight: 600 !important;
-  padding: 0.75rem 1.5rem !important;
-  transition: all 0.2s !important;
+/* Utility Classes */
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-xl bg-black/40 border border-white/10;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .neon-text {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+  }
+
+  .neon-text-magenta {
+    color: var(--neon-magenta);
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+  }
+
+  .neon-text-green {
+    color: var(--toxic-green);
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+  }
+
+  .neon-border {
+    border: 1px solid var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.3), inset 0 0 10px rgba(0, 243, 255, 0.1);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, rgba(0, 243, 255, 0.1) 0%, rgba(0, 243, 255, 0) 100%);
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    font-family: var(--font-orbitron);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.2), transparent);
+    transition: 0.5s;
+  }
+
+  .btn-primary:hover::before {
+    left: 100%;
+  }
+
+  .btn-primary:hover {
+    background: var(--neon-cyan);
+    color: var(--deep-space);
+    box-shadow: 0 0 20px var(--neon-cyan);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--starlight);
+    font-family: var(--font-orbitron);
+    transition: all 0.3s ease;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--starlight);
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
-.wallet-adapter-button:hover {
-  background-color: #047857 !important;
-}
-
-.wallet-adapter-button-trigger {
-  background-color: #059669 !important;
-}
-
-.wallet-adapter-button-trigger:hover {
-  background-color: #047857 !important;
-}
-
-.wallet-adapter-dropdown {
-  background-color: #0f172a !important;
-  border: 1px solid #334155 !important;
-}
-
-.wallet-adapter-dropdown-list {
-  background-color: #0f172a !important;
-}
-
-.wallet-adapter-dropdown-list-item:hover {
-  background-color: #1e293b !important;
-}
-
-.wallet-adapter-modal-wrapper {
-  background-color: rgba(0, 0, 0, 0.8) !important;
-}
-
-.wallet-adapter-modal {
-  background-color: #0f172a !important;
-  border: 1px solid #334155 !important;
-  border-radius: 1rem !important;
-}
-
-@keyframes gradient {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
+/* Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-@keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
-  50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.8); }
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient 3s ease infinite;
+  50% { transform: translateY(-10px); }
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite;
 }
 
-.animate-glow {
-  animation: glow 2s ease-in-out infinite;
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 20px var(--neon-cyan); }
+  50% { opacity: 0.8; box-shadow: 0 0 10px var(--neon-cyan); }
 }
 
-.glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
 }
 
-.shimmer {
-  position: relative;
-  overflow: hidden;
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }
 
-.shimmer::after {
-  content: "";
+.scanline::after {
+  content: '';
   position: absolute;
   top: 0;
-  right: 0;
-  bottom: 0;
   left: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0.2) 20%,
-    rgba(255, 255, 255, 0.5) 60%,
-    rgba(255, 255, 255, 0)
-  );
-  animation: shimmer 2s infinite;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 243, 255, 0.02) 51%, transparent 51%);
+  background-size: 100% 4px;
+  animation: scanline 10s linear infinite;
+  pointer-events: none;
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+/* Wallet Adapter Overrides */
+.wallet-adapter-button {
+  font-family: var(--font-orbitron) !important;
+  background-color: transparent !important;
+  border: 1px solid var(--neon-cyan) !important;
+  color: var(--neon-cyan) !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+}
+
+.wallet-adapter-button:hover {
+  background-color: var(--neon-cyan) !important;
+  color: var(--deep-space) !important;
+  box-shadow: 0 0 20px var(--neon-cyan) !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: var(--midnight) !important;
+  border: 1px solid var(--neon-cyan) !important;
+  box-shadow: 0 0 50px rgba(0, 243, 255, 0.2) !important;
+}
+
+.wallet-adapter-modal-title {
+  font-family: var(--font-orbitron) !important;
+  color: var(--starlight) !important;
 }
