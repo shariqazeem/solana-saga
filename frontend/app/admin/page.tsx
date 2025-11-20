@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
 export default function AdminPage() {
   const wallet = useAnchorWallet();
   const { connection } = useConnection();
-  const { markets, loading: marketsLoading, refetch, resolveMarket: resolveMarketHook, finalizeResolution } = usePredictionMarkets();
+  const { markets, loading: marketsLoading, refetch, resolveMarket: resolveMarketHook } = usePredictionMarkets();
 
   // Create Market Form
   const [question, setQuestion] = useState("");
@@ -121,7 +121,8 @@ export default function AdminPage() {
     }
   };
 
-  const proposeResolution = async (marketAddress: string, outcome: boolean) => {
+  // CREATOR-ONLY: Instant resolution (simplified)
+  const resolveMarketSimple = async (marketAddress: string, outcome: boolean) => {
     if (!wallet) {
       setResolveError("Please connect your wallet");
       return;
@@ -132,56 +133,11 @@ export default function AdminPage() {
     setResolveSuccess(null);
 
     try {
+      setResolveSuccess(`Resolving market as ${outcome ? "YES" : "NO"}...`);
       const tx = await resolveMarketHook(marketAddress, outcome);
-      setResolveSuccess(`Resolution proposed: ${outcome ? "YES" : "NO"}! TX: ${tx.slice(0, 8)}... (24h challenge period started)`);
+      console.log("Market resolved:", tx);
 
-      // Refresh markets
-      await new Promise(r => setTimeout(r, 2000));
-      await refetch();
-    } catch (error: any) {
-      console.error("Error proposing resolution:", error);
-      setResolveError(error.message || "Failed to propose resolution");
-    } finally {
-      setResolving(null);
-    }
-  };
-
-  // SIMPLIFIED: One-click resolution (for demo/UX)
-  const resolveMarketInstant = async (marketAddress: string, outcome: boolean) => {
-    if (!wallet) {
-      setResolveError("Please connect your wallet");
-      return;
-    }
-
-    setResolving(marketAddress);
-    setResolveError(null);
-    setResolveSuccess(null);
-
-    try {
-      // Step 1: Propose resolution
-      setResolveSuccess(`Resolving market as ${outcome ? "YES" : "NO"}... (Step 1/2)`);
-      const tx1 = await resolveMarketHook(marketAddress, outcome);
-      console.log("Resolution proposed:", tx1);
-
-      // Wait a bit for blockchain to process
-      await new Promise(r => setTimeout(r, 3000));
-
-      // Step 2: Auto-finalize (skip challenge period for demo UX)
-      setResolveSuccess(`Resolving market as ${outcome ? "YES" : "NO"}... (Step 2/2)`);
-
-      try {
-        const tx2 = await finalizeResolution(marketAddress);
-        console.log("Resolution finalized:", tx2);
-
-        setResolveSuccess(`✓ Market resolved as ${outcome ? "YES" : "NO"}! Users can now claim winnings.`);
-      } catch (finalizeError: any) {
-        // If finalize fails (challenge period not over), show helpful message
-        if (finalizeError.message?.includes("challenge") || finalizeError.message?.includes("time")) {
-          setResolveSuccess(`✓ Resolution proposed as ${outcome ? "YES" : "NO"}! Will finalize after 24h challenge period.`);
-        } else {
-          throw finalizeError;
-        }
-      }
+      setResolveSuccess(`✓ Market instantly resolved as ${outcome ? "YES" : "NO"}! Users can now claim winnings.`);
 
       // Refresh markets
       await new Promise(r => setTimeout(r, 2000));
@@ -189,31 +145,6 @@ export default function AdminPage() {
     } catch (error: any) {
       console.error("Error resolving market:", error);
       setResolveError(error.message || "Failed to resolve market");
-    } finally {
-      setResolving(null);
-    }
-  };
-
-  const finalizeMarket = async (marketAddress: string) => {
-    if (!wallet) {
-      setResolveError("Please connect your wallet");
-      return;
-    }
-
-    setResolving(marketAddress);
-    setResolveError(null);
-    setResolveSuccess(null);
-
-    try {
-      const tx = await finalizeResolution(marketAddress);
-      setResolveSuccess(`Market finalized! TX: ${tx.slice(0, 8)}...`);
-
-      // Refresh markets
-      await new Promise(r => setTimeout(r, 2000));
-      await refetch();
-    } catch (error: any) {
-      console.error("Error finalizing resolution:", error);
-      setResolveError(error.message || "Failed to finalize resolution");
     } finally {
       setResolving(null);
     }
@@ -415,14 +346,14 @@ export default function AdminPage() {
                               </div>
                               <div className="flex gap-3">
                                 <button
-                                  onClick={() => resolveMarketInstant(market.publicKey, true)}
+                                  onClick={() => resolveMarketSimple(market.publicKey, true)}
                                   disabled={resolving === market.publicKey}
                                   className="flex-1 bg-gradient-to-r from-green-500/20 to-green-600/20 hover:from-green-500/30 hover:to-green-600/30 text-green-400 border border-green-500/50 font-bold py-3 px-4 rounded-lg transition-all text-sm shadow-lg hover:shadow-green-500/20"
                                 >
                                   {resolving === market.publicKey ? "Resolving..." : "✓ YES Won"}
                                 </button>
                                 <button
-                                  onClick={() => resolveMarketInstant(market.publicKey, false)}
+                                  onClick={() => resolveMarketSimple(market.publicKey, false)}
                                   disabled={resolving === market.publicKey}
                                   className="flex-1 bg-gradient-to-r from-red-500/20 to-red-600/20 hover:from-red-500/30 hover:to-red-600/30 text-red-400 border border-red-500/50 font-bold py-3 px-4 rounded-lg transition-all text-sm shadow-lg hover:shadow-red-500/20"
                                 >
@@ -430,7 +361,7 @@ export default function AdminPage() {
                                 </button>
                               </div>
                               <p className="text-xs text-slate-500 text-center mt-2">
-                                Click outcome to resolve market and enable payouts
+                                Creator-only instant resolution
                               </p>
                             </div>
                           ) : (
