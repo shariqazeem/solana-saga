@@ -85,14 +85,27 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
       setBetAmount("");
       setSelectedSide(null);
 
-      // Wait for transaction to be fully processed
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for transaction to be fully confirmed (5 seconds to ensure blockchain state updates)
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // Refresh market data
-      const updatedMarket = await getMarket(market.publicKey);
-      if (updatedMarket) {
-        setMarket(updatedMarket);
-        console.log("Market updated:", updatedMarket);
+      // Refresh market data multiple times with polling to ensure we get latest state
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (attempts < maxAttempts) {
+        const updatedMarket = await getMarket(market.publicKey);
+        if (updatedMarket) {
+          setMarket(updatedMarket);
+          console.log(`Market updated (attempt ${attempts + 1}):`, updatedMarket);
+
+          // Check if the market data has actually updated (has volume now)
+          if (updatedMarket.totalVolume > market.totalVolume || attempts === maxAttempts - 1) {
+            break;
+          }
+        }
+        attempts++;
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
     } catch (err: any) {
       console.error("Error placing bet:", err);

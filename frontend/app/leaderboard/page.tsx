@@ -5,65 +5,130 @@ import {
   Trophy, TrendingUp, Target, Flame, Star, Award,
   ArrowLeft, Users, DollarSign, Zap, Crown, Medal
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { WalletButton } from "@/components/WalletButton";
+import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useEffect } from "react";
+import { Program, AnchorProvider } from "@coral-xyz/anchor";
+import idl from "@/lib/solana/idl/prediction_markets.json";
 
-// Mock leaderboard data
-const MOCK_LEADERBOARD = {
-  daily: [
-    { rank: 1, user: "sigma.sol", avatar: "🦈", winRate: 94, totalBets: 28, netProfit: "+$12,450", streak: 8 },
-    { rank: 2, user: "chad.sol", avatar: "💪", winRate: 89, totalBets: 45, netProfit: "+$9,230", streak: 6 },
-    { rank: 3, user: "degen.sol", avatar: "🎲", winRate: 87, totalBets: 67, netProfit: "+$7,890", streak: 5 },
-    { rank: 4, user: "whale.sol", avatar: "🐋", winRate: 82, totalBets: 23, netProfit: "+$6,540", streak: 4 },
-    { rank: 5, user: "moon.sol", avatar: "🌙", winRate: 79, totalBets: 34, netProfit: "+$5,230", streak: 3 },
-    { rank: 6, user: "ape.sol", avatar: "🦍", winRate: 76, totalBets: 56, netProfit: "+$4,120", streak: 7 },
-    { rank: 7, user: "bull.sol", avatar: "🐂", winRate: 73, totalBets: 41, netProfit: "+$3,890", streak: 2 },
-    { rank: 8, user: "rocket.sol", avatar: "🚀", winRate: 71, totalBets: 38, netProfit: "+$3,450", streak: 5 },
-    { rank: 9, user: "diamond.sol", avatar: "💎", winRate: 68, totalBets: 29, netProfit: "+$2,980", streak: 1 },
-    { rank: 10, user: "king.sol", avatar: "👑", winRate: 65, totalBets: 52, netProfit: "+$2,560", streak: 4 },
-  ],
-  weekly: [
-    { rank: 1, user: "sigma.sol", avatar: "🦈", winRate: 92, totalBets: 156, netProfit: "+$45,230", streak: 12 },
-    { rank: 2, user: "whale.sol", avatar: "🐋", winRate: 88, totalBets: 134, netProfit: "+$38,450", streak: 9 },
-    { rank: 3, user: "chad.sol", avatar: "💪", winRate: 85, totalBets: 189, netProfit: "+$32,100", streak: 8 },
-    { rank: 4, user: "moon.sol", avatar: "🌙", winRate: 83, totalBets: 98, netProfit: "+$28,790", streak: 11 },
-    { rank: 5, user: "degen.sol", avatar: "🎲", winRate: 81, totalBets: 245, netProfit: "+$25,340", streak: 6 },
-    { rank: 6, user: "ape.sol", avatar: "🦍", winRate: 78, totalBets: 167, netProfit: "+$22,450", streak: 7 },
-    { rank: 7, user: "bull.sol", avatar: "🐂", winRate: 76, totalBets: 143, netProfit: "+$19,230", streak: 5 },
-    { rank: 8, user: "rocket.sol", avatar: "🚀", winRate: 74, totalBets: 121, netProfit: "+$17,890", streak: 4 },
-    { rank: 9, user: "diamond.sol", avatar: "💎", winRate: 71, totalBets: 156, netProfit: "+$15,670", streak: 3 },
-    { rank: 10, user: "king.sol", avatar: "👑", winRate: 69, totalBets: 178, netProfit: "+$13,450", streak: 8 },
-  ],
-  allTime: [
-    { rank: 1, user: "sigma.sol", avatar: "🦈", winRate: 91, totalBets: 1243, netProfit: "+$234,560", streak: 23 },
-    { rank: 2, user: "whale.sol", avatar: "🐋", winRate: 87, totalBets: 1098, netProfit: "+$198,340", streak: 18 },
-    { rank: 3, user: "chad.sol", avatar: "💪", winRate: 84, totalBets: 1567, netProfit: "+$176,230", streak: 15 },
-    { rank: 4, user: "moon.sol", avatar: "🌙", winRate: 82, totalBets: 876, netProfit: "+$154,890", streak: 21 },
-    { rank: 5, user: "degen.sol", avatar: "🎲", winRate: 79, totalBets: 2134, netProfit: "+$142,670", streak: 12 },
-    { rank: 6, user: "ape.sol", avatar: "🦍", winRate: 77, totalBets: 1456, netProfit: "+$128,450", streak: 16 },
-    { rank: 7, user: "bull.sol", avatar: "🐂", winRate: 75, totalBets: 1289, netProfit: "+$115,230", streak: 9 },
-    { rank: 8, user: "rocket.sol", avatar: "🚀", winRate: 73, totalBets: 1034, netProfit: "+$103,890", streak: 14 },
-    { rank: 9, user: "diamond.sol", avatar: "💎", winRate: 71, totalBets: 1678, netProfit: "+$95,670", streak: 7 },
-    { rank: 10, user: "king.sol", avatar: "👑", winRate: 69, totalBets: 1823, netProfit: "+$87,450", streak: 11 },
-  ],
-};
+interface UserStatsData {
+  user: string;
+  totalBets: number;
+  totalWagered: number;
+  totalWon: number;
+  winCount: number;
+  lossCount: number;
+  netProfit: number;
+  currentStreak: number;
+  bestStreak: number;
+}
 
-const TIMEFRAMES = ["Daily", "Weekly", "All Time"] as const;
+interface LeaderboardEntry {
+  rank: number;
+  user: string;
+  avatar: string;
+  winRate: number;
+  totalBets: number;
+  netProfit: string;
+  streak: number;
+}
+
+const TIMEFRAMES = ["All Time"] as const;
 type Timeframe = typeof TIMEFRAMES[number];
 
 export default function LeaderboardPage() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>("Weekly");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>("All Time");
+  const { markets, userBets } = usePredictionMarkets();
+  const { connection } = useConnection();
+  const [userStats, setUserStats] = useState<UserStatsData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getLeaderboardData = () => {
-    switch (selectedTimeframe) {
-      case "Daily": return MOCK_LEADERBOARD.daily;
-      case "Weekly": return MOCK_LEADERBOARD.weekly;
-      case "All Time": return MOCK_LEADERBOARD.allTime;
-    }
-  };
+  // Fetch all UserStats from blockchain
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      try {
+        setLoading(true);
+        const provider = new AnchorProvider(
+          connection,
+          {} as any,
+          { commitment: "confirmed" }
+        );
+        const program = new Program(idl as any, provider);
 
-  const leaderboardData = getLeaderboardData();
+        // Fetch all UserStats accounts
+        const accounts = await (program as any).account.userStats.all();
+
+        const stats: UserStatsData[] = accounts.map((account: any) => {
+          const data = account.account;
+          return {
+            user: data.user.toString(),
+            totalBets: data.total_bets.toNumber ? data.total_bets.toNumber() : data.total_bets,
+            totalWagered: (data.total_wagered.toNumber ? data.total_wagered.toNumber() : data.total_wagered) / 1e6,
+            totalWon: (data.total_won.toNumber ? data.total_won.toNumber() : data.total_won) / 1e6,
+            winCount: data.win_count,
+            lossCount: data.loss_count,
+            netProfit: (data.net_profit.toNumber ? data.net_profit.toNumber() : data.net_profit) / 1e6,
+            currentStreak: data.current_streak,
+            bestStreak: data.best_streak,
+          };
+        });
+
+        setUserStats(stats);
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserStats();
+  }, [connection]);
+
+  // Transform user stats into leaderboard entries
+  const leaderboardData: LeaderboardEntry[] = useMemo(() => {
+    if (userStats.length === 0) return [];
+
+    return userStats
+      .filter(stat => stat.totalBets > 0) // Only show users who have placed bets
+      .sort((a, b) => b.netProfit - a.netProfit) // Sort by net profit descending
+      .slice(0, 10) // Top 10
+      .map((stat, index) => {
+        const totalBets = stat.winCount + stat.lossCount;
+        const winRate = totalBets > 0 ? Math.round((stat.winCount / totalBets) * 100) : 0;
+
+        // Generate consistent avatar emoji based on user address
+        const avatars = ["🦈", "💪", "🎲", "🐋", "🌙", "🦍", "🐂", "🚀", "💎", "👑", "🔥", "⚡", "🎯", "🏆", "⭐"];
+        const avatarIndex = parseInt(stat.user.slice(0, 8), 16) % avatars.length;
+
+        return {
+          rank: index + 1,
+          user: `${stat.user.slice(0, 4)}...${stat.user.slice(-4)}`,
+          avatar: avatars[avatarIndex],
+          winRate,
+          totalBets: stat.totalBets,
+          netProfit: stat.netProfit >= 0 ? `+$${stat.netProfit.toFixed(2)}` : `-$${Math.abs(stat.netProfit).toFixed(2)}`,
+          streak: stat.currentStreak,
+        };
+      });
+  }, [userStats]);
+
+  // Calculate aggregate stats
+  const aggregateStats = useMemo(() => {
+    const totalPredictors = userStats.filter(s => s.totalBets > 0).length;
+    const totalBets = markets.reduce((sum, m) => sum + m.totalBetsCount, 0);
+    const totalVolume = markets.reduce((sum, m) => sum + m.totalVolume, 0);
+    const activeBettors = new Set(userBets.map(bet => bet.user)).size;
+
+    return {
+      totalPredictors,
+      totalBets,
+      totalVolume: `$${totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      activeBettors,
+    };
+  }, [userStats, markets, userBets]);
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -85,10 +150,10 @@ export default function LeaderboardPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <StatBox icon={<Users />} label="Total Predictors" value="12,543" color="from-blue-500 to-cyan-500" />
-            <StatBox icon={<Target />} label="Total Bets" value="89,234" color="from-purple-500 to-pink-500" />
-            <StatBox icon={<DollarSign />} label="Total Volume" value="$4.2M" color="from-emerald-500 to-green-500" />
-            <StatBox icon={<Flame />} label="Active Today" value="3,421" color="from-orange-500 to-red-500" />
+            <StatBox icon={<Users />} label="Total Predictors" value={aggregateStats.totalPredictors.toString()} color="from-blue-500 to-cyan-500" />
+            <StatBox icon={<Target />} label="Total Bets" value={aggregateStats.totalBets.toString()} color="from-purple-500 to-pink-500" />
+            <StatBox icon={<DollarSign />} label="Total Volume" value={aggregateStats.totalVolume} color="from-emerald-500 to-green-500" />
+            <StatBox icon={<Flame />} label="Active Bettors" value={aggregateStats.activeBettors.toString()} color="from-orange-500 to-red-500" />
           </div>
         </motion.div>
 
@@ -111,63 +176,93 @@ export default function LeaderboardPage() {
         </section>
 
         {/* Top 3 Podium */}
-        <section className="mb-12">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-6 items-end">
-              {/* 2nd Place */}
-              <PodiumCard
-                rank={2}
-                user={leaderboardData[1]}
-                delay={0.2}
-              />
-
-              {/* 1st Place */}
-              <PodiumCard
-                rank={1}
-                user={leaderboardData[0]}
-                delay={0.1}
-                isWinner
-              />
-
-              {/* 3rd Place */}
-              <PodiumCard
-                rank={3}
-                user={leaderboardData[2]}
-                delay={0.3}
-              />
+        {loading ? (
+          <section className="mb-12">
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFD700] mb-4"></div>
+              <p className="text-slate-400">Loading leaderboard...</p>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : leaderboardData.length === 0 ? (
+          <section className="mb-12">
+            <div className="text-center py-12 glass-card rounded-2xl max-w-2xl mx-auto">
+              <Trophy className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+              <h3 className="text-2xl font-bold mb-2">No Leaderboard Yet</h3>
+              <p className="text-slate-500 mb-6">Be the first to place bets and claim the top spot!</p>
+              <Link href="/markets">
+                <button className="px-6 py-3 neon-button rounded-xl font-bold font-orbitron">
+                  Browse Markets
+                </button>
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <>
+            <section className="mb-12">
+              <div className="max-w-5xl mx-auto">
+                <div className="grid md:grid-cols-3 gap-6 items-end">
+                  {/* 2nd Place */}
+                  {leaderboardData[1] && (
+                    <PodiumCard
+                      rank={2}
+                      user={leaderboardData[1]}
+                      delay={0.2}
+                    />
+                  )}
 
-        {/* Full Leaderboard */}
-        <section className="pb-24">
-          <div className="max-w-5xl mx-auto">
-            <div className="glass-card rounded-2xl overflow-hidden">
-              {/* Table Header */}
-              <div className="px-6 py-4 border-b border-[#00E5FF]/20" style={{ background: 'rgba(0, 229, 255, 0.05)' }}>
-                <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-slate-300 font-orbitron">
-                  <div className="col-span-1">Rank</div>
-                  <div className="col-span-4">User</div>
-                  <div className="col-span-2 text-center">Win Rate</div>
-                  <div className="col-span-2 text-center">Total Bets</div>
-                  <div className="col-span-2 text-center">Streak</div>
-                  <div className="col-span-1 text-right">Profit</div>
+                  {/* 1st Place */}
+                  {leaderboardData[0] && (
+                    <PodiumCard
+                      rank={1}
+                      user={leaderboardData[0]}
+                      delay={0.1}
+                      isWinner
+                    />
+                  )}
+
+                  {/* 3rd Place */}
+                  {leaderboardData[2] && (
+                    <PodiumCard
+                      rank={3}
+                      user={leaderboardData[2]}
+                      delay={0.3}
+                    />
+                  )}
                 </div>
               </div>
+            </section>
 
-              {/* Table Rows */}
-              <div className="divide-y divide-[#00E5FF]/10">
-                {leaderboardData.map((user, index) => (
-                  <LeaderboardRow
-                    key={user.user}
-                    user={user}
-                    delay={0.4 + index * 0.05}
-                  />
-                ))}
+            {/* Full Leaderboard */}
+            <section className="pb-24">
+              <div className="max-w-5xl mx-auto">
+                <div className="glass-card rounded-2xl overflow-hidden">
+                  {/* Table Header */}
+                  <div className="px-6 py-4 border-b border-[#00E5FF]/20" style={{ background: 'rgba(0, 229, 255, 0.05)' }}>
+                    <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-slate-300 font-orbitron">
+                      <div className="col-span-1">Rank</div>
+                      <div className="col-span-4">User</div>
+                      <div className="col-span-2 text-center">Win Rate</div>
+                      <div className="col-span-2 text-center">Total Bets</div>
+                      <div className="col-span-2 text-center">Streak</div>
+                      <div className="col-span-1 text-right">Profit</div>
+                    </div>
+                  </div>
+
+                  {/* Table Rows */}
+                  <div className="divide-y divide-[#00E5FF]/10">
+                    {leaderboardData.map((user, index) => (
+                      <LeaderboardRow
+                        key={user.user}
+                        user={user}
+                        delay={0.4 + index * 0.05}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
 
         {/* Your Rank (if connected) */}
         <section className="pb-24">

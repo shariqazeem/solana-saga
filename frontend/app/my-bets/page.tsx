@@ -195,9 +195,14 @@ function StatCard({ label, value, icon, color, borderColor }: any) {
 }
 
 function BetRow({ bet, onClaim, claiming }: any) {
+  const { markets } = usePredictionMarkets();
   const isWin = bet.claimed && bet.payout > 0;
   const isLoss = bet.claimed && bet.payout === 0;
   const isPending = !bet.claimed;
+
+  // Find the market for this bet
+  const market = markets.find(m => m.publicKey === bet.market);
+  const marketQuestion = market?.question || "Unknown Market";
 
   return (
     <div className="p-6 hover:bg-white/5 transition-colors flex flex-col md:flex-row items-center gap-6">
@@ -210,10 +215,12 @@ function BetRow({ bet, onClaim, claiming }: any) {
             {bet.prediction ? "YES" : "NO"}
           </span>
           <span className="text-slate-400 text-sm flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {new Date(bet.timestamp).toLocaleDateString()}
+            <Calendar className="w-3 h-3" /> {new Date(bet.timestamp * 1000).toLocaleDateString()}
           </span>
         </div>
-        <h3 className="font-bold text-lg mb-1">{bet.marketName || "Unknown Market"}</h3>
+        <Link href={`/markets/${bet.market}`} className="hover:text-[#00F3FF] transition-colors">
+          <h3 className="font-bold text-lg mb-1">{marketQuestion}</h3>
+        </Link>
         <div className="text-sm text-slate-400 font-numbers">
           Wagered: <span className="text-white">${bet.amount.toFixed(2)}</span>
         </div>
