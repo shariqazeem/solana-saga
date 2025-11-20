@@ -143,6 +143,19 @@ export function usePredictionMarkets() {
         const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
         const hoursLeft = Math.floor(secondsLeft / (60 * 60));
 
+        // DEBUG: Log time calculation
+        if (pubkey.toString() === 'HXrmpkc8xHcpba3zYDuHDvbZLgZwFdCg5myhyen9DUET') {
+          console.log('=== TIME DEBUG FOR NEW MARKET ===');
+          console.log('Raw end_time from blockchain:', data.end_time);
+          console.log('Converted endTime:', endTime);
+          console.log('Current time (now):', now);
+          console.log('Seconds left:', secondsLeft);
+          console.log('Days left:', daysLeft);
+          console.log('End time as date:', new Date(endTime * 1000).toString());
+          console.log('Now as date:', new Date(now * 1000).toString());
+          console.log('=== END TIME DEBUG ===');
+        }
+
         let endsIn = "";
         if (secondsLeft < 0) endsIn = "Ended";
         else if (daysLeft > 0) endsIn = `${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
@@ -531,6 +544,14 @@ export function usePredictionMarkets() {
       const secondsLeft = endTime - now;
       const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
       const hoursLeft = Math.floor(secondsLeft / (60 * 60));
+
+      // DEBUG: Log time calculation for getMarket
+      console.log(`[getMarket] Time debug for ${marketAddress}`);
+      console.log('  Raw end_time:', (data as any).end_time);
+      console.log('  Converted endTime:', endTime);
+      console.log('  Current time (now):', now);
+      console.log('  Seconds left:', secondsLeft);
+      console.log('  End time as date:', new Date(endTime * 1000).toString());
 
       let endsIn = "";
       if (secondsLeft < 0) endsIn = "Ended";
