@@ -358,11 +358,42 @@ export function usePredictionMarkets() {
     }
 
     try {
+      // Check SOL balance first (transaction fees ~0.00001 SOL)
+      const solBalance = await connection.getBalance(wallet.publicKey);
+      const MIN_SOL_FOR_TX = 10000; // ~0.00001 SOL
+
+      if (solBalance < MIN_SOL_FOR_TX) {
+        throw new Error(
+          `Insufficient SOL for transaction fees. You need ~0.00001 SOL. ` +
+          `Current balance: ${(solBalance / 1e9).toFixed(6)} SOL. ` +
+          `Please add some SOL to your wallet.`
+        );
+      }
+
       const betPubkey = new PublicKey(betAddress);
       const betAccount = await (program as any).account.bet.fetch(betPubkey);
+
+      // Check if bet is already claimed
+      if ((betAccount as any).claimed) {
+        throw new Error("This bet has already been claimed!");
+      }
+
       const marketPubkey = (betAccount as any).market as PublicKey;
       const marketAccount = await (program as any).account.market.fetch(marketPubkey);
       const marketId = toNum((marketAccount as any).id);
+
+      // Verify market is resolved
+      const marketStatus = (marketAccount as any).status;
+      if (!marketStatus || !('resolved' in marketStatus)) {
+        throw new Error("Market is not resolved yet. Wait for resolution.");
+      }
+
+      // Verify user won
+      const outcome = (marketAccount as any).outcome;
+      const userPrediction = (betAccount as any).prediction;
+      if (outcome !== userPrediction) {
+        throw new Error("You did not win this bet. Cannot claim.");
+      }
 
       // Get user's USDC token account
       const userUsdcAccount = await getUserUsdcAccount();
@@ -392,7 +423,8 @@ export function usePredictionMarkets() {
 
       console.log("Winnings claimed successfully:", tx);
 
-      // Refresh data
+      // Refresh data after a short delay
+      await new Promise(r => setTimeout(r, 2000));
       await Promise.all([fetchMarkets(), fetchUserBets()]);
 
       return tx;

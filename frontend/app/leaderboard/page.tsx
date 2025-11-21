@@ -97,8 +97,8 @@ export default function LeaderboardPage() {
 
     fetchUserStats();
 
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchUserStats, 30000);
+    // Auto-refresh every 60 seconds (reduced from 30s to avoid 429 rate limiting)
+    const interval = setInterval(fetchUserStats, 60000);
     return () => clearInterval(interval);
   }, [connection]);
 

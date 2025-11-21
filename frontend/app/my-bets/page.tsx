@@ -20,6 +20,12 @@ export default function MyBetsPage() {
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
 
   const handleClaimWinnings = async (betPublicKey: string) => {
+    // Prevent double-click while already claiming
+    if (claiming) {
+      console.log("Already claiming, ignoring double-click");
+      return;
+    }
+
     setClaiming(betPublicKey);
     setClaimError(null);
     setClaimSuccess(null);
@@ -32,7 +38,7 @@ export default function MyBetsPage() {
         origin: { y: 0.6 },
         colors: ['#00E5FF', '#FF1493', '#39FF14']
       });
-      setClaimSuccess(`Winnings claimed! Transaction: ${tx.slice(0, 8)}...`);
+      setClaimSuccess(`✅ Winnings claimed! TX: ${tx.slice(0, 8)}...`);
       await new Promise(r => setTimeout(r, 2000));
       await refetch();
     } catch (error: any) {
