@@ -199,16 +199,14 @@ async function main() {
 
       const [userStatsPda] = getUserStatsPda(creator.publicKey);
 
-      // Get current bet count for this user
-      let betCount = 0;
-      try {
-        const stats = await program.account.userStats.fetch(userStatsPda);
-        betCount = toNum(stats.totalBets);
-      } catch (err) {
-        // User stats don't exist yet, betCount = 0
-      }
+      // Get current bet count from MARKET (not user stats!)
+      // Bet PDA uses market.total_bets_count, not user's personal bet count
+      const market = await program.account.market.fetch(marketPda);
+      const totalBetsCount = toNum(market.totalBetsCount);
 
-      const [betPda] = getBetPda(marketPda, creator.publicKey, new anchor.BN(betCount));
+      console.log(`   Market total bets count: ${totalBetsCount}`);
+
+      const [betPda] = getBetPda(marketPda, creator.publicKey, new anchor.BN(totalBetsCount));
 
       try {
         const tx = await program.methods
@@ -312,32 +310,31 @@ async function main() {
   console.log("STEP 5: CLAIM WINNINGS");
   console.log("=".repeat(80) + "\n");
 
-  // Fetch all bets for creator
-  const [userStatsPda] = getUserStatsPda(creator.publicKey);
-  let stats;
-  try {
-    stats = await program.account.userStats.fetch(userStatsPda);
-  } catch (err) {
-    console.log("No user stats found\n");
-    stats = { totalBets: 0 };
-  }
+  // Fetch all bets for this market
+  // We need to check all bets up to market.total_bets_count
+  const marketAfterResolution = await program.account.market.fetch(marketPda);
+  const totalMarketBets = toNum(marketAfterResolution.totalBetsCount);
 
-  const totalBets = toNum(stats.totalBets);
-  console.log(`Found ${totalBets} bets to check...\n`);
+  console.log(`Checking all ${totalMarketBets} bets placed on this market...\n`);
 
   let totalClaimedAmount = 0;
   let winningBetsCount = 0;
   let losingBetsCount = 0;
+  let betsChecked = 0;
 
-  for (let i = 0; i < totalBets; i++) {
+  // Check all bets for this market (they might be from different users in a real scenario)
+  // For this test, all bets are from creator
+  for (let i = 0; i < totalMarketBets; i++) {
     const [betPda] = getBetPda(marketPda, creator.publicKey, new anchor.BN(i));
 
     try {
       const bet = await program.account.bet.fetch(betPda);
+      betsChecked++;
+
       const isWinner = bet.prediction === outcome;
       const amount = formatUSDC(bet.amount);
 
-      console.log(`Bet ${i + 1}:`);
+      console.log(`Bet ${i + 1} (Market bet #${i}):`);
       console.log(`   - Amount: ${amount} USDC`);
       console.log(`   - Prediction: ${bet.prediction ? "YES" : "NO"}`);
       console.log(`   - Result: ${isWinner ? "✅ WON" : "❌ LOST"}`);
@@ -350,13 +347,16 @@ async function main() {
         const tokenAccountBefore = await getAccount(connection, creatorTokenAccount);
         const balanceBefore = Number(tokenAccountBefore.amount);
 
+        // Get user stats PDA for claiming user
+        const [claimUserStatsPda] = getUserStatsPda(creator.publicKey);
+
         try {
           const claimTx = await program.methods
             .claimWinnings(marketId)
             .accounts({
               market: marketPda,
               bet: betPda,
-              userStats: userStatsPda,
+              userStats: claimUserStatsPda,
               vault: vaultPda,
               userTokenAccount: creatorTokenAccount,
               user: creator.publicKey,
@@ -385,11 +385,13 @@ async function main() {
 
       console.log("");
     } catch (err) {
-      console.log(`   ⚠️  Bet ${i + 1} not found\n`);
+      // Bet might not exist for this user (could be another user's bet in a real scenario)
+      // Skip silently for this test
     }
   }
 
   console.log("📊 Claim Summary:");
+  console.log(`   - Total bets checked: ${betsChecked}`);
   console.log(`   - Winning bets claimed: ${winningBetsCount}`);
   console.log(`   - Losing bets: ${losingBetsCount}`);
   console.log(`   - Total payout: ${formatUSDC(totalClaimedAmount)} USDC`);
@@ -399,8 +401,9 @@ async function main() {
   console.log("=".repeat(80) + "\n");
 
   // Fetch updated user stats
+  const [finalUserStatsPda] = getUserStatsPda(creator.publicKey);
   try {
-    const finalStats = await program.account.userStats.fetch(userStatsPda);
+    const finalStats = await program.account.userStats.fetch(finalUserStatsPda);
 
     console.log("👤 User Stats:");
     console.log(`   - Total Bets: ${toNum(finalStats.totalBets)}`);
