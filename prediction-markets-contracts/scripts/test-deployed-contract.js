@@ -80,6 +80,15 @@ async function main() {
 
   console.log("\n" + "=".repeat(80) + "\n");
 
+  // Helper function to safely convert BN or number to number
+  const toNum = (value) => {
+    if (!value) return 0;
+    if (typeof value === 'number') return value;
+    if (value.toNumber) return value.toNumber();
+    if (value.toString) return parseInt(value.toString());
+    return 0;
+  };
+
   // Test 1: Fetch all markets
   console.log("📊 TEST 1: Fetching all markets...\n");
   try {
@@ -92,10 +101,10 @@ async function main() {
         console.log(`\n   Market ${i + 1}:`);
         console.log(`   - Question: ${data.question}`);
         console.log(`   - Status: ${Object.keys(data.status)[0]}`);
-        console.log(`   - YES Pool: ${(data.yesPool.toNumber() / 1e6).toFixed(2)} USDC`);
-        console.log(`   - NO Pool: ${(data.noPool.toNumber() / 1e6).toFixed(2)} USDC`);
-        console.log(`   - Total Bets: ${data.totalBets.toNumber()}`);
-        if (data.outcome !== null) {
+        console.log(`   - YES Pool: ${(toNum(data.yesPool) / 1e6).toFixed(2)} USDC`);
+        console.log(`   - NO Pool: ${(toNum(data.noPool) / 1e6).toFixed(2)} USDC`);
+        console.log(`   - Total Bets: ${toNum(data.totalBets)}`);
+        if (data.outcome !== null && data.outcome !== undefined) {
           console.log(`   - Outcome: ${data.outcome ? "YES" : "NO"}`);
         }
       });
@@ -118,14 +127,14 @@ async function main() {
       const userStats = await program.account.userStats.fetch(userStatsPda);
 
       console.log("✅ User stats found:");
-      console.log(`   - Total Bets: ${userStats.totalBets.toNumber()}`);
-      console.log(`   - Total Wagered: ${(userStats.totalWagered.toNumber() / 1e6).toFixed(2)} USDC`);
-      console.log(`   - Total Won: ${(userStats.totalWon.toNumber() / 1e6).toFixed(2)} USDC`);
-      console.log(`   - Win Count: ${userStats.winCount.toNumber()}`);
-      console.log(`   - Loss Count: ${userStats.lossCount.toNumber()}`);
-      console.log(`   - Net Profit: ${(userStats.netProfit.toNumber() / 1e6).toFixed(2)} USDC`);
-      console.log(`   - Current Streak: ${userStats.currentStreak.toNumber()}`);
-      console.log(`   - Best Streak: ${userStats.bestStreak.toNumber()}`);
+      console.log(`   - Total Bets: ${toNum(userStats.totalBets)}`);
+      console.log(`   - Total Wagered: ${(toNum(userStats.totalWagered) / 1e6).toFixed(2)} USDC`);
+      console.log(`   - Total Won: ${(toNum(userStats.totalWon) / 1e6).toFixed(2)} USDC`);
+      console.log(`   - Win Count: ${toNum(userStats.winCount)}`);
+      console.log(`   - Loss Count: ${toNum(userStats.lossCount)}`);
+      console.log(`   - Net Profit: ${(toNum(userStats.netProfit) / 1e6).toFixed(2)} USDC`);
+      console.log(`   - Current Streak: ${toNum(userStats.currentStreak)}`);
+      console.log(`   - Best Streak: ${toNum(userStats.bestStreak)}`);
     } catch (err) {
       console.log("ℹ️  No user stats found (user hasn't placed any bets yet)");
     }
@@ -153,10 +162,10 @@ async function main() {
       allBets.slice(0, 5).forEach((bet, i) => {
         const data = bet.account;
         console.log(`\n   Bet ${i + 1}:`);
-        console.log(`   - Amount: ${(data.amount.toNumber() / 1e6).toFixed(2)} USDC`);
+        console.log(`   - Amount: ${(toNum(data.amount) / 1e6).toFixed(2)} USDC`);
         console.log(`   - Prediction: ${data.prediction ? "YES" : "NO"}`);
         console.log(`   - Claimed: ${data.claimed}`);
-        console.log(`   - Timestamp: ${new Date(data.timestamp.toNumber() * 1000).toLocaleString()}`);
+        console.log(`   - Timestamp: ${new Date(toNum(data.timestamp) * 1000).toLocaleString()}`);
         console.log(`   - Bet PDA: ${bet.publicKey.toString()}`);
       });
     }
@@ -193,16 +202,16 @@ async function main() {
     if (allStats.length > 0) {
       // Sort by net profit
       const sorted = allStats.sort((a, b) =>
-        b.account.netProfit.toNumber() - a.account.netProfit.toNumber()
+        toNum(b.account.netProfit) - toNum(a.account.netProfit)
       );
 
       console.log("\n   Top 5 Users by Profit:");
       sorted.slice(0, 5).forEach((stat, i) => {
         const data = stat.account;
         console.log(`\n   ${i + 1}. ${data.user.toString().slice(0, 8)}...`);
-        console.log(`      - Net Profit: ${(data.netProfit.toNumber() / 1e6).toFixed(2)} USDC`);
-        console.log(`      - Wins: ${data.winCount.toNumber()} | Losses: ${data.lossCount.toNumber()}`);
-        console.log(`      - Best Streak: ${data.bestStreak.toNumber()}`);
+        console.log(`      - Net Profit: ${(toNum(data.netProfit) / 1e6).toFixed(2)} USDC`);
+        console.log(`      - Wins: ${toNum(data.winCount)} | Losses: ${toNum(data.lossCount)}`);
+        console.log(`      - Best Streak: ${toNum(data.bestStreak)}`);
       });
     }
   } catch (error) {
