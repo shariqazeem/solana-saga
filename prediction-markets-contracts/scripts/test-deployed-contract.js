@@ -48,10 +48,24 @@ async function main() {
   });
   anchor.setProvider(provider);
 
-  // Load program
+  // Load program using local IDL
+  console.log("Loading program IDL...");
   const idlPath = path.join(__dirname, "../target/idl/prediction_markets.json");
+
+  if (!fs.existsSync(idlPath)) {
+    console.log("❌ IDL file not found at:", idlPath);
+    console.log("Please copy the IDL from frontend:");
+    console.log("  mkdir -p prediction-markets-contracts/target/idl");
+    console.log("  cp frontend/lib/solana/idl/prediction_markets.json prediction-markets-contracts/target/idl/");
+    process.exit(1);
+  }
+
   const idl = JSON.parse(fs.readFileSync(idlPath, "utf-8"));
-  const program = new anchor.Program(idl, PROGRAM_ID, provider);
+
+  // In Anchor 0.32+, Program takes (idl, provider) and gets programId from idl.address
+  const program = new anchor.Program(idl, provider);
+  console.log("✅ Program loaded successfully");
+  console.log("Program ID from IDL:", program.programId.toString());
 
   console.log("Wallet:", wallet.publicKey.toString());
 
