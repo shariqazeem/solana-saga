@@ -18,8 +18,8 @@ const { TOKEN_PROGRAM_ID, getAccount, createAssociatedTokenAccountInstruction, g
 const fs = require("fs");
 const path = require("path");
 
-// USDC Devnet mint
-const USDC_DEVNET_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+// USDC Devnet mint (same as frontend)
+const USDC_DEVNET_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
 // Helper to safely convert BN or number to number
 const toNum = (value) => {

@@ -359,20 +359,28 @@ STEP 1: CREATE A TEST MARKET
 
 Since you need USDC for betting, here are ways to get devnet USDC:
 
-1. **Solana Faucet** (easiest):
+**USDC Mint Address**: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
+
+1. **Circle USDC Devnet Faucet** (recommended):
+   - Visit https://faucet.circle.com/
+   - Connect your Solana wallet
+   - Select "Solana Devnet"
+   - Request USDC tokens (up to 10,000 USDC per request!)
+
+2. **Solana Faucet**:
    - Visit https://faucet.solana.com/
    - Paste your wallet address
    - Request USDC devnet tokens
 
-2. **SPL Token Faucet**:
+3. **SPL Token Faucet**:
    - Visit https://spl-token-faucet.com/
    - Connect your wallet
-   - Select USDC (devnet)
+   - Paste the USDC mint: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
    - Request tokens
 
-3. **Use your frontend**:
+4. **Use your frontend**:
    - Your frontend already handles USDC devnet
-   - Just connect and use the faucet integration if available
+   - Just connect and the app will help you get tokens
 
 ## 🔗 Useful Links
 

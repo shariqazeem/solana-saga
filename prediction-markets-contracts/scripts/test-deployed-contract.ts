@@ -20,8 +20,8 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 
-// USDC Devnet mint
-const USDC_DEVNET_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+// USDC Devnet mint (same as frontend)
+const USDC_DEVNET_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
 // Program ID (deployed contract)
 const PROGRAM_ID = new PublicKey("G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j");
