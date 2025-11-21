@@ -9,24 +9,53 @@ We've created two types of tests:
 1. **Comprehensive Anchor Tests** (`tests/prediction-markets.ts`) - Full integration tests that create a local test environment
 2. **Deployed Contract Tests** (`scripts/test-deployed-contract.js`) - Tests that work with the already-deployed contract on devnet
 
-## 🚀 Quick Start - Test Deployed Contract
+## 🚀 Quick Start Options
 
-The easiest way to test is using the deployed contract test script:
+### Option 1: End-to-End Test (Recommended - Full User Journey)
 
-### Step 1: Setup Wallet
+**This simulates the complete user experience** - creating a market, placing bets, resolving, and claiming winnings.
+
+```bash
+cd prediction-markets-contracts
+node scripts/e2e-test.js
+```
+
+This test will:
+1. ✅ Create a test market (ends in 2 minutes)
+2. ✅ Place multiple YES/NO bets
+3. ✅ Wait for market to end
+4. ✅ Resolve the market as YES
+5. ✅ Claim all winnings
+6. ✅ Show final stats and leaderboard
+
+**Duration**: ~3 minutes (includes 2-minute wait for market to end)
+
+**Requirements**:
+- At least 0.1 SOL for transaction fees
+- At least 10 USDC devnet tokens for betting
+
+### Option 2: Test Deployed Contract (Quick Data Check)
+
+The easiest way to verify existing data:
+
+### Step 1: Setup Wallet & Get Tokens
 
 ```bash
 # Create a devnet wallet if you don't have one
 solana-keygen new --outfile ~/.config/solana/devnet.json
 
-# Or copy your existing wallet to /root/.config/solana/
-cp ~/.config/solana/devnet.json /root/.config/solana/devnet.json
-
 # Set config to devnet
 solana config set --url devnet
 
-# Airdrop some SOL for testing
+# Airdrop SOL for transaction fees
 solana airdrop 2 --url devnet
+
+# Get USDC devnet tokens (required for E2E test)
+# Visit: https://faucet.solana.com/
+# Or use the SPL Token Faucet:
+#   1. Connect your wallet at https://spl-token-faucet.com/
+#   2. Select USDC devnet token
+#   3. Request airdrop
 ```
 
 ### Step 2: Run the Test Script
@@ -239,11 +268,119 @@ it("Should test custom functionality", async () => {
 });
 ```
 
+## 🎮 End-to-End Test Details
+
+The `scripts/e2e-test.js` script simulates the complete user journey:
+
+### What It Does:
+
+```
+STEP 1: CREATE A TEST MARKET
+├── Creates a market that ends in 2 minutes
+├── Verifies market creation
+└── Shows market PDA and transaction
+
+STEP 2: PLACE BETS
+├── Places 3 bets: 5 USDC YES, 3 USDC NO, 2 USDC YES
+├── Updates market pools in real-time
+└── Tracks user stats
+
+STEP 3: WAIT FOR MARKET TO END
+├── 2-minute countdown timer
+└── Ensures market is ended before resolution
+
+STEP 4: RESOLVE THE MARKET
+├── Resolves market as YES (creator-only)
+├── Verifies resolution and finalization
+└── Shows outcome and timestamp
+
+STEP 5: CLAIM WINNINGS
+├── Finds all winning bets
+├── Claims each winning bet
+├── Shows payout amounts
+└── Tracks claimed vs unclaimed
+
+STEP 6: CHECK STATS & LEADERBOARD
+├── Shows updated user stats
+├── Displays leaderboard rankings
+└── Verifies all data updates
+```
+
+### Example Output:
+
+```
+================================================================================
+🎮 END-TO-END INTEGRATION TEST - FULL USER JOURNEY
+================================================================================
+
+👤 Creator Wallet: 5TY5gts9AktYJMN6S8dGDzjAxmZLbxgbWrhRPpLfxYUD
+💰 SOL Balance: 8.1906 SOL
+
+================================================================================
+STEP 1: CREATE A TEST MARKET
+================================================================================
+
+📊 Creating market...
+   Question: 🚀 Will this E2E test pass?
+   Ends in: 2 minutes
+   Category: Test
+
+✅ Market created successfully!
+   TX: 4xJ8Kf7Hn...
+   Market PDA: 9Xd2pQ3...
+
+   Verified market data:
+   - Status: active
+   - YES Pool: 0.00 USDC
+   - NO Pool: 0.00 USDC
+
+[... continues through all steps ...]
+
+✅ END-TO-END TEST COMPLETED SUCCESSFULLY!
+
+📋 Test Summary:
+   ✅ Market creation
+   ✅ Bet placement (YES/NO)
+   ✅ Market resolution
+   ✅ Claiming winnings
+   ✅ Stats tracking
+   ✅ Leaderboard updates
+
+🎉 All user features are working correctly!
+```
+
+### Requirements:
+
+- **SOL**: At least 0.1 SOL for transaction fees (~0.00001 SOL per transaction × ~10 transactions)
+- **USDC**: At least 10 USDC for placing test bets (you get most of it back when you win!)
+- **Time**: About 3 minutes total (includes 2-minute wait)
+
+### Getting USDC Devnet Tokens:
+
+Since you need USDC for betting, here are ways to get devnet USDC:
+
+1. **Solana Faucet** (easiest):
+   - Visit https://faucet.solana.com/
+   - Paste your wallet address
+   - Request USDC devnet tokens
+
+2. **SPL Token Faucet**:
+   - Visit https://spl-token-faucet.com/
+   - Connect your wallet
+   - Select USDC (devnet)
+   - Request tokens
+
+3. **Use your frontend**:
+   - Your frontend already handles USDC devnet
+   - Just connect and use the faucet integration if available
+
 ## 🔗 Useful Links
 
 - **Contract on Solana Explorer**: https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet
 - **Anchor Documentation**: https://www.anchor-lang.com/docs
 - **Solana Web3.js Docs**: https://solana-labs.github.io/solana-web3.js/
+- **Solana Devnet Faucet**: https://faucet.solana.com/
+- **SPL Token Faucet**: https://spl-token-faucet.com/
 
 ## 🎯 What Each Test Verifies
 
