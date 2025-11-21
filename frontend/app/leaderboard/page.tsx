@@ -63,16 +63,26 @@ export default function LeaderboardPage() {
 
         const stats: UserStatsData[] = accounts.map((account: any) => {
           const data = account.account;
+
+          // Helper to safely convert BN to number
+          const toNum = (value: any): number => {
+            if (!value) return 0;
+            if (typeof value === 'number') return value;
+            if (value.toNumber) return value.toNumber();
+            if (value.toString) return parseInt(value.toString());
+            return 0;
+          };
+
           return {
             user: data.user.toString(),
-            totalBets: data.totalBets || data.total_bets || 0,
-            totalWagered: ((data.totalWagered || data.total_wagered || 0).toNumber ? (data.totalWagered || data.total_wagered).toNumber() : (data.totalWagered || data.total_wagered)) / 1e6,
-            totalWon: ((data.totalWon || data.total_won || 0).toNumber ? (data.totalWon || data.total_won).toNumber() : (data.totalWon || data.total_won)) / 1e6,
-            winCount: data.winCount || data.win_count || 0,
-            lossCount: data.lossCount || data.loss_count || 0,
-            netProfit: ((data.netProfit || data.net_profit || 0).toNumber ? (data.netProfit || data.net_profit).toNumber() : (data.netProfit || data.net_profit)) / 1e6,
-            currentStreak: data.currentStreak || data.current_streak || 0,
-            bestStreak: data.bestStreak || data.best_streak || 0,
+            totalBets: toNum(data.totalBets || data.total_bets),
+            totalWagered: toNum(data.totalWagered || data.total_wagered) / 1e6,
+            totalWon: toNum(data.totalWon || data.total_won) / 1e6,
+            winCount: toNum(data.winCount || data.win_count),
+            lossCount: toNum(data.lossCount || data.loss_count),
+            netProfit: toNum(data.netProfit || data.net_profit) / 1e6,
+            currentStreak: toNum(data.currentStreak || data.current_streak),
+            bestStreak: toNum(data.bestStreak || data.best_streak),
           };
         });
 

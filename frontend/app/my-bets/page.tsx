@@ -196,13 +196,18 @@ function StatCard({ label, value, icon, color, borderColor }: any) {
 
 function BetRow({ bet, onClaim, claiming }: any) {
   const { markets } = usePredictionMarkets();
-  const isWin = bet.claimed && bet.payout > 0;
-  const isLoss = bet.claimed && bet.payout === 0;
-  const isPending = !bet.claimed;
 
   // Find the market for this bet
   const market = markets.find(m => m.publicKey === bet.market);
   const marketQuestion = market?.question || "Unknown Market";
+
+  // Determine bet status
+  const marketResolved = market?.status === "Resolved";
+  const marketOutcome = market?.outcome;
+  const userWon = marketResolved && bet.prediction === marketOutcome;
+  const userLost = marketResolved && bet.prediction !== marketOutcome;
+  const alreadyClaimed = bet.claimed;
+  const canClaim = marketResolved && userWon && !alreadyClaimed;
 
   return (
     <div className="p-6 hover:bg-white/5 transition-colors flex flex-col md:flex-row items-center gap-6">
@@ -217,6 +222,13 @@ function BetRow({ bet, onClaim, claiming }: any) {
           <span className="text-slate-400 text-sm flex items-center gap-1">
             <Calendar className="w-3 h-3" /> {new Date(bet.timestamp * 1000).toLocaleDateString()}
           </span>
+          {marketResolved && (
+            <span className="text-slate-400 text-xs">
+              • Outcome: <span className={marketOutcome ? "text-green-400 font-bold" : "text-red-400 font-bold"}>
+                {marketOutcome ? "YES" : "NO"}
+              </span>
+            </span>
+          )}
         </div>
         <Link href={`/markets/${bet.market}`} className="hover:text-[#00F3FF] transition-colors">
           <h3 className="font-bold text-lg mb-1">{marketQuestion}</h3>
@@ -229,13 +241,21 @@ function BetRow({ bet, onClaim, claiming }: any) {
       <div className="flex items-center gap-6">
         <div className="text-right">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</div>
-          <div className={`font-bold ${isWin ? "text-[#00FF9D]" : isLoss ? "text-[#FF3366]" : "text-[#00F3FF]"
-            }`}>
-            {isWin ? "WON" : isLoss ? "LOST" : "PENDING"}
+          <div className={`font-bold ${
+            alreadyClaimed && userWon ? "text-[#00FF9D]" :
+            userLost ? "text-[#FF3366]" :
+            marketResolved && userWon ? "text-[#FFD700]" :
+            "text-[#00F3FF]"
+          }`}>
+            {alreadyClaimed && userWon ? "✓ CLAIMED" :
+             alreadyClaimed && userLost ? "LOST" :
+             userWon ? "🎉 WON!" :
+             userLost ? "LOST" :
+             "PENDING"}
           </div>
         </div>
 
-        {isWin && (
+        {alreadyClaimed && bet.payout > 0 && (
           <div className="text-right">
             <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Payout</div>
             <div className="font-black font-numbers text-[#00FF9D] text-xl">
@@ -244,13 +264,13 @@ function BetRow({ bet, onClaim, claiming }: any) {
           </div>
         )}
 
-        {isPending && bet.canClaim && (
+        {canClaim && (
           <button
-            onClick={() => onClaim(bet.publicKey.toString())}
+            onClick={() => onClaim(bet.publicKey)}
             disabled={claiming}
-            className="btn-primary px-6 py-2 rounded-lg text-sm"
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            {claiming ? "Claiming..." : "Claim Winnings"}
+            {claiming ? "Claiming..." : "💰 Claim Winnings"}
           </button>
         )}
       </div>
