@@ -1,240 +1,232 @@
 "use client";
 
-import { motion } from "framer-motion";
-import {
-  TrendingUp, Clock, Users, DollarSign, Filter, Search,
-  Flame, Star, Zap, ArrowLeft, Target, ChevronRight
-} from "lucide-react";
-import { useState } from "react";
-import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo } from "react";
 import { MarketCard } from "@/components/MarketCard";
+import {
+  Search, Filter, TrendingUp, Flame, Clock,
+  Grid, List, Zap, ChevronDown, Star, Target, Loader2
+} from "lucide-react";
+import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
 
-// Mock data for demo
-const MOCK_MARKETS = [
-  {
-    id: 1,
-    question: "Will SOL hit $300 by Dec 20?",
-    category: "Price",
-    yesPrice: 35,
-    noPrice: 65,
-    volume: "$45,230",
-    endsIn: "2 days",
-    bettors: 342,
-    trending: true,
-  },
-  {
-    id: 2,
-    question: "Will Jupiter reach 10M daily transactions?",
-    category: "Volume",
-    yesPrice: 62,
-    noPrice: 38,
-    volume: "$38,450",
-    endsIn: "5 days",
-    bettors: 289,
-    trending: true,
-  },
-  {
-    id: 3,
-    question: "Raydium or Orca: which DEX wins this week?",
-    category: "Ecosystem",
-    yesPrice: 48,
-    noPrice: 52,
-    volume: "$52,100",
-    endsIn: "3 days",
-    bettors: 456,
-    trending: false,
-  },
-  {
-    id: 4,
-    question: "Will Bonk flip Dogecoin this week?",
-    category: "Meme",
-    yesPrice: 12,
-    noPrice: 88,
-    volume: "$67,890",
-    endsIn: "6 days",
-    bettors: 523,
-    trending: true,
-  },
-  {
-    id: 5,
-    question: "Will Solana NFT sales exceed 50k this week?",
-    category: "NFTs",
-    yesPrice: 71,
-    noPrice: 29,
-    volume: "$29,340",
-    endsIn: "4 days",
-    bettors: 198,
-    trending: false,
-  },
-  {
-    id: 6,
-    question: "Will any Solana DEX reach $1B volume today?",
-    category: "Volume",
-    yesPrice: 55,
-    noPrice: 45,
-    volume: "$41,230",
-    endsIn: "12 hours",
-    bettors: 367,
-    trending: false,
-  },
-  {
-    id: 7,
-    question: "Will Tensor overtake Magic Eden in NFT volume?",
-    category: "NFTs",
-    yesPrice: 42,
-    noPrice: 58,
-    volume: "$33,890",
-    endsIn: "1 week",
-    bettors: 245,
-    trending: false,
-  },
-  {
-    id: 8,
-    question: "Will Solana Mobile sell 100k phones this year?",
-    category: "Ecosystem",
-    yesPrice: 68,
-    noPrice: 32,
-    volume: "$28,450",
-    endsIn: "30 days",
-    bettors: 412,
-    trending: false,
-  },
+const CATEGORIES = [
+  { id: "all", name: "All Markets", icon: Grid, color: "#00f0ff" },
+  { id: "crypto", name: "Crypto", icon: TrendingUp, color: "#00ff88" },
+  { id: "price", name: "Price", icon: TrendingUp, color: "#00ff88" },
+  { id: "sports", name: "Sports", icon: Target, color: "#ff8800" },
+  { id: "meme", name: "Meme", icon: Flame, color: "#ff00aa" },
+  { id: "politics", name: "Politics", icon: Star, color: "#ffd700" },
 ];
 
-const CATEGORIES = ["All", "Price", "Volume", "Ecosystem", "NFTs", "Meme"];
+const SORT_OPTIONS = [
+  { id: "volume", name: "Volume", icon: TrendingUp },
+  { id: "newest", name: "Newest", icon: Clock },
+  { id: "ending", name: "Ending Soon", icon: Zap },
+];
 
 export default function MarketsPage() {
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const { markets, loading, error } = usePredictionMarkets();
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeSort, setActiveSort] = useState("volume");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("trending");
+  const [showFilters, setShowFilters] = useState(false);
 
-  const filteredMarkets = MOCK_MARKETS
-    .filter(market =>
-      (selectedCategory === "All" || market.category === selectedCategory) &&
-      market.question.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === "trending") return b.bettors - a.bettors;
-      if (sortBy === "volume") return parseInt(b.volume.replace(/[$,]/g, "")) - parseInt(a.volume.replace(/[$,]/g, ""));
-      if (sortBy === "ending-soon") return 0; // Would sort by actual time
-      return 0;
+  // Filter and sort markets
+  const filteredMarkets = useMemo(() => {
+    let filtered = markets.filter((market) => {
+      const matchesCategory = activeCategory === "all" ||
+        market.category.toLowerCase() === activeCategory.toLowerCase();
+      const matchesSearch = market.question.toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const isActive = market.status === "Active";
+      return matchesCategory && matchesSearch && isActive;
     });
 
+    // Sort markets
+    switch (activeSort) {
+      case "volume":
+        filtered.sort((a, b) => b.totalVolume - a.totalVolume);
+        break;
+      case "newest":
+        filtered.sort((a, b) => b.createdAt - a.createdAt);
+        break;
+      case "ending":
+        filtered.sort((a, b) => a.endTime - b.endTime);
+        break;
+    }
+
+    return filtered;
+  }, [markets, activeCategory, searchQuery, activeSort]);
+
+  // Calculate total volume
+  const totalVolume = useMemo(() => {
+    return filteredMarkets.reduce((sum, m) => sum + m.totalVolume, 0);
+  }, [filteredMarkets]);
+
   return (
-    <div className="min-h-screen">
-      {/* Header Section */}
-      <section className="py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-12"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <Target className="w-10 h-10 text-[#00F3FF] animate-pulse" />
-              <h1 className="text-4xl md:text-6xl font-black font-heading bg-gradient-to-r from-[#00F3FF] to-[#FF00FF] bg-clip-text text-transparent">
-                ACTIVE MARKETS
-              </h1>
+    <div className="min-h-screen pt-24 pb-32 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Target className="w-10 h-10 text-[#00f0ff]" />
+            <h1 className="text-4xl md:text-5xl font-game font-black">
+              <span className="text-white">ALL </span>
+              <span className="text-[#00f0ff]">MARKETS</span>
+            </h1>
+          </div>
+          <p className="text-gray-400">
+            Find your edge. Pick your battles. Win big.
+          </p>
+        </div>
+
+        {/* Search & Filters Bar */}
+        <div className="game-card p-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search markets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="game-input pl-12 w-full"
+              />
             </div>
-            <p className="text-xl text-slate-400 mb-8">
-              Choose your prediction and start winning. <span className="text-[#00FF9D] font-bold">247 markets live now.</span>
-            </p>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatBox icon={<Target />} label="Active Markets" value="247" />
-              <StatBox icon={<TrendingUp />} label="24h Volume" value="$1.2M" />
-              <StatBox icon={<Users />} label="Active Bettors" value="12.5K" />
-              <StatBox icon={<Flame />} label="Trending" value="42" />
-            </div>
-          </motion.div>
-
-          {/* Filters & Search */}
-          <div className="glass-panel p-6 rounded-2xl mb-8">
-            <div className="flex flex-col md:flex-row gap-6 justify-between items-center">
-              {/* Search */}
-              <div className="relative w-full md:w-96">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00F3FF]" />
-                <input
-                  type="text"
-                  placeholder="Search markets..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-[#00F3FF] focus:outline-none transition-all"
-                />
-              </div>
-
-              {/* Sort Options */}
-              <div className="flex items-center gap-4">
-                <span className="text-slate-400 flex items-center gap-2 font-bold text-sm">
-                  <Filter className="w-4 h-4" />
-                  SORT BY:
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all w-full lg:w-auto"
+              >
+                <Filter className="w-5 h-5 text-[#00f0ff]" />
+                <span className="font-game text-sm">
+                  {SORT_OPTIONS.find(s => s.id === activeSort)?.name}
                 </span>
-                <div className="flex gap-2">
-                  {["trending", "volume", "ending-soon"].map((sort) => (
-                    <button
-                      key={sort}
-                      onClick={() => setSortBy(sort)}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${sortBy === sort
-                          ? "bg-[#00FF9D] text-black shadow-[0_0_10px_rgba(0,255,157,0.4)]"
-                          : "bg-white/5 text-slate-400 hover:bg-white/10"
-                        }`}
-                    >
-                      {sort.replace("-", " ")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+              </button>
 
-            {/* Category Filters */}
-            <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              {CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all ${selectedCategory === category
-                      ? "bg-[#00F3FF] text-black shadow-[0_0_15px_rgba(0,243,255,0.4)]"
-                      : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5"
-                    }`}
-                >
-                  {category}
-                </button>
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full mt-2 right-0 w-48 game-card p-2 z-50"
+                  >
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => {
+                          setActiveSort(option.id);
+                          setShowFilters(false);
+                        }}
+                        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-all ${
+                          activeSort === option.id
+                            ? "bg-[#00f0ff]/20 text-[#00f0ff]"
+                            : "text-gray-400 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <option.icon className="w-4 h-4" />
+                        {option.name}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div className="flex gap-3 overflow-x-auto pb-4 mb-8 scrollbar-hide">
+          {CATEGORIES.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl font-game text-sm whitespace-nowrap transition-all ${
+                activeCategory === category.id
+                  ? "text-black"
+                  : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+              }`}
+              style={{
+                background: activeCategory === category.id ? category.color : undefined,
+                boxShadow: activeCategory === category.id ? `0 0 20px ${category.color}40` : undefined,
+              }}
+            >
+              <category.icon className="w-4 h-4" />
+              {category.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Stats Bar */}
+        <div className="flex flex-wrap gap-6 mb-8 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
+            <span className="text-gray-400">
+              <span className="text-white font-numbers font-bold">{filteredMarkets.length}</span> markets found
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-[#ffd700]" />
+            <span className="text-gray-400">
+              <span className="text-white font-numbers font-bold">${totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> total volume
+            </span>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-20">
+            <Loader2 className="w-12 h-12 text-[#00f0ff] animate-spin mx-auto mb-4" />
+            <p className="text-gray-400 font-game">Loading markets from blockchain...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-game text-white mb-2">Error Loading Markets</h3>
+            <p className="text-gray-400">{error}</p>
+          </div>
+        )}
+
+        {/* Markets Grid */}
+        {!loading && !error && (
+          <>
+            <div className="grid md:grid-cols-2 gap-6">
+              {filteredMarkets.map((market) => (
+                <MarketCard
+                  key={market.publicKey}
+                  id={market.publicKey}
+                  question={market.question}
+                  category={market.category}
+                  yesPrice={market.yesPrice}
+                  noPrice={market.noPrice}
+                  volume={`$${market.totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                  endsIn={market.endsIn}
+                  bettors={market.bettors}
+                  trending={market.totalVolume > 100}
+                  delay={0}
+                />
               ))}
             </div>
-          </div>
 
-          {/* Markets Grid */}
-          <div className="grid md:grid-cols-2 gap-6 pb-24">
-            {filteredMarkets.map((market, index) => (
-              <MarketCard key={market.id} {...market} delay={index * 0.05} />
-            ))}
-          </div>
-
-          {filteredMarkets.length === 0 && (
-            <div className="text-center py-24">
-              <Target className="w-16 h-16 mx-auto mb-4 text-slate-700" />
-              <h3 className="text-2xl font-bold mb-2">No markets found</h3>
-              <p className="text-slate-500">Try adjusting your filters or search query</p>
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function StatBox({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="glass-card rounded-xl p-4 group hover:border-[#00F3FF]/30 transition-colors">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-[#00F3FF]/10 rounded-lg text-[#00F3FF] group-hover:scale-110 transition-transform">
-          {icon}
-        </div>
+            {/* Empty State */}
+            {filteredMarkets.length === 0 && (
+              <div className="text-center py-20">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-game text-white mb-2">No markets found</h3>
+                <p className="text-gray-400">Try adjusting your filters or search query</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
-      <div className="text-2xl font-black mb-1 font-numbers text-white">{value}</div>
-      <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">{label}</div>
     </div>
   );
 }

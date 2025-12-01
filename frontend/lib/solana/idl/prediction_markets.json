@@ -224,83 +224,6 @@
       ]
     },
     {
-      "name": "finalize_resolution",
-      "docs": [
-        "Finalize resolution after challenge period (anyone can call)"
-      ],
-      "discriminator": [
-        191,
-        74,
-        94,
-        214,
-        45,
-        150,
-        152,
-        125
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  97,
-                  114,
-                  107,
-                  101,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "market_id"
-              }
-            ]
-          }
-        },
-        {
-          "name": "vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "market_id"
-              }
-            ]
-          }
-        },
-        {
-          "name": "proposer_token_account",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "_market_id",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "place_bet",
       "docs": [
         "Place a bet on a market (YES or NO)"
@@ -453,7 +376,7 @@
     {
       "name": "resolve_market",
       "docs": [
-        "Propose resolution for a market (DECENTRALIZED - anyone can propose with bond)"
+        "Resolve market (CREATOR-ONLY - instant resolution)"
       ],
       "discriminator": [
         155,
@@ -490,39 +413,9 @@
           }
         },
         {
-          "name": "vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "market_id"
-              }
-            ]
-          }
-        },
-        {
-          "name": "proposer_token_account",
-          "writable": true
-        },
-        {
-          "name": "proposer",
+          "name": "creator",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -658,31 +551,6 @@
       "code": 6015,
       "name": "MathOverflow",
       "msg": "Math overflow"
-    },
-    {
-      "code": 6016,
-      "name": "InsufficientBond",
-      "msg": "Insufficient bond for resolution"
-    },
-    {
-      "code": 6017,
-      "name": "NoResolutionProposed",
-      "msg": "No resolution has been proposed yet"
-    },
-    {
-      "code": 6018,
-      "name": "AlreadyFinalized",
-      "msg": "Resolution already finalized"
-    },
-    {
-      "code": 6019,
-      "name": "ChallengePeriodActive",
-      "msg": "Challenge period still active"
-    },
-    {
-      "code": 6020,
-      "name": "ResolutionNotFinalized",
-      "msg": "Resolution not finalized yet"
     }
   ],
   "types": [

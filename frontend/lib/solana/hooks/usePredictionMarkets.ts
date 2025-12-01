@@ -8,7 +8,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { PROGRAM_ID, RPC_ENDPOINT, DEMO_MARKETS } from "../config";
+import { PROGRAM_ID, RPC_ENDPOINT } from "../config";
 import idl from "../idl/prediction_markets.json";
 
 // USDC Devnet mint address
@@ -114,87 +114,82 @@ export function usePredictionMarkets() {
       setLoading(true);
       setError(null);
 
-      // Fetch all accounts owned by the program
-      console.log("Fetching accounts for program:", readOnlyProgram.programId.toString());
-      const accounts = await connection.getProgramAccounts(readOnlyProgram.programId);
-      console.log(`Found ${accounts.length} total accounts`);
+      console.log("Fetching markets for program:", readOnlyProgram.programId.toString());
 
-      const marketsData: Market[] = [];
-      let skippedCount = 0;
+      // Use Anchor's built-in account fetching which handles discriminators properly
+      const marketAccounts = await (readOnlyProgram as any).account.market.all();
+      console.log(`Found ${marketAccounts.length} market accounts`);
 
-      // Try to decode each account as a Market, skipping any that fail
-      for (const { pubkey, account: accountInfo } of accounts) {
-        try {
-          // Try to decode as Market account
-          const data = readOnlyProgram.coder.accounts.decode("Market", accountInfo.data);
-          console.log(`Successfully decoded market: ${pubkey.toString()}`);
+      const marketsData: Market[] = marketAccounts.map((account: any) => {
+        const data = account.account;
+        const pubkey = account.publicKey;
 
-          // USDC has 6 decimals - use snake_case field names from actual IDL
-          const yesPool = toNum(data.yes_pool) / Math.pow(10, USDC_DECIMALS);
-          const noPool = toNum(data.no_pool) / Math.pow(10, USDC_DECIMALS);
-          const totalVolume = toNum(data.total_volume) / Math.pow(10, USDC_DECIMALS);
+        console.log(`Processing market: ${pubkey.toString()}`);
 
-          // Calculate prices (percentage chance of winning)
-          const totalPool = yesPool + noPool;
-          const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
-          const noPrice = 100 - yesPrice;
-
-          // Calculate time remaining
-          const endTime = toNum(data.end_time);
-          const now = Math.floor(Date.now() / 1000);
-          const secondsLeft = endTime - now;
-          const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
-          const hoursLeft = Math.floor(secondsLeft / (60 * 60));
-
-          let endsIn = "";
-          if (secondsLeft < 0) endsIn = "Ended";
-          else if (daysLeft > 0) endsIn = `${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
-          else if (hoursLeft > 0) endsIn = `${hoursLeft} hour${hoursLeft > 1 ? "s" : ""}`;
-          else endsIn = "Soon";
-
-          let status = "Active";
-          if (data.status && typeof data.status === 'object') {
-            if ('active' in data.status) status = "Active";
-            else if ('resolved' in data.status) status = "Resolved";
-            else if ('cancelled' in data.status) status = "Cancelled";
-          }
-
-          marketsData.push({
-            publicKey: pubkey.toString(),
-            id: toNum(data.id),
-            question: data.question,
-            description: data.description,
-            category: data.category,
-            creator: data.creator.toString(),
-            yesPool,
-            noPool,
-            totalVolume,
-            isResolved: status === "Resolved",
-            outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
-            endTime,
-            createdAt: toNum(data.created_at),
-            yesPrice,
-            noPrice,
-            endsIn,
-            bettors: toNum(data.unique_bettors),
-            totalBetsCount: toNum(data.total_bets_count),
-            status,
-            // Decentralized resolution fields
-            resolutionProposer: data.resolution_proposer ? data.resolution_proposer.toString() : null,
-            resolutionBond: toNum(data.resolution_bond) / Math.pow(10, USDC_DECIMALS),
-            challengeDeadline: data.challenge_deadline ? toNum(data.challenge_deadline) : null,
-            isFinalized: data.is_finalized || false,
-          });
-        } catch (decodeError: any) {
-          // Skip accounts that aren't Market accounts or have incompatible structure
-          // This is expected for old markets or non-market accounts (bets, vaults, etc.)
-          skippedCount++;
-          console.log(`Skipped account ${pubkey.toString()}: ${decodeError.message || 'decode failed'}`);
-          continue;
+        // DEBUG: Log actual field names from IDL
+        if (pubkey.toString() === 'HXrmpkc8xHcpba3zYDuHDvbZLgZwFdCg5myhyen9DUET') {
+          console.log('Available fields:', Object.keys(data));
         }
-      }
 
-      console.log(`Loaded ${marketsData.length} markets (skipped ${skippedCount} accounts)`);
+        // USDC has 6 decimals - IDL uses camelCase field names
+        const yesPool = toNum(data.yesPool) / Math.pow(10, USDC_DECIMALS);
+        const noPool = toNum(data.noPool) / Math.pow(10, USDC_DECIMALS);
+        const totalVolume = toNum(data.totalVolume) / Math.pow(10, USDC_DECIMALS);
+
+        // Calculate prices (percentage chance of winning)
+        const totalPool = yesPool + noPool;
+        const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
+        const noPrice = 100 - yesPrice;
+
+        // Calculate time remaining - IDL uses camelCase field names!
+        const endTime = toNum(data.endTime);
+        const now = Math.floor(Date.now() / 1000);
+        const secondsLeft = endTime - now;
+        const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
+        const hoursLeft = Math.floor(secondsLeft / (60 * 60));
+
+        let endsIn = "";
+        if (secondsLeft < 0) endsIn = "Ended";
+        else if (daysLeft > 0) endsIn = `${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
+        else if (hoursLeft > 0) endsIn = `${hoursLeft} hour${hoursLeft > 1 ? "s" : ""}`;
+        else endsIn = "Soon";
+
+        let status = "Active";
+        if (data.status && typeof data.status === 'object') {
+          if ('active' in data.status) status = "Active";
+          else if ('resolved' in data.status) status = "Resolved";
+          else if ('cancelled' in data.status) status = "Cancelled";
+        }
+
+        return {
+          publicKey: pubkey.toString(),
+          id: toNum(data.id),
+          question: data.question,
+          description: data.description,
+          category: data.category,
+          creator: data.creator.toString(),
+          yesPool,
+          noPool,
+          totalVolume,
+          isResolved: status === "Resolved",
+          outcome: data.outcome !== null && data.outcome !== undefined ? data.outcome : null,
+          endTime,
+          createdAt: toNum(data.createdAt),
+          yesPrice,
+          noPrice,
+          endsIn,
+          bettors: toNum(data.uniqueBettors),
+          totalBetsCount: toNum(data.totalBetsCount),
+          status,
+          // Decentralized resolution fields
+          resolutionProposer: data.resolutionProposer ? data.resolutionProposer.toString() : null,
+          resolutionBond: toNum(data.resolutionBond) / Math.pow(10, USDC_DECIMALS),
+          challengeDeadline: data.challengeDeadline ? toNum(data.challengeDeadline) : null,
+          isFinalized: data.isFinalized || false,
+        };
+      });
+
+      console.log(`Loaded ${marketsData.length} markets`);
       setMarkets(marketsData);
     } catch (error: any) {
       console.error("Error fetching markets:", error);
@@ -202,7 +197,7 @@ export function usePredictionMarkets() {
     } finally {
       setLoading(false);
     }
-  }, [readOnlyProgram, connection]);
+  }, [readOnlyProgram]);
 
   // Fetch user bets
   const fetchUserBets = useCallback(async () => {
@@ -363,11 +358,42 @@ export function usePredictionMarkets() {
     }
 
     try {
+      // Check SOL balance first (transaction fees ~0.00001 SOL)
+      const solBalance = await connection.getBalance(wallet.publicKey);
+      const MIN_SOL_FOR_TX = 10000; // ~0.00001 SOL
+
+      if (solBalance < MIN_SOL_FOR_TX) {
+        throw new Error(
+          `Insufficient SOL for transaction fees. You need ~0.00001 SOL. ` +
+          `Current balance: ${(solBalance / 1e9).toFixed(6)} SOL. ` +
+          `Please add some SOL to your wallet.`
+        );
+      }
+
       const betPubkey = new PublicKey(betAddress);
       const betAccount = await (program as any).account.bet.fetch(betPubkey);
+
+      // Check if bet is already claimed
+      if ((betAccount as any).claimed) {
+        throw new Error("This bet has already been claimed!");
+      }
+
       const marketPubkey = (betAccount as any).market as PublicKey;
       const marketAccount = await (program as any).account.market.fetch(marketPubkey);
       const marketId = toNum((marketAccount as any).id);
+
+      // Verify market is resolved
+      const marketStatus = (marketAccount as any).status;
+      if (!marketStatus || !('resolved' in marketStatus)) {
+        throw new Error("Market is not resolved yet. Wait for resolution.");
+      }
+
+      // Verify user won
+      const outcome = (marketAccount as any).outcome;
+      const userPrediction = (betAccount as any).prediction;
+      if (outcome !== userPrediction) {
+        throw new Error("You did not win this bet. Cannot claim.");
+      }
 
       // Get user's USDC token account
       const userUsdcAccount = await getUserUsdcAccount();
@@ -397,7 +423,8 @@ export function usePredictionMarkets() {
 
       console.log("Winnings claimed successfully:", tx);
 
-      // Refresh data
+      // Refresh data after a short delay
+      await new Promise(r => setTimeout(r, 2000));
       await Promise.all([fetchMarkets(), fetchUserBets()]);
 
       return tx;
@@ -407,7 +434,7 @@ export function usePredictionMarkets() {
     }
   };
 
-  // Propose or challenge a market resolution (DECENTRALIZED)
+  // Resolve market (CREATOR-ONLY - instant resolution, NO BONDS)
   const resolveMarket = async (marketAddress: string, outcome: boolean): Promise<string> => {
     if (!program || !wallet) {
       throw new Error("Wallet not connected");
@@ -418,103 +445,29 @@ export function usePredictionMarkets() {
       const marketAccount = await (program as any).account.market.fetch(marketPubkey);
       const marketId = toNum((marketAccount as any).id);
 
-      // Get user's USDC token account
-      const userUsdcAccount = await getUserUsdcAccount();
-
-      // If user doesn't have USDC account, throw error
-      if (!userUsdcAccount.exists) {
-        throw new Error("You need a USDC account to propose resolutions");
+      // Check if caller is the market creator
+      const creatorPubkey = (marketAccount as any).creator as PublicKey;
+      if (!wallet.publicKey.equals(creatorPubkey)) {
+        throw new Error("Only the market creator can resolve this market");
       }
-
-      // Check minimum bond requirement (100 USDC for first proposal)
-      const MIN_BOND = 100;
-      const accountInfo = await connection.getTokenAccountBalance(userUsdcAccount.address);
-      const balance = parseFloat(accountInfo.value.amount) / Math.pow(10, USDC_DECIMALS);
-
-      const existingProposer = (marketAccount as any).resolution_proposer;
-      const requiredBond = existingProposer ?
-        (toNum((marketAccount as any).resolution_bond) / Math.pow(10, USDC_DECIMALS)) * 2 :
-        MIN_BOND;
-
-      if (balance < requiredBond) {
-        throw new Error(`Insufficient USDC balance. Required: ${requiredBond} USDC, Available: ${balance.toFixed(2)} USDC`);
-      }
-
-      const [vaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
-        program.programId
-      );
 
       const tx = await program.methods
         .resolveMarket(new BN(marketId), outcome)
         .accounts({
           market: marketPubkey,
-          vault: vaultPda,
-          proposerTokenAccount: userUsdcAccount.address,
-          proposer: wallet.publicKey,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          creator: wallet.publicKey,
         })
         .rpc();
 
-      console.log("Resolution proposed/challenged successfully:", tx);
+      console.log("Market resolved instantly:", tx);
 
       // Refresh data
       await Promise.all([fetchMarkets(), fetchUserBets()]);
 
       return tx;
     } catch (error: any) {
-      console.error("Error proposing resolution:", error);
-      throw new Error(error.message || "Failed to propose resolution");
-    }
-  };
-
-  // Finalize resolution after challenge period (anyone can call)
-  const finalizeResolution = async (marketAddress: string): Promise<string> => {
-    if (!program || !wallet) {
-      throw new Error("Wallet not connected");
-    }
-
-    try {
-      const marketPubkey = new PublicKey(marketAddress);
-      const marketAccount = await (program as any).account.market.fetch(marketPubkey);
-      const marketId = toNum((marketAccount as any).id);
-
-      // Get proposer's wallet address
-      const proposerPubkey = (marketAccount as any).resolution_proposer;
-      if (!proposerPubkey) {
-        throw new Error("No resolution proposer found");
-      }
-
-      // Derive proposer's USDC token account
-      const proposerTokenAccount = await getAssociatedTokenAddress(
-        USDC_MINT,
-        proposerPubkey
-      );
-
-      const [vaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
-        program.programId
-      );
-
-      const tx = await program.methods
-        .finalizeResolution(new BN(marketId))
-        .accounts({
-          market: marketPubkey,
-          vault: vaultPda,
-          proposerTokenAccount: proposerTokenAccount,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
-
-      console.log("Resolution finalized successfully:", tx);
-
-      // Refresh data
-      await Promise.all([fetchMarkets(), fetchUserBets()]);
-
-      return tx;
-    } catch (error: any) {
-      console.error("Error finalizing resolution:", error);
-      throw new Error(error.message || "Failed to finalize resolution");
+      console.error("Error resolving market:", error);
+      throw new Error(error.message || "Failed to resolve market");
     }
   };
 
@@ -527,16 +480,17 @@ export function usePredictionMarkets() {
       // Use "confirmed" commitment to get latest data
       const data = await (readOnlyProgram as any).account.market.fetch(marketPubkey, "confirmed");
 
-      // Use snake_case field names from actual IDL
-      const yesPool = toNum((data as any).yes_pool) / Math.pow(10, USDC_DECIMALS);
-      const noPool = toNum((data as any).no_pool) / Math.pow(10, USDC_DECIMALS);
-      const totalVolume = toNum((data as any).total_volume) / Math.pow(10, USDC_DECIMALS);
+      // IDL uses camelCase field names
+      const yesPool = toNum((data as any).yesPool) / Math.pow(10, USDC_DECIMALS);
+      const noPool = toNum((data as any).noPool) / Math.pow(10, USDC_DECIMALS);
+      const totalVolume = toNum((data as any).totalVolume) / Math.pow(10, USDC_DECIMALS);
 
       const totalPool = yesPool + noPool;
       const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
       const noPrice = 100 - yesPrice;
 
-      const endTime = toNum((data as any).end_time);
+      // IDL uses camelCase field names!
+      const endTime = toNum((data as any).endTime);
       const now = Math.floor(Date.now() / 1000);
       const secondsLeft = endTime - now;
       const daysLeft = Math.floor(secondsLeft / (24 * 60 * 60));
@@ -568,18 +522,18 @@ export function usePredictionMarkets() {
         isResolved: status === "Resolved",
         outcome: (data as any).outcome !== null && (data as any).outcome !== undefined ? (data as any).outcome : null,
         endTime,
-        createdAt: toNum((data as any).created_at),
+        createdAt: toNum((data as any).createdAt),
         yesPrice,
         noPrice,
         endsIn,
-        bettors: toNum((data as any).unique_bettors),
-        totalBetsCount: toNum((data as any).total_bets_count),
+        bettors: toNum((data as any).uniqueBettors),
+        totalBetsCount: toNum((data as any).totalBetsCount),
         status,
         // Decentralized resolution fields
-        resolutionProposer: (data as any).resolution_proposer ? (data as any).resolution_proposer.toString() : null,
-        resolutionBond: toNum((data as any).resolution_bond) / Math.pow(10, USDC_DECIMALS),
-        challengeDeadline: (data as any).challenge_deadline ? toNum((data as any).challenge_deadline) : null,
-        isFinalized: (data as any).is_finalized || false,
+        resolutionProposer: (data as any).resolutionProposer ? (data as any).resolutionProposer.toString() : null,
+        resolutionBond: toNum((data as any).resolutionBond) / Math.pow(10, USDC_DECIMALS),
+        challengeDeadline: (data as any).challengeDeadline ? toNum((data as any).challengeDeadline) : null,
+        isFinalized: (data as any).isFinalized || false,
       };
     } catch (error: any) {
       console.error("Error fetching market:", error);
@@ -604,7 +558,6 @@ export function usePredictionMarkets() {
     placeBet,
     claimWinnings,
     resolveMarket,
-    finalizeResolution,
     getMarket,
     getUserUsdcAccount,
     refetch: () => Promise.all([fetchMarkets(), fetchUserBets()]),

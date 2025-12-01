@@ -1,8 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { TrendingUp, Users, Clock, Flame, ArrowRight } from "lucide-react";
+import { TrendingUp, Users, Clock, Flame, Target, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 interface MarketCardProps {
     id: string | number;
@@ -27,89 +27,171 @@ export function MarketCard({
     endsIn,
     bettors,
     trending,
-    delay = 0,
 }: MarketCardProps) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay }}
-            className="group relative"
-        >
-            <div className="absolute inset-0 bg-gradient-to-b from-[#00F3FF]/20 to-[#FF00FF]/20 rounded-xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
+    const [isHovered, setIsHovered] = useState(false);
+    const isUrgent = endsIn.includes("hour") || endsIn === "Soon";
 
-            <div className="relative glass-card rounded-xl p-6 h-full flex flex-col border border-white/10 group-hover:border-[#00F3FF]/50 transition-colors">
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4">
-                    <div className="flex gap-2">
-                        <span className="px-2 py-1 rounded bg-white/5 text-xs font-bold uppercase tracking-wider text-slate-300 border border-white/10">
+    // Category colors
+    const getCategoryStyle = () => {
+        switch (category.toLowerCase()) {
+            case "price":
+            case "crypto":
+                return "category-pill-crypto";
+            case "sports":
+                return "category-pill-sports";
+            case "meme":
+                return "category-pill-meme";
+            case "politics":
+                return "category-pill-politics";
+            default:
+                return "category-pill-crypto";
+        }
+    };
+
+    return (
+        <div
+            className="group relative"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {/* Simplified glow on hover */}
+            {isHovered && (
+                <div
+                    className="absolute -inset-1 rounded-2xl opacity-50 transition-opacity duration-300"
+                    style={{
+                        background: "linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(0, 240, 255, 0.3))",
+                        filter: "blur(15px)",
+                    }}
+                />
+            )}
+
+            {/* Card */}
+            <div className="relative game-card p-6 h-full flex flex-col bg-[#0a0a0f]/90 backdrop-blur-xl border border-white/10 rounded-2xl transition-transform hover:scale-[1.02]">
+                {/* Header Row */}
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex flex-wrap gap-2">
+                        <span className={`category-pill ${getCategoryStyle()}`}>
                             {category}
                         </span>
                         {trending && (
-                            <span className="px-2 py-1 rounded bg-[#FF3366]/20 text-[#FF3366] text-xs font-bold uppercase tracking-wider border border-[#FF3366]/30 flex items-center gap-1 animate-pulse">
-                                <Flame className="w-3 h-3" /> Hot
+                            <span className="hot-badge">
+                                <Flame className="w-3 h-3" />
+                                HOT
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-slate-400 font-numbers">
-                        <Clock className="w-3 h-3" /> {endsIn}
+
+                    {/* Timer */}
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+            ${isUrgent
+                            ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse"
+                            : "bg-white/5 text-gray-400 border border-white/10"
+                        }`}
+                    >
+                        <Clock className="w-3 h-3" />
+                        <span className="font-numbers">{endsIn}</span>
                     </div>
                 </div>
 
                 {/* Question */}
                 <Link href={`/markets/${id}`} className="flex-grow">
-                    <h3 className="text-lg font-bold mb-4 leading-snug group-hover:text-[#00F3FF] transition-colors">
+                    <h3 className="text-xl font-bold mb-4 leading-snug text-white group-hover:text-[#00f0ff] transition-colors">
                         {question}
                     </h3>
                 </Link>
 
-                {/* Stats */}
-                <div className="flex items-center justify-between mb-6 text-xs text-slate-400 font-numbers">
-                    <div className="flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 text-[#00FF9D]" /> {volume} Vol
+                {/* Stats Row */}
+                <div className="flex items-center gap-4 mb-5 text-sm">
+                    <div className="flex items-center gap-1.5 text-gray-400">
+                        <TrendingUp className="w-4 h-4 text-[#00ff88]" />
+                        <span className="font-numbers">{volume}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3 text-[#00F3FF]" /> {bettors}
+                    <div className="flex items-center gap-1.5 text-gray-400">
+                        <Users className="w-4 h-4 text-[#00f0ff]" />
+                        <span className="font-numbers">{bettors}</span>
+                    </div>
+                </div>
+
+                {/* Battle Bar - Simplified animation */}
+                <div className="mb-4">
+                    <div className="relative h-4 rounded-full overflow-hidden bg-black/50 border border-white/5">
+                        {/* YES Side */}
+                        <div
+                            className="absolute top-0 left-0 h-full rounded-l-full transition-all duration-700"
+                            style={{
+                                width: `${yesPrice}%`,
+                                background: "linear-gradient(90deg, #00ff88, #00cc66)",
+                                boxShadow: isHovered ? "0 0 15px rgba(0, 255, 136, 0.4)" : "none",
+                            }}
+                        />
+                        {/* NO Side */}
+                        <div
+                            className="absolute top-0 right-0 h-full rounded-r-full transition-all duration-700"
+                            style={{
+                                width: `${noPrice}%`,
+                                background: "linear-gradient(90deg, #cc0033, #ff0044)",
+                                boxShadow: isHovered ? "0 0 15px rgba(255, 0, 68, 0.4)" : "none",
+                            }}
+                        />
+
+                        {/* Center Divider */}
+                        <div
+                            className="absolute top-1/2 -translate-y-1/2 w-1 h-full bg-white/50"
+                            style={{ left: `${yesPrice}%`, transform: "translateX(-50%) translateY(-50%)" }}
+                        />
                     </div>
                 </div>
 
-                {/* Battle Bar */}
-                <div className="space-y-3">
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden flex">
-                        <div
-                            className="h-full bg-[#00FF9D] shadow-[0_0_10px_#00FF9D]"
-                            style={{ width: `${yesPrice}%` }}
-                        />
-                        <div
-                            className="h-full bg-[#FF3366] shadow-[0_0_10px_#FF3366]"
-                            style={{ width: `${noPrice}%` }}
-                        />
+                {/* VS Display */}
+                <div className="flex items-center justify-between">
+                    {/* YES Button */}
+                    <Link href={`/markets/${id}`} className="flex-1">
+                        <div className="text-left p-3 rounded-xl bg-[#00ff88]/5 border border-[#00ff88]/20
+                         hover:bg-[#00ff88]/20 hover:border-[#00ff88]/50 transition-all cursor-pointer">
+                            <div className="text-xs text-gray-400 mb-1 font-game">YES</div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-2xl font-black text-[#00ff88] font-numbers">
+                                    {yesPrice}
+                                </span>
+                                <span className="text-lg text-[#00ff88]/70">%</span>
+                            </div>
+                        </div>
+                    </Link>
+
+                    {/* VS Badge */}
+                    <div className="px-4">
+                        <div className="font-pixel text-xl text-[#ffd700]">
+                            VS
+                        </div>
                     </div>
 
-                    <div className="flex justify-between items-center">
-                        <button className="flex-1 text-left group/yes">
-                            <div className="text-xs text-slate-400 mb-1">YES</div>
-                            <div className="text-xl font-black text-[#00FF9D] font-numbers group-hover/yes:scale-110 transition-transform origin-left">
-                                {yesPrice}%
+                    {/* NO Button */}
+                    <Link href={`/markets/${id}`} className="flex-1">
+                        <div className="text-right p-3 rounded-xl bg-[#ff0044]/5 border border-[#ff0044]/20
+                         hover:bg-[#ff0044]/20 hover:border-[#ff0044]/50 transition-all cursor-pointer">
+                            <div className="text-xs text-gray-400 mb-1 font-game text-right">NO</div>
+                            <div className="flex items-baseline gap-1 justify-end">
+                                <span className="text-2xl font-black text-[#ff0044] font-numbers">
+                                    {noPrice}
+                                </span>
+                                <span className="text-lg text-[#ff0044]/70">%</span>
                             </div>
-                        </button>
-
-                        <Link href={`/markets/${id}`}>
-                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#00F3FF] hover:text-black transition-colors">
-                                <ArrowRight className="w-4 h-4" />
-                            </div>
-                        </Link>
-
-                        <button className="flex-1 text-right group/no">
-                            <div className="text-xs text-slate-400 mb-1">NO</div>
-                            <div className="text-xl font-black text-[#FF3366] font-numbers group-hover/no:scale-110 transition-transform origin-right">
-                                {noPrice}%
-                            </div>
-                        </button>
-                    </div>
+                        </div>
+                    </Link>
                 </div>
+
+                {/* Quick Play Button */}
+                <Link href={`/markets/${id}`}>
+                    <button className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00aa]/10
+                       border border-[#00f0ff]/30 text-[#00f0ff] font-game text-sm
+                       hover:from-[#00f0ff]/20 hover:to-[#ff00aa]/20 hover:border-[#00f0ff]/50
+                       transition-all flex items-center justify-center gap-2 group/play">
+                        <Target className="w-4 h-4" />
+                        <span>PLACE BET</span>
+                        <ChevronRight className="w-4 h-4 group-hover/play:translate-x-1 transition-transform" />
+                    </button>
+                </Link>
             </div>
-        </motion.div>
+        </div>
     );
 }

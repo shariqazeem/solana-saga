@@ -1,336 +1,335 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  Trophy, TrendingUp, Target, Flame, Star, Award,
-  ArrowLeft, Users, DollarSign, Zap, Crown, Medal
-} from "lucide-react";
 import { useState } from "react";
-import Link from "next/link";
-import { WalletButton } from "@/components/WalletButton";
+import { 
+  Trophy, Crown, Medal, Star, Flame, TrendingUp, 
+  ChevronDown, Zap, Target, Award, Shield
+} from "lucide-react";
 
-// Mock leaderboard data
-const MOCK_LEADERBOARD = {
-  daily: [
-    { rank: 1, user: "sigma.sol", avatar: "🦈", winRate: 94, totalBets: 28, netProfit: "+$12,450", streak: 8 },
-    { rank: 2, user: "chad.sol", avatar: "💪", winRate: 89, totalBets: 45, netProfit: "+$9,230", streak: 6 },
-    { rank: 3, user: "degen.sol", avatar: "🎲", winRate: 87, totalBets: 67, netProfit: "+$7,890", streak: 5 },
-    { rank: 4, user: "whale.sol", avatar: "🐋", winRate: 82, totalBets: 23, netProfit: "+$6,540", streak: 4 },
-    { rank: 5, user: "moon.sol", avatar: "🌙", winRate: 79, totalBets: 34, netProfit: "+$5,230", streak: 3 },
-    { rank: 6, user: "ape.sol", avatar: "🦍", winRate: 76, totalBets: 56, netProfit: "+$4,120", streak: 7 },
-    { rank: 7, user: "bull.sol", avatar: "🐂", winRate: 73, totalBets: 41, netProfit: "+$3,890", streak: 2 },
-    { rank: 8, user: "rocket.sol", avatar: "🚀", winRate: 71, totalBets: 38, netProfit: "+$3,450", streak: 5 },
-    { rank: 9, user: "diamond.sol", avatar: "💎", winRate: 68, totalBets: 29, netProfit: "+$2,980", streak: 1 },
-    { rank: 10, user: "king.sol", avatar: "👑", winRate: 65, totalBets: 52, netProfit: "+$2,560", streak: 4 },
-  ],
-  weekly: [
-    { rank: 1, user: "sigma.sol", avatar: "🦈", winRate: 92, totalBets: 156, netProfit: "+$45,230", streak: 12 },
-    { rank: 2, user: "whale.sol", avatar: "🐋", winRate: 88, totalBets: 134, netProfit: "+$38,450", streak: 9 },
-    { rank: 3, user: "chad.sol", avatar: "💪", winRate: 85, totalBets: 189, netProfit: "+$32,100", streak: 8 },
-    { rank: 4, user: "moon.sol", avatar: "🌙", winRate: 83, totalBets: 98, netProfit: "+$28,790", streak: 11 },
-    { rank: 5, user: "degen.sol", avatar: "🎲", winRate: 81, totalBets: 245, netProfit: "+$25,340", streak: 6 },
-    { rank: 6, user: "ape.sol", avatar: "🦍", winRate: 78, totalBets: 167, netProfit: "+$22,450", streak: 7 },
-    { rank: 7, user: "bull.sol", avatar: "🐂", winRate: 76, totalBets: 143, netProfit: "+$19,230", streak: 5 },
-    { rank: 8, user: "rocket.sol", avatar: "🚀", winRate: 74, totalBets: 121, netProfit: "+$17,890", streak: 4 },
-    { rank: 9, user: "diamond.sol", avatar: "💎", winRate: 71, totalBets: 156, netProfit: "+$15,670", streak: 3 },
-    { rank: 10, user: "king.sol", avatar: "👑", winRate: 69, totalBets: 178, netProfit: "+$13,450", streak: 8 },
-  ],
-  allTime: [
-    { rank: 1, user: "sigma.sol", avatar: "🦈", winRate: 91, totalBets: 1243, netProfit: "+$234,560", streak: 23 },
-    { rank: 2, user: "whale.sol", avatar: "🐋", winRate: 87, totalBets: 1098, netProfit: "+$198,340", streak: 18 },
-    { rank: 3, user: "chad.sol", avatar: "💪", winRate: 84, totalBets: 1567, netProfit: "+$176,230", streak: 15 },
-    { rank: 4, user: "moon.sol", avatar: "🌙", winRate: 82, totalBets: 876, netProfit: "+$154,890", streak: 21 },
-    { rank: 5, user: "degen.sol", avatar: "🎲", winRate: 79, totalBets: 2134, netProfit: "+$142,670", streak: 12 },
-    { rank: 6, user: "ape.sol", avatar: "🦍", winRate: 77, totalBets: 1456, netProfit: "+$128,450", streak: 16 },
-    { rank: 7, user: "bull.sol", avatar: "🐂", winRate: 75, totalBets: 1289, netProfit: "+$115,230", streak: 9 },
-    { rank: 8, user: "rocket.sol", avatar: "🚀", winRate: 73, totalBets: 1034, netProfit: "+$103,890", streak: 14 },
-    { rank: 9, user: "diamond.sol", avatar: "💎", winRate: 71, totalBets: 1678, netProfit: "+$95,670", streak: 7 },
-    { rank: 10, user: "king.sol", avatar: "👑", winRate: 69, totalBets: 1823, netProfit: "+$87,450", streak: 11 },
-  ],
+const TIME_FILTERS = [
+  { id: "weekly", name: "This Week" },
+  { id: "monthly", name: "This Month" },
+  { id: "alltime", name: "All Time" },
+];
+
+const leaderboardData = [
+  { rank: 1, name: "sigma.sol", avatar: "🦈", winRate: 94, earnings: 12450, streak: 8, level: 42, bets: 156 },
+  { rank: 2, name: "chad.sol", avatar: "💪", winRate: 89, earnings: 9230, streak: 6, level: 38, bets: 134 },
+  { rank: 3, name: "degen.sol", avatar: "🎲", winRate: 87, earnings: 7890, streak: 5, level: 35, bets: 198 },
+  { rank: 4, name: "whale.sol", avatar: "🐋", winRate: 82, earnings: 6540, streak: 4, level: 31, bets: 89 },
+  { rank: 5, name: "moon.sol", avatar: "🌙", winRate: 79, earnings: 5230, streak: 3, level: 28, bets: 112 },
+  { rank: 6, name: "rocket.sol", avatar: "🚀", winRate: 77, earnings: 4890, streak: 2, level: 26, bets: 145 },
+  { rank: 7, name: "diamond.sol", avatar: "💎", winRate: 75, earnings: 4120, streak: 0, level: 24, bets: 167 },
+  { rank: 8, name: "ape.sol", avatar: "🦍", winRate: 73, earnings: 3650, streak: 1, level: 22, bets: 234 },
+  { rank: 9, name: "bull.sol", avatar: "🐂", winRate: 71, earnings: 3200, streak: 0, level: 20, bets: 98 },
+  { rank: 10, name: "ninja.sol", avatar: "🥷", winRate: 69, earnings: 2890, streak: 2, level: 19, bets: 76 },
+];
+
+const getRankStyle = (rank: number) => {
+  switch (rank) {
+    case 1: return { bg: "from-[#ffd700]/30 to-[#ff8800]/30", border: "#ffd700", glow: "#ffd700" };
+    case 2: return { bg: "from-[#c0c0c0]/30 to-[#808080]/30", border: "#c0c0c0", glow: "#c0c0c0" };
+    case 3: return { bg: "from-[#cd7f32]/30 to-[#8b4513]/30", border: "#cd7f32", glow: "#cd7f32" };
+    default: return { bg: "from-white/5 to-white/5", border: "transparent", glow: "transparent" };
+  }
 };
 
-const TIMEFRAMES = ["Daily", "Weekly", "All Time"] as const;
-type Timeframe = typeof TIMEFRAMES[number];
+const getRankIcon = (rank: number) => {
+  switch (rank) {
+    case 1: return Crown;
+    case 2: return Medal;
+    case 3: return Medal;
+    default: return Star;
+  }
+};
 
 export default function LeaderboardPage() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>("Weekly");
-
-  const getLeaderboardData = () => {
-    switch (selectedTimeframe) {
-      case "Daily": return MOCK_LEADERBOARD.daily;
-      case "Weekly": return MOCK_LEADERBOARD.weekly;
-      case "All Time": return MOCK_LEADERBOARD.allTime;
-    }
-  };
-
-  const leaderboardData = getLeaderboardData();
+  const [timeFilter, setTimeFilter] = useState("weekly");
 
   return (
-    <div className="min-h-screen py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Hero Section */}
+    <div className="min-h-screen pt-24 pb-32 px-4">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity }}
+            className="inline-block mb-6"
+          >
+            <Trophy className="w-20 h-20 text-[#ffd700]" />
+          </motion.div>
+          <h1 className="text-4xl md:text-6xl font-game font-black mb-4">
+            <span className="text-white">HALL OF </span>
+            <span className="text-[#ffd700]">FAME</span>
+          </h1>
+          <p className="text-xl text-gray-400">
+            The greatest predictors on Solana
+          </p>
+        </motion.div>
+
+        {/* Time Filter */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          transition={{ delay: 0.1 }}
+          className="flex justify-center gap-2 mb-8"
         >
-          <Trophy className="w-20 h-20 mx-auto mb-6 animate-neon-pulse" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 20px #FFD700)' }} />
-          <h1 className="text-5xl md:text-7xl font-black mb-4 font-orbitron bg-gradient-to-r from-[#FFD700] via-[#FF1493] to-[#39FF14] bg-clip-text text-transparent">
-            Leaderboard
-          </h1>
-          <p className="text-xl text-slate-300 mb-8">
-            The best predictors on <span className="neon-text-green font-bold">Solana Saga</span>
-          </p>
+          {TIME_FILTERS.map((filter) => (
+            <motion.button
+              key={filter.id}
+              onClick={() => setTimeFilter(filter.id)}
+              className={`px-6 py-3 rounded-xl font-game text-sm transition-all ${
+                timeFilter === filter.id
+                  ? "bg-[#ffd700] text-black"
+                  : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10"
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {filter.name}
+            </motion.button>
+          ))}
+        </motion.div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <StatBox icon={<Users />} label="Total Predictors" value="12,543" color="from-blue-500 to-cyan-500" />
-            <StatBox icon={<Target />} label="Total Bets" value="89,234" color="from-purple-500 to-pink-500" />
-            <StatBox icon={<DollarSign />} label="Total Volume" value="$4.2M" color="from-emerald-500 to-green-500" />
-            <StatBox icon={<Flame />} label="Active Today" value="3,421" color="from-orange-500 to-red-500" />
+        {/* Top 3 Podium */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex justify-center items-end gap-4 mb-12 px-4"
+        >
+          {/* 2nd Place */}
+          <div className="flex-1 max-w-[200px]">
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="game-card p-4 text-center relative overflow-hidden"
+              style={{
+                background: "linear-gradient(180deg, rgba(192,192,192,0.2), rgba(192,192,192,0.05))",
+                borderColor: "#c0c0c0",
+              }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-[#c0c0c0]" />
+              <div className="text-4xl mb-2">{leaderboardData[1].avatar}</div>
+              <Medal className="w-6 h-6 text-[#c0c0c0] mx-auto mb-1" />
+              <div className="font-game text-white text-sm truncate">{leaderboardData[1].name}</div>
+              <div className="text-2xl font-numbers font-bold text-[#00ff88]">+${leaderboardData[1].earnings.toLocaleString()}</div>
+              <div className="text-xs text-gray-400">2nd Place</div>
+            </motion.div>
+            <div className="h-20 bg-gradient-to-t from-[#c0c0c0]/20 to-[#c0c0c0]/5 rounded-b-xl" />
+          </div>
+
+          {/* 1st Place */}
+          <div className="flex-1 max-w-[220px]">
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="game-card p-6 text-center relative overflow-hidden"
+              style={{
+                background: "linear-gradient(180deg, rgba(255,215,0,0.2), rgba(255,215,0,0.05))",
+                borderColor: "#ffd700",
+                boxShadow: "0 0 30px rgba(255,215,0,0.2)",
+              }}
+            >
+              <motion.div 
+                className="absolute top-0 left-0 right-0 h-1 bg-[#ffd700]"
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <div className="text-5xl mb-2">{leaderboardData[0].avatar}</div>
+              <Crown className="w-8 h-8 text-[#ffd700] mx-auto mb-1" />
+              <div className="font-game text-white truncate">{leaderboardData[0].name}</div>
+              <div className="text-3xl font-numbers font-bold text-[#00ff88]">+${leaderboardData[0].earnings.toLocaleString()}</div>
+              <div className="text-xs text-[#ffd700]">🏆 Champion</div>
+            </motion.div>
+            <div className="h-28 bg-gradient-to-t from-[#ffd700]/20 to-[#ffd700]/5 rounded-b-xl" />
+          </div>
+
+          {/* 3rd Place */}
+          <div className="flex-1 max-w-[200px]">
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="game-card p-4 text-center relative overflow-hidden"
+              style={{
+                background: "linear-gradient(180deg, rgba(205,127,50,0.2), rgba(205,127,50,0.05))",
+                borderColor: "#cd7f32",
+              }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-[#cd7f32]" />
+              <div className="text-4xl mb-2">{leaderboardData[2].avatar}</div>
+              <Medal className="w-6 h-6 text-[#cd7f32] mx-auto mb-1" />
+              <div className="font-game text-white text-sm truncate">{leaderboardData[2].name}</div>
+              <div className="text-2xl font-numbers font-bold text-[#00ff88]">+${leaderboardData[2].earnings.toLocaleString()}</div>
+              <div className="text-xs text-gray-400">3rd Place</div>
+            </motion.div>
+            <div className="h-12 bg-gradient-to-t from-[#cd7f32]/20 to-[#cd7f32]/5 rounded-b-xl" />
           </div>
         </motion.div>
 
-        {/* Timeframe Selector */}
-        <section className="mb-8">
-          <div className="flex justify-center gap-4">
-            {TIMEFRAMES.map((timeframe) => (
-              <button
-                key={timeframe}
-                onClick={() => setSelectedTimeframe(timeframe)}
-                className={`px-8 py-3 rounded-xl font-bold text-lg transition-all font-orbitron ${selectedTimeframe === timeframe
-                    ? "bg-gradient-to-r from-[#FFD700] to-[#FF6B00] text-black shadow-xl shadow-yellow-500/50 scale-105"
-                    : "neon-button-secondary"
-                  }`}
-              >
-                {timeframe}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Top 3 Podium */}
-        <section className="mb-12">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-6 items-end">
-              {/* 2nd Place */}
-              <PodiumCard
-                rank={2}
-                user={leaderboardData[1]}
-                delay={0.2}
-              />
-
-              {/* 1st Place */}
-              <PodiumCard
-                rank={1}
-                user={leaderboardData[0]}
-                delay={0.1}
-                isWinner
-              />
-
-              {/* 3rd Place */}
-              <PodiumCard
-                rank={3}
-                user={leaderboardData[2]}
-                delay={0.3}
-              />
-            </div>
-          </div>
-        </section>
-
         {/* Full Leaderboard */}
-        <section className="pb-24">
-          <div className="max-w-5xl mx-auto">
-            <div className="glass-card rounded-2xl overflow-hidden">
-              {/* Table Header */}
-              <div className="px-6 py-4 border-b border-[#00E5FF]/20" style={{ background: 'rgba(0, 229, 255, 0.05)' }}>
-                <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-slate-300 font-orbitron">
-                  <div className="col-span-1">Rank</div>
-                  <div className="col-span-4">User</div>
-                  <div className="col-span-2 text-center">Win Rate</div>
-                  <div className="col-span-2 text-center">Total Bets</div>
-                  <div className="col-span-2 text-center">Streak</div>
-                  <div className="col-span-1 text-right">Profit</div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="game-card overflow-hidden"
+        >
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-white/5 border-b border-white/10 text-xs font-game text-gray-400">
+            <div className="col-span-1">Rank</div>
+            <div className="col-span-4">Player</div>
+            <div className="col-span-2 text-center">Win Rate</div>
+            <div className="col-span-2 text-center hidden md:block">Streak</div>
+            <div className="col-span-3 text-right">Earnings</div>
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-white/5">
+            {leaderboardData.map((player, index) => {
+              const style = getRankStyle(player.rank);
+              const RankIcon = getRankIcon(player.rank);
+
+              return (
+                <motion.div
+                  key={player.name}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                  className={`grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-white/5 transition-colors group ${
+                    player.rank <= 3 ? `bg-gradient-to-r ${style.bg}` : ""
+                  }`}
+                >
+                  {/* Rank */}
+                  <div className="col-span-1">
+                    {player.rank <= 3 ? (
+                      <motion.div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center"
+                        style={{
+                          background: `linear-gradient(135deg, ${style.border}40, ${style.border}20)`,
+                          border: `2px solid ${style.border}`,
+                          boxShadow: `0 0 15px ${style.glow}30`,
+                        }}
+                        whileHover={{ scale: 1.1 }}
+                      >
+                        <RankIcon className="w-5 h-5" style={{ color: style.border }} />
+                      </motion.div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center font-numbers font-bold text-gray-400">
+                        {player.rank}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Player */}
+                  <div className="col-span-4 flex items-center gap-3">
+                    <div className="text-2xl">{player.avatar}</div>
+                    <div>
+                      <div className="font-game text-white group-hover:text-[#00f0ff] transition-colors">
+                        {player.name}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Level {player.level} • {player.bets} bets
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Win Rate */}
+                  <div className="col-span-2 text-center">
+                    <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#00ff88]/10">
+                      <Target className="w-3 h-3 text-[#00ff88]" />
+                      <span className="font-numbers font-bold text-[#00ff88]">{player.winRate}%</span>
+                    </div>
+                  </div>
+
+                  {/* Streak */}
+                  <div className="col-span-2 text-center hidden md:block">
+                    {player.streak > 0 ? (
+                      <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#ff8800]/10">
+                        <Flame className="w-3 h-3 text-[#ff8800]" />
+                        <span className="font-numbers font-bold text-[#ff8800]">{player.streak}</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </div>
+
+                  {/* Earnings */}
+                  <div className="col-span-3 text-right">
+                    <div className="text-xl font-numbers font-bold text-[#00ff88]">
+                      +${player.earnings.toLocaleString()}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Your Position */}
+          <div className="px-6 py-5 bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00aa]/10 border-t border-[#00f0ff]/30">
+            <div className="grid grid-cols-12 gap-4 items-center">
+              <div className="col-span-1">
+                <div className="w-10 h-10 rounded-xl bg-[#00f0ff]/20 border border-[#00f0ff]/50 flex items-center justify-center font-numbers font-bold text-[#00f0ff]">
+                  42
                 </div>
               </div>
-
-              {/* Table Rows */}
-              <div className="divide-y divide-[#00E5FF]/10">
-                {leaderboardData.map((user, index) => (
-                  <LeaderboardRow
-                    key={user.user}
-                    user={user}
-                    delay={0.4 + index * 0.05}
-                  />
-                ))}
+              <div className="col-span-4 flex items-center gap-3">
+                <div className="text-2xl">🎮</div>
+                <div>
+                  <div className="font-game text-[#00f0ff]">You</div>
+                  <div className="text-xs text-gray-500">Level 12 • 23 bets</div>
+                </div>
+              </div>
+              <div className="col-span-2 text-center">
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#00ff88]/10">
+                  <Target className="w-3 h-3 text-[#00ff88]" />
+                  <span className="font-numbers font-bold text-[#00ff88]">68%</span>
+                </div>
+              </div>
+              <div className="col-span-2 text-center hidden md:block">
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#ff8800]/10">
+                  <Flame className="w-3 h-3 text-[#ff8800]" />
+                  <span className="font-numbers font-bold text-[#ff8800]">2</span>
+                </div>
+              </div>
+              <div className="col-span-3 text-right">
+                <div className="text-xl font-numbers font-bold text-[#00ff88]">+$340</div>
               </div>
             </div>
           </div>
-        </section>
+        </motion.div>
 
-        {/* Your Rank (if connected) */}
-        <section className="pb-24">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
-              className="glass-card rounded-2xl p-8 text-center relative overflow-hidden animate-neon-border"
-              style={{ borderWidth: '2px' }}
-            >
-              <Zap className="w-12 h-12 mx-auto mb-4 neon-text animate-neon-pulse" />
-              <h3 className="text-2xl font-bold mb-2 font-orbitron neon-text-magenta">Want to see your rank?</h3>
-              <p className="text-slate-300 mb-6">
-                Connect your wallet to track your stats and compete for the <span className="neon-text-green font-bold">top spot!</span>
-              </p>
-              <div className="flex justify-center">
-                <WalletButton />
-              </div>
-              <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-br from-[#FF1493]/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 -z-10" />
-            </motion.div>
-          </div>
-        </section>
+        {/* Climb the Ranks CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-8 game-card p-8 text-center"
+        >
+          <Zap className="w-12 h-12 text-[#ffd700] mx-auto mb-4" />
+          <h3 className="font-game text-2xl text-white mb-2">Ready to Climb?</h3>
+          <p className="text-gray-400 mb-6">
+            Place more winning bets to rise up the leaderboard!
+          </p>
+          <motion.button
+            className="arcade-btn arcade-btn-primary px-8 py-4"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Start Betting
+            </span>
+          </motion.button>
+        </motion.div>
       </div>
     </div>
-  );
-}
-
-function StatBox({ icon, label, value, color }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: string;
-}) {
-  return (
-    <div className="glass-card rounded-xl p-4 group">
-      <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${color} mb-3 animate-neon-pulse shadow-lg`}>
-        {icon}
-      </div>
-      <div className="text-2xl font-black mb-1 font-numbers neon-text">{value}</div>
-      <div className="text-sm text-slate-300">{label}</div>
-    </div>
-  );
-}
-
-function PodiumCard({ rank, user, delay, isWinner = false }: {
-  rank: number;
-  user: any;
-  delay: number;
-  isWinner?: boolean;
-}) {
-  const getRankColor = (rank: number) => {
-    if (rank === 1) return "from-[#FFD700] to-[#FFA500]";
-    if (rank === 2) return "from-[#C0C0C0] to-[#A8A8A8]";
-    if (rank === 3) return "from-[#CD7F32] to-[#B87333]";
-    return "from-slate-600 to-slate-700";
-  };
-
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="w-8 h-8" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 10px #FFD700)' }} />;
-    if (rank === 2) return <Medal className="w-8 h-8" style={{ color: '#C0C0C0', filter: 'drop-shadow(0 0 10px #C0C0C0)' }} />;
-    if (rank === 3) return <Award className="w-8 h-8" style={{ color: '#CD7F32', filter: 'drop-shadow(0 0 10px #CD7F32)' }} />;
-    return null;
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay }}
-      className={`glass-card rounded-2xl p-6 hover:scale-105 transition-all relative overflow-hidden ${isWinner
-          ? "border-2 border-[#FFD700] shadow-xl shadow-yellow-500/50 md:-translate-y-8 animate-neon-pulse"
-          : rank === 2
-            ? "border-2 border-[#C0C0C0] shadow-xl shadow-slate-400/30"
-            : "border-2 border-[#CD7F32] shadow-xl shadow-orange-600/30"
-        }`}
-    >
-      <div className={`w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br ${getRankColor(rank)} flex items-center justify-center text-4xl font-black relative shadow-lg`}>
-        {rank === 1 && (
-          <div className="absolute -top-6 animate-bounce">
-            {getRankIcon(rank)}
-          </div>
-        )}
-        <div className="text-5xl">{user.avatar}</div>
-      </div>
-
-      <div className={`font-black mb-2 font-orbitron ${isWinner ? "text-2xl" : "text-xl"}`}>
-        {user.user}
-      </div>
-
-      <div className="text-3xl font-black neon-text-green mb-4 font-numbers">
-        {user.netProfit}
-      </div>
-
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-slate-300">Win Rate:</span>
-          <span className="font-bold neon-text-green font-numbers">{user.winRate}%</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-slate-300">Bets:</span>
-          <span className="font-bold font-numbers">{user.totalBets}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-slate-300">Streak:</span>
-          <span className="font-bold flex items-center gap-1 font-numbers">
-            <Flame className="w-3 h-3" style={{ color: '#FF6B00', filter: 'drop-shadow(0 0 5px #FF6B00)' }} />
-            {user.streak}
-          </span>
-        </div>
-      </div>
-
-      <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-br from-[#FFD700]/10 to-transparent rounded-full blur-2xl" />
-    </motion.div>
-  );
-}
-
-function LeaderboardRow({ user, delay }: { user: any; delay: number }) {
-  const getRankDisplay = (rank: number) => {
-    if (rank === 1) return <span className="text-2xl">🥇</span>;
-    if (rank === 2) return <span className="text-2xl">🥈</span>;
-    if (rank === 3) return <span className="text-2xl">🥉</span>;
-    return <span className="font-bold text-slate-400">#{rank}</span>;
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, delay }}
-      className="px-6 py-4 hover:bg-[#00E5FF]/5 transition-all cursor-pointer group"
-    >
-      <div className="grid grid-cols-12 gap-4 items-center">
-        <div className="col-span-1 text-center">
-          {getRankDisplay(user.rank)}
-        </div>
-
-        <div className="col-span-4 flex items-center gap-3">
-          <div className="text-3xl">{user.avatar}</div>
-          <div className="font-bold font-orbitron group-hover:neon-text transition-all">{user.user}</div>
-        </div>
-
-        <div className="col-span-2 text-center">
-          <div className="inline-flex px-3 py-1 bg-[#39FF14]/20 neon-text-green rounded-lg font-bold font-numbers border border-[#39FF14]/30">
-            {user.winRate}%
-          </div>
-        </div>
-
-        <div className="col-span-2 text-center font-semibold font-numbers">
-          {user.totalBets}
-        </div>
-
-        <div className="col-span-2 text-center">
-          <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#FF6B00]/20 rounded-lg font-bold font-numbers border border-[#FF6B00]/30" style={{ color: '#FF6B00' }}>
-            <Flame className="w-4 h-4" />
-            {user.streak}
-          </div>
-        </div>
-
-        <div className="col-span-1 text-right font-black neon-text-green font-numbers">
-          {user.netProfit}
-        </div>
-      </div>
-    </motion.div>
   );
 }

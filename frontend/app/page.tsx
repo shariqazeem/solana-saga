@@ -7,15 +7,19 @@ import { HowItWorks } from "@/components/home/HowItWorks";
 import { HotMarkets } from "@/components/home/HotMarkets";
 import { LeaderboardPreview } from "@/components/home/LeaderboardPreview";
 import { CTA } from "@/components/home/CTA";
+import { Achievements } from "@/components/home/Achievements";
+import { LiveFeed } from "@/components/home/LiveFeed";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen">
       <Hero />
       <Stats />
+      <LiveFeed />
+      <HotMarkets />
       <Features />
       <HowItWorks />
-      <HotMarkets />
+      <Achievements />
       <LeaderboardPreview />
       <CTA />
     </div>

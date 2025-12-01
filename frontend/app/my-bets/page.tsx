@@ -1,251 +1,417 @@
 "use client";
 
-import { motion } from "framer-motion";
-import {
-  Trophy, TrendingUp, Clock, AlertCircle, Check,
-  ArrowRight, Target, DollarSign, Calendar
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { 
+  TrendingUp, TrendingDown, Clock, DollarSign, 
+  Zap, Trophy, Target, Flame, ChevronRight,
+  Check, X, Timer, Filter, BarChart3
+} from "lucide-react";
 import Link from "next/link";
-import confetti from "canvas-confetti";
-import { useAnchorWallet } from "@solana/wallet-adapter-react";
-import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
-import { WalletButton } from "@/components/WalletButton";
+
+const TABS = [
+  { id: "active", name: "Active Bets", icon: Timer },
+  { id: "won", name: "Won", icon: Trophy },
+  { id: "lost", name: "Lost", icon: X },
+];
+
+const mockBets = {
+  active: [
+    {
+      id: 1,
+      market: "Will SOL hit $300 by Dec 20?",
+      side: "YES",
+      amount: 250,
+      odds: 35,
+      potentialPayout: 714,
+      endsIn: "2 days",
+      currentOdds: 38,
+    },
+    {
+      id: 2,
+      market: "Jupiter reaches 10M transactions?",
+      side: "NO",
+      amount: 100,
+      odds: 38,
+      potentialPayout: 263,
+      endsIn: "5 days",
+      currentOdds: 35,
+    },
+    {
+      id: 3,
+      market: "Fed rate cut in December?",
+      side: "YES",
+      amount: 500,
+      odds: 85,
+      potentialPayout: 588,
+      endsIn: "12 days",
+      currentOdds: 87,
+    },
+  ],
+  won: [
+    {
+      id: 4,
+      market: "ETH ETF approved in 2024?",
+      side: "YES",
+      amount: 200,
+      odds: 72,
+      payout: 278,
+      profit: 78,
+      resolvedAt: "Nov 28",
+    },
+    {
+      id: 5,
+      market: "Bitcoin breaks 100k?",
+      side: "YES",
+      amount: 150,
+      odds: 45,
+      payout: 333,
+      profit: 183,
+      resolvedAt: "Nov 25",
+    },
+  ],
+  lost: [
+    {
+      id: 6,
+      market: "SOL flips ETH by Nov?",
+      side: "YES",
+      amount: 75,
+      odds: 8,
+      loss: 75,
+      resolvedAt: "Nov 30",
+    },
+  ],
+};
+
+const portfolioStats = {
+  totalInvested: 850,
+  potentialReturn: 1565,
+  totalWon: 511,
+  totalLost: 75,
+  winRate: 67,
+  currentStreak: 2,
+  level: 12,
+  xp: 2450,
+  xpToNext: 3000,
+};
 
 export default function MyBetsPage() {
-  const wallet = useAnchorWallet();
-  const { userBets, markets, loading, claimWinnings, refetch } = usePredictionMarkets();
-  const [claiming, setClaiming] = useState<string | null>(null);
-  const [claimError, setClaimError] = useState<string | null>(null);
-  const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
-
-  const handleClaimWinnings = async (betPublicKey: string) => {
-    setClaiming(betPublicKey);
-    setClaimError(null);
-    setClaimSuccess(null);
-
-    try {
-      const tx = await claimWinnings(betPublicKey);
-      confetti({
-        particleCount: 150,
-        spread: 90,
-        origin: { y: 0.6 },
-        colors: ['#00E5FF', '#FF1493', '#39FF14']
-      });
-      setClaimSuccess(`Winnings claimed! Transaction: ${tx.slice(0, 8)}...`);
-      await new Promise(r => setTimeout(r, 2000));
-      await refetch();
-    } catch (error: any) {
-      console.error("Error claiming winnings:", error);
-      setClaimError(error.message || "Failed to claim winnings");
-    } finally {
-      setClaiming(null);
-    }
-  };
-
-  if (!wallet) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse-glow">
-            <Target className="w-12 h-12 text-[#00F3FF]" />
-          </div>
-          <h1 className="text-3xl font-black mb-4 font-heading">Connect Wallet</h1>
-          <p className="text-slate-400 mb-8">
-            Connect your Solana wallet to view your betting history and track your performance.
-          </p>
-          <div className="flex justify-center">
-            <WalletButton />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculate stats
-  const totalWagered = userBets.reduce((acc, bet) => acc + bet.amount, 0);
-  const totalWon = userBets.reduce((acc, bet) => acc + (bet.claimed ? bet.payout : 0), 0);
-  const activeBetsCount = userBets.filter(bet => !bet.claimed && !bet.payout).length;
-  const winRate = userBets.length > 0
-    ? Math.round((userBets.filter(bet => bet.payout > 0).length / userBets.length) * 100)
-    : 0;
+  const [activeTab, setActiveTab] = useState("active");
 
   return (
-    <div className="min-h-screen py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen pt-24 pb-32 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-12"
+          className="mb-8"
         >
-          <h1 className="text-4xl md:text-6xl font-black mb-4 font-heading bg-gradient-to-r from-[#00F3FF] to-[#FF00FF] bg-clip-text text-transparent">
-            MY DASHBOARD
-          </h1>
-          <p className="text-xl text-slate-400">
-            Track your performance and claim your winnings.
+          <div className="flex items-center gap-3 mb-2">
+            <BarChart3 className="w-10 h-10 text-[#ff00aa]" />
+            <h1 className="text-4xl md:text-5xl font-game font-black">
+              <span className="text-white">MY </span>
+              <span className="text-[#ff00aa]">BETS</span>
+            </h1>
+          </div>
+          <p className="text-gray-400">
+            Track your positions and claim your winnings
           </p>
         </motion.div>
 
-        {/* HUD Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <StatCard
-            label="Total Wagered"
-            value={`$${totalWagered.toFixed(2)}`}
-            icon={<DollarSign />}
-            color="text-[#00F3FF]"
-            borderColor="border-[#00F3FF]/30"
-          />
-          <StatCard
-            label="Total Won"
-            value={`$${totalWon.toFixed(2)}`}
-            icon={<Trophy />}
-            color="text-[#FFD700]"
-            borderColor="border-[#FFD700]/30"
-          />
-          <StatCard
-            label="Active Bets"
-            value={activeBetsCount.toString()}
-            icon={<Target />}
-            color="text-[#FF00FF]"
-            borderColor="border-[#FF00FF]/30"
-          />
-          <StatCard
-            label="Win Rate"
-            value={`${winRate}%`}
-            icon={<TrendingUp />}
-            color="text-[#00FF9D]"
-            borderColor="border-[#00FF9D]/30"
-          />
-        </div>
+        {/* Portfolio Overview */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+        >
+          <div className="game-card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#00f0ff]/20 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-[#00f0ff]" />
+              </div>
+              <div className="text-sm text-gray-400">Active Position</div>
+            </div>
+            <div className="text-3xl font-numbers font-bold text-white">
+              ${portfolioStats.totalInvested}
+            </div>
+            <div className="text-sm text-[#00f0ff]">
+              → ${portfolioStats.potentialReturn} potential
+            </div>
+          </div>
 
-        {/* Messages */}
-        {claimError && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3"
-          >
-            <AlertCircle className="w-5 h-5 text-red-500" />
-            <span className="text-red-400">{claimError}</span>
-          </motion.div>
-        )}
-        {claimSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center gap-3"
-          >
-            <Check className="w-5 h-5 text-green-500" />
-            <span className="text-green-400">{claimSuccess}</span>
-          </motion.div>
-        )}
+          <div className="game-card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#00ff88]/20 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-[#00ff88]" />
+              </div>
+              <div className="text-sm text-gray-400">Total Won</div>
+            </div>
+            <div className="text-3xl font-numbers font-bold text-[#00ff88]">
+              +${portfolioStats.totalWon}
+            </div>
+            <div className="text-sm text-gray-500">
+              -{portfolioStats.totalLost} lost
+            </div>
+          </div>
+
+          <div className="game-card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#ffd700]/20 flex items-center justify-center">
+                <Target className="w-5 h-5 text-[#ffd700]" />
+              </div>
+              <div className="text-sm text-gray-400">Win Rate</div>
+            </div>
+            <div className="text-3xl font-numbers font-bold text-white">
+              {portfolioStats.winRate}%
+            </div>
+            <div className="flex items-center gap-1 text-sm text-[#ff8800]">
+              <Flame className="w-4 h-4" />
+              {portfolioStats.currentStreak} streak
+            </div>
+          </div>
+
+          <div className="game-card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#ff00aa]/20 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-[#ff00aa]" />
+              </div>
+              <div className="text-sm text-gray-400">Level {portfolioStats.level}</div>
+            </div>
+            <div className="text-3xl font-numbers font-bold text-white">
+              {portfolioStats.xp} XP
+            </div>
+            <div className="mt-2 h-2 rounded-full bg-black/50 overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-[#ff00aa] to-[#00f0ff]"
+                initial={{ width: 0 }}
+                animate={{ width: `${(portfolioStats.xp / portfolioStats.xpToNext) * 100}%` }}
+                transition={{ duration: 1 }}
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex gap-2 mb-6"
+        >
+          {TABS.map((tab) => (
+            <motion.button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl font-game text-sm transition-all ${
+                activeTab === tab.id
+                  ? "bg-white/10 border border-white/20 text-white"
+                  : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10"
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.name}
+              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                activeTab === tab.id ? "bg-white/20" : "bg-white/5"
+              }`}>
+                {mockBets[tab.id as keyof typeof mockBets].length}
+              </span>
+            </motion.button>
+          ))}
+        </motion.div>
 
         {/* Bets List */}
-        <div className="glass-panel rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-            <h2 className="text-xl font-bold font-heading">Bet History</h2>
-            <div className="text-sm text-slate-400 font-numbers">{userBets.length} Total Bets</div>
-          </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="space-y-4"
+        >
+          <AnimatePresence mode="wait">
+            {activeTab === "active" && (
+              <motion.div
+                key="active"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-4"
+              >
+                {mockBets.active.map((bet, index) => (
+                  <motion.div
+                    key={bet.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="game-card p-6"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            bet.side === "YES" 
+                              ? "bg-[#00ff88]/20 text-[#00ff88]" 
+                              : "bg-[#ff0044]/20 text-[#ff0044]"
+                          }`}>
+                            {bet.side}
+                          </span>
+                          <span className="text-xs text-gray-500">@ {bet.odds}%</span>
+                          {bet.currentOdds > bet.odds && bet.side === "YES" && (
+                            <span className="text-xs text-[#00ff88]">↑ now {bet.currentOdds}%</span>
+                          )}
+                          {bet.currentOdds < bet.odds && bet.side === "NO" && (
+                            <span className="text-xs text-[#00ff88]">↓ now {bet.currentOdds}%</span>
+                          )}
+                        </div>
+                        <h3 className="font-game text-white text-lg mb-2">{bet.market}</h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-400">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {bet.endsIn}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-6">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-400">Stake</div>
+                          <div className="text-xl font-numbers font-bold text-white">${bet.amount}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-gray-400">To Win</div>
+                          <div className="text-xl font-numbers font-bold text-[#00ff88]">${bet.potentialPayout}</div>
+                        </div>
+                        <Link href={`/markets/${bet.id}`}>
+                          <motion.button
+                            className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <ChevronRight className="w-5 h-5 text-gray-400" />
+                          </motion.button>
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
 
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 border-4 border-[#00F3FF] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-slate-400">Loading your bets...</p>
-            </div>
-          ) : userBets.length === 0 ? (
-            <div className="p-12 text-center">
-              <Target className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">No bets yet</h3>
-              <p className="text-slate-500 mb-6">Start predicting to see your history here.</p>
+            {activeTab === "won" && (
+              <motion.div
+                key="won"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-4"
+              >
+                {mockBets.won.map((bet, index) => (
+                  <motion.div
+                    key={bet.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="game-card p-6 border-[#00ff88]/30"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-full bg-[#00ff88] flex items-center justify-center">
+                            <Check className="w-4 h-4 text-black" />
+                          </div>
+                          <span className="text-xs text-[#00ff88] font-bold">WON</span>
+                          <span className="text-xs text-gray-500">• {bet.resolvedAt}</span>
+                        </div>
+                        <h3 className="font-game text-white text-lg mb-2">{bet.market}</h3>
+                        <div className="text-sm text-gray-400">
+                          Bet <span className={bet.side === "YES" ? "text-[#00ff88]" : "text-[#ff0044]"}>{bet.side}</span> @ {bet.odds}%
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-6">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-400">Stake</div>
+                          <div className="text-xl font-numbers font-bold text-white">${bet.amount}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-gray-400">Profit</div>
+                          <div className="text-xl font-numbers font-bold text-[#00ff88]">+${bet.profit}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+
+            {activeTab === "lost" && (
+              <motion.div
+                key="lost"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-4"
+              >
+                {mockBets.lost.map((bet, index) => (
+                  <motion.div
+                    key={bet.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="game-card p-6 border-[#ff0044]/30 opacity-75"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-full bg-[#ff0044] flex items-center justify-center">
+                            <X className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-xs text-[#ff0044] font-bold">LOST</span>
+                          <span className="text-xs text-gray-500">• {bet.resolvedAt}</span>
+                        </div>
+                        <h3 className="font-game text-white text-lg mb-2">{bet.market}</h3>
+                        <div className="text-sm text-gray-400">
+                          Bet <span className={bet.side === "YES" ? "text-[#00ff88]" : "text-[#ff0044]"}>{bet.side}</span> @ {bet.odds}%
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-6">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-400">Lost</div>
+                          <div className="text-xl font-numbers font-bold text-[#ff0044]">-${bet.loss}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Empty State */}
+          {mockBets[activeTab as keyof typeof mockBets].length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-20"
+            >
+              <div className="text-6xl mb-4">📭</div>
+              <h3 className="text-xl font-game text-white mb-2">No bets here</h3>
+              <p className="text-gray-400 mb-6">Start placing bets to see them here!</p>
               <Link href="/markets">
-                <button className="btn-primary px-8 py-3 rounded-full">
+                <motion.button
+                  className="arcade-btn arcade-btn-primary"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   Browse Markets
-                </button>
+                </motion.button>
               </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-white/5">
-              {userBets.map((bet, index) => (
-                <BetRow
-                  key={index}
-                  bet={bet}
-                  onClaim={handleClaimWinnings}
-                  claiming={claiming === bet.publicKey.toString()}
-                />
-              ))}
-            </div>
+            </motion.div>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon, color, borderColor }: any) {
-  return (
-    <div className={`glass-card p-6 rounded-xl border ${borderColor} relative overflow-hidden group`}>
-      <div className={`absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity ${color}`}>
-        {icon}
-      </div>
-      <div className="text-3xl font-black font-numbers mb-1 text-white">{value}</div>
-      <div className={`text-sm font-bold uppercase tracking-wider ${color}`}>{label}</div>
-    </div>
-  );
-}
-
-function BetRow({ bet, onClaim, claiming }: any) {
-  const isWin = bet.claimed && bet.payout > 0;
-  const isLoss = bet.claimed && bet.payout === 0;
-  const isPending = !bet.claimed;
-
-  return (
-    <div className="p-6 hover:bg-white/5 transition-colors flex flex-col md:flex-row items-center gap-6">
-      <div className="flex-grow">
-        <div className="flex items-center gap-3 mb-2">
-          <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider border ${bet.prediction
-              ? "bg-[#00FF9D]/10 text-[#00FF9D] border-[#00FF9D]/30"
-              : "bg-[#FF3366]/10 text-[#FF3366] border-[#FF3366]/30"
-            }`}>
-            {bet.prediction ? "YES" : "NO"}
-          </span>
-          <span className="text-slate-400 text-sm flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {new Date(bet.timestamp).toLocaleDateString()}
-          </span>
-        </div>
-        <h3 className="font-bold text-lg mb-1">{bet.marketName || "Unknown Market"}</h3>
-        <div className="text-sm text-slate-400 font-numbers">
-          Wagered: <span className="text-white">${bet.amount.toFixed(2)}</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-6">
-        <div className="text-right">
-          <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</div>
-          <div className={`font-bold ${isWin ? "text-[#00FF9D]" : isLoss ? "text-[#FF3366]" : "text-[#00F3FF]"
-            }`}>
-            {isWin ? "WON" : isLoss ? "LOST" : "PENDING"}
-          </div>
-        </div>
-
-        {isWin && (
-          <div className="text-right">
-            <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Payout</div>
-            <div className="font-black font-numbers text-[#00FF9D] text-xl">
-              +${bet.payout.toFixed(2)}
-            </div>
-          </div>
-        )}
-
-        {isPending && bet.canClaim && (
-          <button
-            onClick={() => onClaim(bet.publicKey.toString())}
-            disabled={claiming}
-            className="btn-primary px-6 py-2 rounded-lg text-sm"
-          >
-            {claiming ? "Claiming..." : "Claim Winnings"}
-          </button>
-        )}
+        </motion.div>
       </div>
     </div>
   );
