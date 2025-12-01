@@ -1,8 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -10,7 +7,7 @@
     --bg-primary: #0a0a0f;
     --bg-secondary: #12121a;
     --bg-card: rgba(18, 18, 26, 0.8);
-
+    
     /* Neon Colors */
     --neon-green: #00ff88;
     --neon-cyan: #00f0ff;
@@ -19,7 +16,7 @@
     --neon-yellow: #ffff00;
     --neon-orange: #ff8800;
     --neon-red: #ff0044;
-
+    
     /* Game UI Colors */
     --win-color: #00ff88;
     --lose-color: #ff0044;
@@ -28,11 +25,11 @@
     --gold: #ffd700;
     --silver: #c0c0c0;
     --bronze: #cd7f32;
-
+    
     /* Glass Effect */
     --glass-bg: rgba(10, 10, 15, 0.7);
     --glass-border: rgba(0, 240, 255, 0.2);
-
+    
     /* Fonts */
     --font-pixel: 'Press Start 2P', cursive;
     --font-game: 'Orbitron', sans-serif;
@@ -59,10 +56,7 @@
   }
 
   /* Gaming Typography */
-  h1,
-  h2,
-  h3,
-  .font-game {
+  h1, h2, h3, .font-game {
     font-family: var(--font-game);
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -100,7 +94,6 @@
 
 /* ========== GAMING UI COMPONENTS ========== */
 @layer components {
-
   /* Glass Card with Gaming Feel */
   .game-card {
     background: linear-gradient(135deg, rgba(0, 240, 255, 0.05) 0%, rgba(170, 0, 255, 0.05) 100%);
@@ -125,7 +118,7 @@
 
   .game-card:hover {
     border-color: var(--neon-cyan);
-    box-shadow:
+    box-shadow: 
       0 0 30px rgba(0, 240, 255, 0.2),
       inset 0 0 30px rgba(0, 240, 255, 0.05);
     transform: translateY(-4px) scale(1.01);
@@ -150,21 +143,21 @@
   .arcade-btn-primary {
     background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-cyan) 100%);
     color: #000;
-    box-shadow:
+    box-shadow: 
       0 4px 0 #00aa55,
       0 8px 20px rgba(0, 255, 136, 0.4);
   }
 
   .arcade-btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow:
+    box-shadow: 
       0 6px 0 #00aa55,
       0 12px 30px rgba(0, 255, 136, 0.5);
   }
 
   .arcade-btn-primary:active {
     transform: translateY(2px);
-    box-shadow:
+    box-shadow: 
       0 2px 0 #00aa55,
       0 4px 10px rgba(0, 255, 136, 0.3);
   }
@@ -359,7 +352,7 @@
     font-family: var(--font-pixel);
     font-size: 24px;
     color: var(--neon-yellow);
-    text-shadow:
+    text-shadow: 
       0 0 10px var(--neon-yellow),
       0 0 20px var(--neon-orange),
       2px 2px 0 #000;
@@ -483,8 +476,7 @@
     border: 2px solid rgba(0, 255, 136, 0.3);
   }
 
-  .versus-side-yes:hover,
-  .versus-side-yes.selected {
+  .versus-side-yes:hover, .versus-side-yes.selected {
     border-color: var(--neon-green);
     box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
     transform: scale(1.02);
@@ -495,8 +487,7 @@
     border: 2px solid rgba(255, 0, 68, 0.3);
   }
 
-  .versus-side-no:hover,
-  .versus-side-no.selected {
+  .versus-side-no:hover, .versus-side-no.selected {
     border-color: var(--neon-red);
     box-shadow: 0 0 30px rgba(255, 0, 68, 0.3);
     transform: scale(1.02);
@@ -580,138 +571,62 @@
 
 /* ========== ANIMATIONS ========== */
 @keyframes power-shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 @keyframes xp-pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.8;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 
 @keyframes live-pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.5;
-    transform: scale(1.2);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
 }
 
 @keyframes hot-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 10px rgba(255, 136, 0, 0.5);
-  }
-
-  50% {
-    box-shadow: 0 0 20px rgba(255, 68, 0, 0.8);
-  }
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 136, 0, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(255, 68, 0, 0.8); }
 }
 
 @keyframes fire-flicker {
-  0% {
-    transform: scale(1);
-  }
-
-  100% {
-    transform: scale(1.05);
-  }
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
 }
 
 @keyframes popup-appear {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0;
-  }
-
-  50% {
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
 @keyframes combo-bounce {
-
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.2);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 @keyframes urgent-flash {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 @keyframes vs-pulse {
-
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
 }
 
 @keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 @keyframes glow-pulse {
-
-  0%,
-  100% {
+  0%, 100% { 
     box-shadow: 0 0 20px currentColor;
     opacity: 1;
   }
-
-  50% {
+  50% { 
     box-shadow: 0 0 40px currentColor;
     opacity: 0.8;
   }
@@ -722,7 +637,6 @@
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -730,246 +644,63 @@
 }
 
 @keyframes shake {
-
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(-5px);
-  }
-
-  75% {
-    transform: translateX(5px);
-  }
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 @keyframes coin-flip {
-  0% {
-    transform: rotateY(0deg);
-  }
-
-  100% {
-    transform: rotateY(360deg);
-  }
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
 }
 
 @keyframes confetti-fall {
-  0% {
-    transform: translateY(-100vh) rotate(0deg);
-    opacity: 1;
-  }
-
-  100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
 @keyframes number-pop {
-  0% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.3);
-  }
-
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
 @keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @keyframes scan-line {
-  0% {
-    transform: translateY(-100%);
-  }
-
-  100% {
-    transform: translateY(100vh);
-  }
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }
 
 @keyframes neon-flicker {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  92% {
-    opacity: 1;
-  }
-
-  93% {
-    opacity: 0.8;
-  }
-
-  94% {
-    opacity: 1;
-  }
-
-  96% {
-    opacity: 0.9;
-  }
-
-  97% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.8; }
+  94% { opacity: 1; }
+  96% { opacity: 0.9; }
+  97% { opacity: 1; }
 }
 
 /* Utility Animation Classes */
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.5s ease-out forwards;
-}
-
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
-
-.animate-coin-flip {
-  animation: coin-flip 1s ease-in-out;
-}
-
-.animate-number-pop {
-  animation: number-pop 0.3s ease-out;
-}
-
-.animate-gradient {
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+.animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
+.animate-shake { animation: shake 0.5s ease-in-out; }
+.animate-coin-flip { animation: coin-flip 1s ease-in-out; }
+.animate-number-pop { animation: number-pop 0.3s ease-out; }
+.animate-gradient { 
   background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
+  animation: gradient-shift 3s ease infinite; 
 }
-
-.animate-neon-flicker {
-  animation: neon-flicker 3s infinite;
-}
-
-/* Glitch Effect */
-@keyframes glitch {
-  0% {
-    transform: translate(0);
-  }
-
-  20% {
-    transform: translate(-2px, 2px);
-  }
-
-  40% {
-    transform: translate(-2px, -2px);
-  }
-
-  60% {
-    transform: translate(2px, 2px);
-  }
-
-  80% {
-    transform: translate(2px, -2px);
-  }
-
-  100% {
-    transform: translate(0);
-  }
-}
-
-.animate-glitch {
-  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
-}
-
-/* Holographic Card Effect */
-.holo-card {
-  position: relative;
-  overflow: hidden;
-  background: rgba(18, 18, 26, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-}
-
-.holo-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 200%;
-  height: 100%;
-  background: linear-gradient(115deg,
-      transparent 0%,
-      transparent 25%,
-      rgba(0, 240, 255, 0.1) 45%,
-      rgba(255, 0, 170, 0.1) 50%,
-      rgba(0, 240, 255, 0.1) 55%,
-      transparent 75%,
-      transparent 100%);
-  transform: skewX(-15deg);
-  transition: left 0.5s;
-  pointer-events: none;
-}
-
-.holo-card:hover::before {
-  left: 100%;
-  transition: left 0.7s;
-}
-
-.holo-card:hover {
-  box-shadow:
-    0 0 20px rgba(0, 240, 255, 0.2),
-    inset 0 0 20px rgba(0, 240, 255, 0.05);
-  border-color: rgba(0, 240, 255, 0.4);
-}
-
-/* Cyberpunk Grid Background */
-.bg-cyber-grid {
-  background-size: 40px 40px;
-  background-image:
-    linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
-  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-}
-
-/* Scanline Overlay */
-.scanlines {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(to bottom,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0) 50%,
-      rgba(0, 0, 0, 0.1) 50%,
-      rgba(0, 0, 0, 0.1));
-  background-size: 100% 4px;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.3;
-}
+.animate-neon-flicker { animation: neon-flicker 3s infinite; }
 
 /* ========== BACKGROUND EFFECTS ========== */
 .bg-grid-pattern {
-  background-image:
+  background-image: 
     linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -982,11 +713,13 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: repeating-linear-gradient(0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.1) 2px,
-      rgba(0, 0, 0, 0.1) 4px);
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
   pointer-events: none;
   z-index: 9999;
 }
@@ -1103,12 +836,14 @@
   pointer-events: none;
   z-index: -1;
   opacity: 0.03;
-  background:
-    repeating-linear-gradient(0deg,
+  background: 
+    repeating-linear-gradient(
+      0deg,
       transparent,
       transparent 50%,
       rgba(0, 255, 136, 0.1) 50%,
-      rgba(0, 255, 136, 0.1) 100%);
+      rgba(0, 255, 136, 0.1) 100%
+    );
   background-size: 3px 3px;
 }
 
@@ -1135,9 +870,7 @@
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 /* Toast notifications gaming style */

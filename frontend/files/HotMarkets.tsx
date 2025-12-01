@@ -57,8 +57,7 @@ export function HotMarkets() {
     <section className="py-24 px-4 relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#ff8800]/5 via-transparent to-transparent" />
-      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-
+      
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-6">
@@ -69,22 +68,21 @@ export function HotMarkets() {
           >
             <div className="flex items-center gap-3 mb-4">
               <motion.div
-                animate={{
+                animate={{ 
                   rotate: [0, 10, -10, 0],
                   scale: [1, 1.1, 1],
-                  filter: ["drop-shadow(0 0 0px #ff8800)", "drop-shadow(0 0 20px #ff8800)", "drop-shadow(0 0 0px #ff8800)"]
                 }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <Flame className="w-10 h-10 text-[#ff8800]" />
+                <Flame className="w-8 h-8 text-[#ff8800]" />
               </motion.div>
-              <h2 className="text-4xl md:text-6xl font-game font-black tracking-tighter">
-                <span className="text-white drop-shadow-lg">HOT</span>{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff8800] to-[#ff0044] drop-shadow-lg">MARKETS</span>
+              <h2 className="text-3xl md:text-5xl font-game font-black">
+                <span className="text-white">HOT</span>{" "}
+                <span className="text-[#ff8800]">MARKETS</span>
               </h2>
             </div>
-            <p className="text-gray-400 max-w-md font-light text-lg">
-              The most active predictions right now. <span className="text-[#ff8800] font-bold">Jump in</span> before the odds shift!
+            <p className="text-gray-400 max-w-md">
+              The most active predictions right now. Jump in before the odds shift!
             </p>
           </motion.div>
 
@@ -95,18 +93,18 @@ export function HotMarkets() {
             className="flex items-center gap-4"
           >
             {/* Live Indicator */}
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#ff0044]/10 border border-[#ff0044]/30 backdrop-blur-sm">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#ff0044]/10 border border-[#ff0044]/30">
               <motion.div
                 className="w-2 h-2 rounded-full bg-[#ff0044]"
-                animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
               />
-              <span className="text-sm font-bold text-[#ff0044] font-game tracking-wider">LIVE FEED</span>
+              <span className="text-sm font-bold text-[#ff0044]">LIVE</span>
             </div>
 
             <Link href="/markets">
               <motion.button
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-game text-sm hover:bg-white/10 hover:border-[#00f0ff]/50 transition-all group backdrop-blur-sm"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-game text-sm hover:bg-white/10 hover:border-[#00f0ff]/50 transition-all group"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -122,28 +120,24 @@ export function HotMarkets() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex flex-wrap gap-6 mb-12"
+          className="flex flex-wrap gap-6 mb-8"
         >
-          <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/5 backdrop-blur-sm hover:border-[#ffd700]/30 transition-colors">
-            <div className="p-2 rounded-lg bg-[#ffd700]/10">
-              <Zap className="w-5 h-5 text-[#ffd700]" />
-            </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5">
+            <Zap className="w-4 h-4 text-[#ffd700]" />
             <span className="text-sm text-gray-400">
-              <span className="text-white font-numbers font-bold text-lg block">$1.2M</span> volume today
+              <span className="text-white font-numbers font-bold">$1.2M</span> volume today
             </span>
           </div>
-          <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/5 backdrop-blur-sm hover:border-[#00ff88]/30 transition-colors">
-            <div className="p-2 rounded-lg bg-[#00ff88]/10">
-              <TrendingUp className="w-5 h-5 text-[#00ff88]" />
-            </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5">
+            <TrendingUp className="w-4 h-4 text-[#00ff88]" />
             <span className="text-sm text-gray-400">
-              <span className="text-white font-numbers font-bold text-lg block">3,421</span> players active
+              <span className="text-white font-numbers font-bold">3,421</span> players active
             </span>
           </div>
         </motion.div>
 
         {/* Markets Grid */}
-        <div className="grid md:grid-cols-2 gap-8 perspective-1000">
+        <div className="grid md:grid-cols-2 gap-6">
           {MOCK_MARKETS.map((market, index) => (
             <MarketCard key={market.id} {...market} delay={index * 0.1} />
           ))}
@@ -154,20 +148,19 @@ export function HotMarkets() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mt-16"
+          className="text-center mt-12"
         >
           <Link href="/markets">
             <motion.button
-              className="relative group"
+              className="arcade-btn arcade-btn-primary px-10 py-4"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#ff8800] to-[#ff0044] rounded-xl blur opacity-50 group-hover:opacity-100 transition duration-200" />
-              <div className="relative px-12 py-5 bg-black rounded-xl border border-white/10 flex items-center gap-3">
-                <Flame className="w-5 h-5 text-[#ff8800]" />
-                <span className="font-game text-white tracking-wider">EXPLORE ALL MARKETS</span>
-                <ChevronRight className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" />
-              </div>
+              <span className="flex items-center gap-3">
+                <Flame className="w-5 h-5" />
+                Explore All Markets
+                <ChevronRight className="w-5 h-5" />
+              </span>
             </motion.button>
           </Link>
         </motion.div>
