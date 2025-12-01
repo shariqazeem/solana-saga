@@ -9,13 +9,10 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSoundEffects } from "./home/useSoundEffects";
-
 export function Navbar() {
     const pathname = usePathname();
     const [isScrolled, setIsScrolled] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
-    const { isMuted, toggleSound, playClick, playHover, playNotification } = useSoundEffects();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -29,11 +26,10 @@ export function Navbar() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setShowNotification(true);
-            playNotification();
             setTimeout(() => setShowNotification(false), 5000);
         }, 10000);
         return () => clearTimeout(timer);
-    }, [playNotification]);
+    }, []);
 
     const navItems = [
         { name: "Markets", href: "/markets", icon: LayoutGrid, color: "#00f0ff" },
@@ -54,12 +50,12 @@ export function Navbar() {
             >
                 <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group" onClick={playClick}>
+                    <Link href="/" className="flex items-center gap-3 group" onClick={() => {}}>
                         <motion.div
                             className="relative"
                             whileHover={{ scale: 1.1, rotate: 10 }}
                             whileTap={{ scale: 0.9 }}
-                            onMouseEnter={playHover}
+                            
                         >
                             <div className="absolute inset-0 bg-[#00ff88] blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
                             <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[#00ff88] to-[#00f0ff] flex items-center justify-center border border-white/20">
@@ -95,7 +91,7 @@ export function Navbar() {
                             const Icon = item.icon;
 
                             return (
-                                <Link key={item.name} href={item.href} onClick={playClick}>
+                                <Link key={item.name} href={item.href} onClick={() => {}}>
                                     <motion.div
                                         className={`relative px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-300 ${isActive
                                                 ? "bg-white/10 border border-white/20"
@@ -103,7 +99,7 @@ export function Navbar() {
                                             }`}
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
-                                        onMouseEnter={playHover}
+                                        
                                     >
                                         {isActive && (
                                             <motion.div
@@ -139,27 +135,23 @@ export function Navbar() {
 
                     {/* Right Side */}
                     <div className="flex items-center gap-3">
-                        {/* Sound Toggle */}
-                        <motion.button
-                            className={`hidden md:flex w-10 h-10 rounded-xl items-center justify-center transition-all ${!isMuted
-                                    ? "bg-[#00ff88]/10 text-[#00ff88] border border-[#00ff88]/30 shadow-[0_0_10px_rgba(0,255,136,0.2)]"
-                                    : "bg-white/5 text-gray-400 border border-white/10"
-                                }`}
-                            onClick={() => { toggleSound(); playClick(); }}
+                        {/* Sound Toggle - Disabled for performance */}
+                        {/* <motion.button
+                            className="hidden md:flex w-10 h-10 rounded-xl items-center justify-center transition-all bg-white/5 text-gray-400 border border-white/10"
+                            onClick={() => {}}
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            onMouseEnter={playHover}
                         >
-                            {!isMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                        </motion.button>
+                            <Volume2 className="w-4 h-4" />
+                        </motion.button> */}
 
                         {/* Notification Bell */}
                         <motion.button
                             className="hidden md:flex relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 items-center justify-center text-gray-400 hover:text-white transition-colors hover:bg-white/10"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            onMouseEnter={playHover}
-                            onClick={playClick}
+                            
+                            onClick={() => {}}
                         >
                             <Bell className="w-4 h-4" />
                             <span className="absolute top-2 right-2 w-2 h-2 bg-[#ff0044] rounded-full animate-pulse shadow-[0_0_5px_#ff0044]" />
@@ -172,7 +164,7 @@ export function Navbar() {
                         <motion.div
                             className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#ff8800]/10 to-[#ff4400]/10 border border-[#ff8800]/30"
                             whileHover={{ scale: 1.05 }}
-                            onMouseEnter={playHover}
+                            
                         >
                             <div className="flex items-center gap-1">
                                 <Zap className="w-4 h-4 text-[#ff8800]" />
@@ -194,7 +186,7 @@ export function Navbar() {
                             const Icon = item.icon;
 
                             return (
-                                <Link key={item.name} href={item.href} onClick={playClick}>
+                                <Link key={item.name} href={item.href} onClick={() => {}}>
                                     <motion.div
                                         className="flex flex-col items-center gap-1 p-2"
                                         whileTap={{ scale: 0.9 }}
