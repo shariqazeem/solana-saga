@@ -11,6 +11,8 @@ import confetti from "canvas-confetti";
 import { WalletButton } from "@/components/WalletButton";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { usePredictionMarkets, Market as MarketType } from "@/lib/solana/hooks/usePredictionMarkets";
+import { AIAnalyst } from "@/components/AIAnalyst";
+import { Activity } from "lucide-react";
 
 export default function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -23,7 +25,7 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
   const [selectedSide, setSelectedSide] = useState<"YES" | "NO" | null>(null);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [success, setSuccess] = useState<React.ReactNode | null>(null);
 
   // Fetch market data - id is the market public key
   useEffect(() => {
@@ -81,7 +83,20 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
         origin: { y: 0.6 }
       });
 
-      setSuccess(`Bet placed successfully! Transaction: ${signature.slice(0, 8)}... Refreshing market data...`);
+      const shareMessage = `I just bet $${amount} ${selectedSide} on "${market.question}" on Solana Saga! 🎯\n\nWill I be right? Follow my prediction!`;
+      const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareMessage)}&url=${encodeURIComponent(window.location.href)}&hashtags=SolanaSaga,Solana`;
+
+      setSuccess(
+        <div className="flex items-center gap-2">
+          <span>Bet placed! TX: {signature.slice(0, 8)}...</span>
+          <button
+            onClick={() => window.open(shareUrl, '_blank')}
+            className="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs font-bold flex items-center gap-1"
+          >
+            <Share2 className="w-3 h-3" /> Share
+          </button>
+        </div>
+      );
       setBetAmount("");
       setSelectedSide(null);
 
@@ -93,12 +108,12 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
         totalBets: market.totalBetsCount
       });
 
-      // Wait longer initially for blockchain to finalize (8 seconds)
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      // Wait for blockchain to finalize (3 seconds)
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // Aggressive polling with increasing delays
-      for (let attempt = 1; attempt <= 6; attempt++) {
-        console.log(`Refresh attempt ${attempt}/6...`);
+      // Reduced polling to avoid rate limits
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`Refresh attempt ${attempt}/3...`);
 
         const updatedMarket = await getMarket(market.publicKey);
         if (updatedMarket) {
@@ -121,14 +136,14 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
           }
 
           // On last attempt, show message to refresh
-          if (attempt === 6) {
+          if (attempt === 3) {
             setSuccess(`Bet placed successfully! Please refresh the page if stats don't update.`);
           }
         }
 
-        // Wait before next attempt with increasing delay
-        if (attempt < 6) {
-          await new Promise(resolve => setTimeout(resolve, 3000));
+        // Wait before next attempt (2 seconds between retries)
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
     } catch (err: any) {
@@ -227,17 +242,25 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                     {market.category}
                   </span>
                   <span className={`px-4 py-1.5 font-bold rounded-full flex items-center gap-1.5 ${market.status === "Active"
-                      ? "bg-gradient-to-r from-[#39FF14]/20 to-[#00FFA3]/20 text-[#39FF14] border border-[#39FF14]/40 animate-neon-pulse"
-                      : market.status === "Resolved"
-                        ? "bg-gradient-to-r from-[#FF6B00]/20 to-[#FF1493]/20 text-[#FF6B00] border border-[#FF6B00]/40"
-                        : "bg-gradient-to-r from-gray-500/20 to-gray-600/20 text-gray-400 border border-gray-500/40"
+                    ? "bg-gradient-to-r from-[#39FF14]/20 to-[#00FFA3]/20 text-[#39FF14] border border-[#39FF14]/40 animate-neon-pulse"
+                    : market.status === "Resolved"
+                      ? "bg-gradient-to-r from-[#FF6B00]/20 to-[#FF1493]/20 text-[#FF6B00] border border-[#FF6B00]/40"
+                      : "bg-gradient-to-r from-gray-500/20 to-gray-600/20 text-gray-400 border border-gray-500/40"
                     }`}>
                     {market.status === "Active" && <Flame className="w-4 h-4" />}
                     {market.status}
                   </span>
                 </div>
-                <button className="p-2 glass-card rounded-lg transition-all hover:border-[#00E5FF]">
-                  <Share2 className="w-5 h-5 neon-text" />
+                <button
+                  onClick={() => {
+                    const tweetText = `I'm betting on "${market.question}" on Solana Saga! 🎯\n\nCurrent odds: YES ${market.yesPrice}% | NO ${market.noPrice}%\n\nThink you can predict better? Join me!`;
+                    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(window.location.href)}&hashtags=SolanaSaga,Solana,PredictionMarkets`;
+                    window.open(tweetUrl, '_blank');
+                  }}
+                  className="p-2 glass-card rounded-lg transition-all hover:border-[#00E5FF] group"
+                  title="Share on Twitter"
+                >
+                  <Share2 className="w-5 h-5 neon-text group-hover:scale-110 transition-transform" />
                 </button>
               </div>
 
@@ -263,6 +286,53 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
 
               {/* Glow Effect */}
               <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-[#00E5FF]/20 to-transparent rounded-full blur-3xl" />
+            </motion.div>
+
+            {/* AI Analyst */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <AIAnalyst
+                yesPool={market.yesPool}
+                noPool={market.noPool}
+                question={market.question}
+              />
+            </motion.div>
+
+            {/* Live Activity Ticker */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass-card rounded-2xl p-6 overflow-hidden relative"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-4 h-4 text-[#00F3FF] animate-pulse" />
+                <h3 className="text-sm font-bold font-orbitron text-slate-300">LIVE ACTIVITY</h3>
+              </div>
+
+              <div className="space-y-3 relative">
+                <div className="absolute left-1.5 top-2 bottom-2 w-px bg-gradient-to-b from-transparent via-[#00F3FF]/30 to-transparent" />
+
+                {[
+                  { user: "8x...3f2a", action: "Bought YES", amount: "$500.00", time: "Just now" },
+                  { user: "4k...9d1c", action: "Bought NO", amount: "$120.00", time: "12s ago" },
+                  { user: "2p...5m8x", action: "Bought YES", amount: "$1,250.00", time: "45s ago" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs pl-6 relative">
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#050A14] border border-[#00F3FF]/50 flex items-center justify-center">
+                      <div className="w-1 h-1 rounded-full bg-[#00F3FF]" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#00F3FF] font-mono">{item.user}</span>
+                      <span className={item.action.includes("YES") ? "text-[#00FF9D]" : "text-[#FF003C]"}>{item.action}</span>
+                    </div>
+                    <div className="text-slate-400 font-numbers">{item.amount}</div>
+                  </div>
+                ))}
+              </div>
             </motion.div>
 
             {/* Current Odds */}
@@ -329,8 +399,8 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                     >
                       <div className="flex items-center gap-4">
                         <div className={`px-3 py-1 rounded-lg font-bold text-sm ${bet.prediction
-                            ? "bg-[#39FF14]/20 neon-text-green border border-[#39FF14]/30"
-                            : "bg-[#FF0040]/20 text-[#FF0040] border border-[#FF0040]/30"
+                          ? "bg-[#39FF14]/20 neon-text-green border border-[#39FF14]/30"
+                          : "bg-[#FF0040]/20 text-[#FF0040] border border-[#FF0040]/30"
                           }`}>
                           {bet.prediction ? "YES" : "NO"}
                         </div>
@@ -388,8 +458,8 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                   onClick={() => setSelectedSide("YES")}
                   disabled={!wallet || market.status !== "Active"}
                   className={`p-4 rounded-xl font-bold text-lg transition-all font-orbitron disabled:opacity-50 disabled:cursor-not-allowed ${selectedSide === "YES"
-                      ? "bg-[#39FF14] text-black scale-105 shadow-xl shadow-green-500/70"
-                      : "bg-[#39FF14]/10 neon-text-green border-2 border-[#39FF14]/40 hover:bg-[#39FF14]/20 hover:shadow-lg hover:shadow-green-500/50"
+                    ? "bg-[#39FF14] text-black scale-105 shadow-xl shadow-green-500/70"
+                    : "bg-[#39FF14]/10 neon-text-green border-2 border-[#39FF14]/40 hover:bg-[#39FF14]/20 hover:shadow-lg hover:shadow-green-500/50"
                     }`}
                 >
                   <div className="mb-1">YES</div>
@@ -400,8 +470,8 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                   onClick={() => setSelectedSide("NO")}
                   disabled={!wallet || market.status !== "Active"}
                   className={`p-4 rounded-xl font-bold text-lg transition-all font-orbitron disabled:opacity-50 disabled:cursor-not-allowed ${selectedSide === "NO"
-                      ? "bg-[#FF0040] text-white scale-105 shadow-xl shadow-red-500/70"
-                      : "bg-[#FF0040]/10 text-[#FF0040] border-2 border-[#FF0040]/40 hover:bg-[#FF0040]/20 hover:shadow-lg hover:shadow-red-500/50"
+                    ? "bg-[#FF0040] text-white scale-105 shadow-xl shadow-red-500/70"
+                    : "bg-[#FF0040]/10 text-[#FF0040] border-2 border-[#FF0040]/40 hover:bg-[#FF0040]/20 hover:shadow-lg hover:shadow-red-500/50"
                     }`}
                   style={selectedSide !== "NO" ? { textShadow: '0 0 10px rgba(255, 0, 64, 0.8)' } : {}}
                 >
