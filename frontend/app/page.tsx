@@ -3,8 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Minus, Plus, Wallet, Settings, AlertTriangle, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { Zap, Minus, Plus, Wallet, AlertTriangle } from "lucide-react";
 import { RetroGrid } from "@/components/RetroGrid";
 import { SwipeableMarketStack } from "@/components/SwipeableMarketStack";
 import { GameOverlay } from "@/components/GameOverlay";
@@ -34,6 +33,7 @@ export default function ArenaPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [isBetting, setIsBetting] = useState(false);
+  const [comboText, setComboText] = useState<{ text: string; x: number; y: number; id: number } | null>(null);
 
   const { playWin, playStreak, playError, playBet } = useSoundEffects(soundEnabled);
 
@@ -52,7 +52,6 @@ export default function ArenaPage() {
     let totalBets = userBets.length;
     let totalWins = 0;
     let totalWagered = 0;
-    let currentStreak = 0;
 
     // Get market outcomes to determine wins
     const marketOutcomes = new Map(
@@ -75,7 +74,7 @@ export default function ArenaPage() {
       const outcome = marketOutcomes.get(bet.market);
       return outcome !== undefined && bet.prediction === outcome;
     });
-    currentStreak = wonBets.length > 0 ? Math.min(wonBets.length, 10) : 0;
+    const currentStreak = wonBets.length > 0 ? Math.min(wonBets.length, 10) : 0;
 
     return { totalBets, totalWins, totalWagered, winStreak: currentStreak };
   }, [userBets, markets]);
@@ -101,6 +100,14 @@ export default function ArenaPage() {
   // Dismiss notification
   const dismissNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
+  // Spawn combo text
+  const spawnComboText = useCallback((text: string, prediction: boolean) => {
+    const x = prediction ? 70 : 30; // percentage from left
+    const y = 40; // percentage from top
+    setComboText({ text, x, y, id: Date.now() });
+    setTimeout(() => setComboText(null), 1000);
   }, []);
 
   // Handle real bet placement
@@ -138,9 +145,12 @@ export default function ArenaPage() {
 
       try {
         // Place the actual bet on blockchain
-        const tx = await placeBet(marketId, amount, prediction);
+        await placeBet(marketId, amount, prediction);
 
         playBet();
+
+        // Spawn combo text
+        spawnComboText(prediction ? "YES!" : "NO!", prediction);
 
         addNotification({
           type: "info",
@@ -148,7 +158,7 @@ export default function ArenaPage() {
           amount: amount,
         });
 
-        // Update streak (simplified - just increment for now, real tracking would be based on resolved bets)
+        // Update streak
         setStreak((prev) => prev + 1);
 
         // Fire confetti on bet placement
@@ -204,13 +214,13 @@ export default function ArenaPage() {
         setIsBetting(false);
       }
     },
-    [connected, usdcBalance, solBalance, placeBet, streak, playBet, playStreak, playError, addNotification, refetch, refetchBalance]
+    [connected, usdcBalance, solBalance, placeBet, streak, playBet, playStreak, playError, addNotification, refetch, refetchBalance, spawnComboText]
   );
 
   // Handle skip
   const handleSkip = useCallback(() => {
-    // Reset streak on skip (optional - can be removed)
-  }, []);
+    spawnComboText("SKIP", true);
+  }, [spawnComboText]);
 
   // Initial load animation
   useEffect(() => {
@@ -219,23 +229,36 @@ export default function ArenaPage() {
     }
   }, [loading, isFirstLoad]);
 
-  // Adjust bet amount
-  const increaseBet = () => setBetAmount((prev) => Math.min(prev + 1, Math.floor(usdcBalance)));
-  const decreaseBet = () => setBetAmount((prev) => Math.max(prev - 1, 1));
+  // Adjust bet amount - now with better handling
+  const increaseBet = useCallback(() => {
+    const maxBet = Math.max(1, Math.floor(usdcBalance));
+    setBetAmount((prev) => Math.min(prev + 1, maxBet));
+  }, [usdcBalance]);
+
+  const decreaseBet = useCallback(() => {
+    setBetAmount((prev) => Math.max(prev - 1, 1));
+  }, []);
 
   // Quick bet amount setters
-  const setQuickBet = (amount: number) => {
-    if (amount <= usdcBalance) {
+  const setQuickBet = useCallback((amount: number) => {
+    if (amount <= usdcBalance || usdcBalance === 0) {
       setBetAmount(amount);
     }
-  };
+  }, [usdcBalance]);
+
+  // Ensure bet amount doesn't exceed balance
+  useEffect(() => {
+    if (usdcBalance > 0 && betAmount > usdcBalance) {
+      setBetAmount(Math.max(1, Math.floor(usdcBalance)));
+    }
+  }, [usdcBalance, betAmount]);
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
-      {/* Retro Grid Background */}
-      <RetroGrid />
+    <div className="fixed inset-0 flex flex-col h-[100dvh] overflow-hidden">
+      {/* Retro Grid Background - Streak Reactive */}
+      <RetroGrid streak={streak} />
 
-      {/* Game Overlay HUD */}
+      {/* Game Overlay HUD - Includes Admin Button */}
       <GameOverlay
         streak={streak}
         balance={usdcBalance}
@@ -246,31 +269,39 @@ export default function ArenaPage() {
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
         totalWins={userStats.totalWins}
         totalBets={userStats.totalBets}
+        showAdmin={connected}
       />
 
-      {/* Admin Link - Top Right */}
-      {connected && (
-        <Link href="/admin">
+      {/* Floating Combo Text */}
+      <AnimatePresence>
+        {comboText && (
           <motion.div
-            className="fixed top-20 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-400 hover:bg-purple-500/30 transition-colors cursor-pointer"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
+            key={comboText.id}
+            className="fixed z-[60] pointer-events-none"
+            style={{ left: `${comboText.x}%`, top: `${comboText.y}%` }}
+            initial={{ opacity: 1, scale: 0.5, y: 0 }}
+            animate={{ opacity: 0, scale: 2, y: -100 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <Settings className="w-4 h-4" />
-            <span className="text-xs font-game">ADMIN</span>
+            <span className={`font-game text-4xl font-bold drop-shadow-lg ${
+              comboText.text === "YES!" ? "text-[#00FF88]" :
+              comboText.text === "NO!" ? "text-[#FF0044]" :
+              "text-white"
+            }`}>
+              {comboText.text}
+            </span>
           </motion.div>
-        </Link>
-      )}
+        )}
+      </AnimatePresence>
 
-      {/* Main Arena Content */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center pt-20 pb-24 px-4">
-        {/* Loading State */}
+      {/* Main Arena Content - Flexbox Layout */}
+      <main className="relative z-10 flex-1 flex flex-col min-h-0 pt-20 pb-24">
         <AnimatePresence mode="wait">
           {loading && isFirstLoad ? (
             <motion.div
               key="loading"
-              className="flex flex-col items-center gap-6"
+              className="flex-1 flex flex-col items-center justify-center gap-6 px-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -290,7 +321,7 @@ export default function ArenaPage() {
           ) : !connected ? (
             <motion.div
               key="connect"
-              className="flex flex-col items-center gap-8 text-center max-w-md"
+              className="flex-1 flex flex-col items-center justify-center gap-8 text-center max-w-md mx-auto px-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -330,7 +361,7 @@ export default function ArenaPage() {
           ) : activeMarkets.length === 0 ? (
             <motion.div
               key="empty"
-              className="flex flex-col items-center gap-6 text-center max-w-md"
+              className="flex-1 flex flex-col items-center justify-center gap-6 text-center max-w-md mx-auto px-4"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
             >
@@ -349,13 +380,6 @@ export default function ArenaPage() {
                 >
                   REFRESH MARKETS
                 </button>
-
-                <Link href="/admin" className="w-full">
-                  <button className="w-full px-6 py-3 rounded-xl bg-purple-500/20 border border-purple-500/50 text-purple-400 font-game hover:bg-purple-500/30 transition-colors flex items-center justify-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    CREATE MARKET
-                  </button>
-                </Link>
               </div>
 
               {/* Balance info */}
@@ -381,7 +405,7 @@ export default function ArenaPage() {
           ) : (
             <motion.div
               key="arena"
-              className="w-full max-w-lg"
+              className="flex-1 flex flex-col min-h-0 w-full max-w-lg mx-auto px-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -389,7 +413,7 @@ export default function ArenaPage() {
               {/* Balance Warning */}
               {usdcBalance < 1 && (
                 <motion.div
-                  className="mb-4 p-3 rounded-xl bg-yellow-500/20 border border-yellow-500/50 flex items-center gap-3"
+                  className="mb-3 p-3 rounded-xl bg-yellow-500/20 border border-yellow-500/50 flex items-center gap-3 flex-shrink-0"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -401,27 +425,19 @@ export default function ArenaPage() {
                 </motion.div>
               )}
 
-              {/* Bet Amount Selector */}
-              <motion.div
-                className="flex flex-col items-center gap-3 mb-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <span className="text-sm text-gray-400 font-game">BET AMOUNT (USDC)</span>
+              {/* Bet Amount Selector - Compact - Always visible */}
+              <div className="flex flex-col items-center gap-2 mb-4 flex-shrink-0">
+                <span className="text-xs text-gray-400 font-game">BET AMOUNT (USDC)</span>
 
                 {/* Quick bet buttons */}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2">
                   {[1, 5, 10, 25].map((amount) => (
                     <button
                       key={amount}
                       onClick={() => setQuickBet(amount)}
-                      disabled={amount > usdcBalance}
                       className={`px-3 py-1 rounded-lg text-sm font-numbers font-bold transition-all ${
                         betAmount === amount
                           ? "bg-[#00F3FF] text-black"
-                          : amount > usdcBalance
-                          ? "bg-white/5 text-gray-600 cursor-not-allowed"
                           : "bg-white/10 text-white hover:bg-white/20"
                       }`}
                     >
@@ -430,29 +446,29 @@ export default function ArenaPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/40 border border-white/10">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/10">
                   <motion.button
-                    className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-50"
+                    className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-30"
                     whileTap={{ scale: 0.9 }}
                     onClick={decreaseBet}
                     disabled={betAmount <= 1}
                   >
-                    <Minus className="w-5 h-5" />
+                    <Minus className="w-4 h-4" />
                   </motion.button>
 
-                  <div className="min-w-[100px] text-center">
-                    <span className="text-3xl font-numbers font-bold text-white">
+                  <div className="min-w-[80px] text-center">
+                    <span className="text-2xl font-numbers font-bold text-white">
                       ${betAmount}
                     </span>
                   </div>
 
                   <motion.button
-                    className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-50"
+                    className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-30"
                     whileTap={{ scale: 0.9 }}
                     onClick={increaseBet}
-                    disabled={betAmount >= usdcBalance}
+                    disabled={usdcBalance > 0 && betAmount >= Math.floor(usdcBalance)}
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                   </motion.button>
                 </div>
 
@@ -460,16 +476,19 @@ export default function ArenaPage() {
                 <div className="text-xs text-gray-500">
                   Balance: <span className="text-[#00FF88] font-numbers">${usdcBalance.toFixed(2)}</span> USDC
                 </div>
-              </motion.div>
+              </div>
 
-              {/* Swipeable Card Stack */}
-              <SwipeableMarketStack
-                markets={activeMarkets}
-                onBet={handleBet}
-                onSkip={handleSkip}
-                betAmount={betAmount}
-                soundEnabled={soundEnabled}
-              />
+              {/* Swipeable Card Stack - Takes remaining space */}
+              <div className="flex-1 min-h-0">
+                <SwipeableMarketStack
+                  markets={activeMarkets}
+                  onBet={handleBet}
+                  onSkip={handleSkip}
+                  betAmount={betAmount}
+                  soundEnabled={soundEnabled}
+                  streak={streak}
+                />
+              </div>
 
               {/* Betting indicator */}
               {isBetting && (
@@ -491,7 +510,7 @@ export default function ArenaPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </main>
 
       {/* Screen shake CSS */}
       <style jsx global>{`
