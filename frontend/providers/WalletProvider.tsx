@@ -6,7 +6,7 @@ import {
   WalletProvider as SolanaWalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+
 import { clusterApiUrl } from "@solana/web3.js";
 import { useMemo, ReactNode } from "react";
 
@@ -25,11 +25,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
   const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => [],
     [network]
   );
 
