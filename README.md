@@ -1,440 +1,312 @@
-# 🎮 Solana Saga - Viral Prediction Market Game
+# Solana Saga
 
 <div align="center">
 
-![Solana Saga Banner](https://img.shields.io/badge/Built%20on-Solana-14F195?style=for-the-badge&logo=solana&logoColor=white)
+### **The First Swipe-to-Bet Prediction Game on Solana**
+
+![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?style=for-the-badge&logo=solana&logoColor=white)
 ![Hackathon](https://img.shields.io/badge/Indie.fun%20Hackathon-2025-blueviolet?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Live%20on%20Devnet-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Live-success?style=for-the-badge)
 
-**Predict. Compete. Dominate. The most addictive prediction game on Solana.**
+**Swipe Right = YES | Swipe Left = NO | Win the Pool**
 
-[Live Demo](#) • [Video Demo](#) • [Smart Contract](#)
+[Live Demo](#) | [Video Demo](#) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet)
 
 </div>
 
 ---
 
-## 🎯 What Is Solana Saga?
+## The Problem
 
-**Solana Saga** is a gamified prediction market where users bet on REAL Solana ecosystem events:
+Prediction markets are powerful tools for aggregating wisdom, but they're **boring**.
 
-- 💰 Will SOL hit $300 this week?
-- 📊 Which Solana DEX will have the highest volume today?
-- 🚀 Will Jupiter reach 10M daily transactions?
-- 🖼️ Which NFT collection will moon next?
+Current platforms feel like stock trading dashboards: complex interfaces, intimidating charts, zero fun. Nobody wants to study order books just to bet on whether their favorite memecoin will moon.
 
-**THE HOOK**: Live predictions + social competition + instant payouts = VIRAL GROWTH
+## Our Solution: Gamified Betting
 
----
+We threw out the dashboard and built **Tinder for Predictions**.
 
-## 🏆 Why This Wins
-
-### ✅ Perfect Fit for Indie.fun Hackathon
-
-**1. Fun & Unique** ✅
-- Addictive gameplay loop with instant gratification
-- Meme-friendly markets ("Will Bonk flip Dogecoin?")
-- Leaderboards create competitive pressure
-- Social sharing amplifies engagement
-
-**2. Prediction Markets Theme** ✅
-- Core mechanic IS prediction markets (bonus points!)
-- Binary outcome markets with AMM pricing
-- Real-time odds updates
-- Automated resolution with oracles (future)
-
-**3. Technical Excellence** ✅
-- Custom Anchor program with AMM logic
-- Efficient PDA architecture
-- Real-time price updates
-- Production-quality code
-
-**4. Stellar UX/Design** ✅
-- World-class UI (reusing RizqFi's design system)
-- Framer Motion animations
-- Mobile-first responsive design
-- Confetti celebrations on wins
-
-**5. Vision & Narrative** ✅
-- "The future of community predictions on Solana"
-- Solana's speed enables instant markets
-- Gateway to prediction market education
-- Clear path to viral growth
-
-**6. Social Proof** ✅
-- Twitter integration for sharing predictions
-- Leaderboards (daily, weekly, all-time)
-- Achievement system with levels
-- Referral mechanics
-
----
-
-## 🎮 How It Works
-
-### For Players
-
-1. **Browse Markets** - See all active prediction markets
-2. **Place Bet** - Choose YES or NO, select amount
-3. **Watch Live** - See odds change in real-time as others bet
-4. **Win Big** - Claim winnings when market resolves
-5. **Climb Leaderboard** - Compete for top predictor status
-
-### Market Types
-
-**Quick Markets (1-24 hours)**
-- "Will SOL be above $250 at 12pm UTC?"
-- "Will Jupiter volume exceed 100M today?"
-- Fast resolution, instant payouts
-
-**Ecosystem Markets (1-7 days)**
-- "Which chain will have more TVL this week: Solana vs Ethereum?"
-- "Will Solana NFT sales exceed 50k this week?"
-
-**Community Markets (User-Created)**
-- Anyone can create a market (with stake)
-- Community votes on resolution
-- Creator gets 1% of all bets
-
-### AMM-Based Betting
-
-**Binary Outcome Markets**:
-- YES or NO only (simple!)
-- Automated Market Maker (AMM) pricing
-- Price moves based on bet volume
-- Early bettors get better odds
-
-**Example**:
 ```
-Market: "Will SOL hit $300 by Dec 20?"
-Current price: YES @ 0.35 USDC (35% YES, 65% NO)
-
-You bet 10 USDC on YES:
-- If SOL hits $300: You win 28.57 USDC (2.86x return)
-- If SOL stays below: You lose 10 USDC
-- Pool gets 2% fee
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│     👉 SWIPE RIGHT = Bet YES                               │
+│     👈 SWIPE LEFT = Bet NO                                 │
+│     👆 SWIPE UP = Skip                                     │
+│                                                             │
+│     That's it. No charts. No order books.                  │
+│     Just pure, addictive, swipe-to-bet action.             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🏗️ Technical Architecture
+## How It Works
 
-### Smart Contracts (Rust + Anchor)
+### The Flow
 
-**Program Features**:
-- ✅ Create prediction markets
-- ✅ AMM-based betting (constant product formula)
-- ✅ Market resolution (manual + oracle support)
-- ✅ Claim winnings
-- ✅ User stats tracking
-- ✅ Leaderboards
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   1. CREATE     │────▶│    2. BET       │────▶│   3. RESOLVE    │
+│                 │     │                 │     │                 │
+│  Market Creator │     │  Players Swipe  │     │ Creator Decides │
+│  sets question  │     │  YES / NO / Skip│     │   the outcome   │
+│  & end time     │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                        ┌─────────────────────────────────────────┐
+                        │           4. CLAIM WINNINGS             │
+                        │                                         │
+                        │    Winners split the losers' pool!      │
+                        │    Original bet + share of losers       │
+                        │              (minus 2% fee)             │
+                        └─────────────────────────────────────────┘
+```
 
-**Data Structures**:
+### The Smart Contract Magic (AMM)
+
+Under the hood, we use an **Automated Market Maker (AMM)** inspired by Uniswap:
+
+1. **Virtual Liquidity Pools**: Each market starts with 1000 USDC virtual liquidity on each side (YES/NO)
+2. **Dynamic Odds**: As more people bet YES, the YES price goes up (harder to win, but bigger potential payout)
+3. **Winner Takes All**: When resolved, winners split the entire losing pool proportionally
+
+**Example:**
+```
+Market: "Will SOL hit $200?"
+
+YES Pool: $5,000 (60%)    NO Pool: $3,333 (40%)
+
+If YES wins:
+  → Every YES bettor gets: Original bet + (their share of $3,333 NO pool)
+  → After 2% platform fee
+```
+
+---
+
+## Gamification Features
+
+### Visual Feedback
+- **Confetti Explosions** - Every bet triggers satisfying particle effects
+- **Screen Shake** - Visceral feedback on every action
+- **3D Holographic Cards** - Tilt effects and glare on hover
+- **HypeHUD** - AI analyst with trash talk and sentiment analysis
+
+### Streak System
+- **Fire Counter** - Build betting streaks with animated flames
+- **Trust Score** - Health-bar style reputation meter
+- **Streak-Reactive Environment**:
+  - 0-4 bets: Cyan/Pink cyberpunk theme
+  - 5-9 bets: Gold/Fire theme + faster animations
+  - 10+ bets: **WARP SPEED MODE** with radial blur!
+
+### Retro-Wave Aesthetic
+- Animated synthwave grid floor with perspective
+- Floating neon particles
+- CRT scan line effects
+- Vaporwave sun at horizon
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Blockchain** | Solana (Devnet) |
+| **Smart Contracts** | Anchor Framework 0.32 (Rust) |
+| **Frontend** | Next.js 15 + React 18 |
+| **Styling** | Tailwind CSS |
+| **Animations** | Framer Motion |
+| **Wallet** | Solana Wallet Adapter (Phantom) |
+| **Token** | SPL Token (USDC) |
+
+---
+
+## Smart Contract Architecture
+
+```
+Program ID: G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j
+```
+
+### Instructions
+
+| Instruction | Description | Access |
+|-------------|-------------|--------|
+| `create_market` | Create new prediction market | Anyone |
+| `place_bet` | Bet YES or NO (1-10,000 USDC) | Anyone with USDC |
+| `resolve_market` | Decide the winning outcome | Creator only |
+| `claim_winnings` | Collect payout | Bettors |
+| `cancel_market` | Cancel if no bets | Creator only |
+
+### Key Innovation: Multiple Bets per User
+
+Unlike most prediction markets, users can bet **multiple times** on the same market. Each bet creates a unique PDA:
+
 ```rust
-pub struct Market {
-    id: u64,
-    question: String,
-    creator: Pubkey,
-    end_time: i64,
-    outcome: Option<bool>, // None = unresolved
-    yes_pool: u64,  // AMM pools
-    no_pool: u64,
-    total_volume: u64,
-    status: MarketStatus,
-}
-
-pub struct Bet {
-    market: Pubkey,
-    user: Pubkey,
-    amount: u64,
-    prediction: bool, // true = YES, false = NO
-    claimed: bool,
-}
-
-pub struct UserStats {
-    user: Pubkey,
-    total_bets: u64,
-    win_count: u32,
-    net_profit: i64,
-    current_streak: u32,
-    best_streak: u32,
-}
+seeds = ["bet", market.key(), user.key(), total_bets_count.to_le_bytes()]
 ```
 
-**Security**:
-- Authority validation on all instructions
-- Overflow/underflow protection
-- Phase-based access control
-- PDA derivation verification
-- Min/max bet limits
+This allows the "Start Over" feature where players can re-bet on the same questions!
 
-### Frontend (Next.js 15 + React 19)
+### Security Features
 
-**Tech Stack**:
-- Next.js 15 (App Router, Turbopack)
-- React 19 (latest)
-- TypeScript
-- Tailwind CSS 4
-- Framer Motion (animations)
-- Solana Wallet Adapter
-- React Hot Toast
-
-**Pages**:
-- `/` - Landing page (stunning hero, features)
-- `/markets` - Browse all markets
-- `/market/[id]` - Individual market with live betting
-- `/leaderboard` - Rankings and top users
-- `/profile` - User stats, bet history, achievements
-
-**Key Features**:
-- Real-time price updates
-- Live activity feed
-- Confetti on wins
-- Chart showing price movement
-- Social sharing (Twitter cards)
+- `require!(!bet.claimed)` - Prevents double claiming
+- `require!(bet.user == ctx.accounts.user.key())` - Only bet owners can claim
+- `require!(market.status == MarketStatus::Resolved)` - Must be resolved first
+- Overflow protection on all math operations
+- Min/max bet limits (1 - 10,000 USDC)
 
 ---
 
-## 🚀 Getting Started
+## Local Development
 
 ### Prerequisites
 
 - Node.js 18+
-- Rust & Cargo
-- Solana CLI
-- Phantom/Solflare wallet
-- Testnet USDC
+- Phantom Wallet (browser extension)
+- Devnet SOL (for gas) + Devnet USDC (for betting)
 
-### Installation
+### Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/shariqazeem/solana-saga.git
-cd solana-saga
+git clone https://github.com/your-username/solana-saga.git
+cd solana-saga/frontend
 
-# Install frontend dependencies
-cd frontend
+# Install dependencies
 npm install
 
-# Start development server
+# Configure environment
+cp .env.example .env.local
+# Edit .env.local with your RPC endpoint
+
+# Run development server
 npm run dev
 ```
 
-Visit `http://localhost:3000` and connect your wallet!
+### Get Test Tokens
 
-### Getting Testnet USDC
-
-1. Visit [Circle's USDC Faucet](https://faucet.circle.com/)
-2. Paste your Solana wallet address (Devnet)
-3. Click "Get USDC" to receive testnet tokens
-4. Add USDC token to wallet: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
+1. **Devnet SOL**: Use [Solana Faucet](https://faucet.solana.com/)
+2. **Devnet USDC** (Mint: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`):
+   - Use [spl-token-faucet](https://spl-token-faucet.com/)
+   - Or request in Solana Discord
 
 ---
 
-## 🎨 Design System
+## Project Structure
 
-### Visual Style
-
-**Theme**: Neon cyberpunk meets Solana gradients
-- **Primary**: Purple to pink gradients (#9945FF → #14F195)
-- **Accent**: Bright green (#14F195) for wins, red (#FF4444) for losses
-- **Background**: Dark mode with subtle grid patterns
-- **Typography**: Space Grotesk (headings), Inter (body)
-
-### Animations
-
-- Market cards flip on hover
-- Pulse effect on live markets
-- Confetti on winning bets
-- Smooth number counters
-- Parallax scrolling
-
----
-
-## 🎯 Gamification
-
-### Levels & Achievements
-
-- 🥉 **Bronze Predictor** - 10 correct predictions
-- 🥈 **Silver Oracle** - 50 correct predictions
-- 🥇 **Gold Sage** - 100 correct predictions
-- 💎 **Diamond Prophet** - 500 correct predictions
-
-### Leaderboards
-
-- **Daily** - Best ROI today
-- **Weekly** - Top earners this week
-- **All-Time** - Hall of fame champions
-- **Streaks** - Longest win streaks
-
-### Social Features
-
-- Share predictions on Twitter
-- Follow top predictors
-- Copy trades from winners
-- Challenge friends
+```
+solana-saga/
+├── frontend/
+│   ├── app/
+│   │   ├── page.tsx              # Main arena (swipe interface)
+│   │   ├── admin/page.tsx        # Market creation dashboard
+│   │   └── layout.tsx            # Root layout with wallet provider
+│   ├── components/
+│   │   ├── SwipeableMarketStack.tsx   # Tinder-style card stack
+│   │   ├── GameOverlay.tsx            # HUD with stats/notifications
+│   │   ├── HypeHUD.tsx                # AI analyst overlay
+│   │   └── RetroGrid.tsx              # Animated background
+│   ├── hooks/
+│   │   ├── useSoundEffects.ts         # Web Audio API sounds
+│   │   └── useUsdcBalance.ts          # Real-time USDC balance
+│   └── lib/solana/
+│       ├── hooks/usePredictionMarkets.ts  # Anchor program interface
+│       └── idl/prediction_markets.json    # Contract IDL
+│
+└── prediction-markets-contracts/
+    └── programs/prediction-markets/src/lib.rs  # Anchor program
+```
 
 ---
 
-## 💼 Business Model
+## Demo Recording Checklist
 
-### Revenue Streams
+### Setup (Before Recording)
+- [ ] Wallet A (Creator) has SOL + USDC on Devnet
+- [ ] Wallet B (Player) has SOL + USDC on Devnet
+- [ ] Browser window sized for screen recording
+- [ ] Clear any existing test markets
 
-1. **Platform Fee**: 2% on all payouts
-   - Example: $1,000 payout → $20 fee
-   - Scales with usage
+### Recording Flow
 
-2. **Premium Features** (Future):
-   - Priority market creation
-   - Advanced analytics
-   - Custom notifications
+**Step 1: Create Market (Wallet A)**
+- [ ] Connect Wallet A
+- [ ] Go to Admin panel (gear icon)
+- [ ] Create market: "Will SOL hit $200 by end of month?"
+- [ ] Category: Crypto, Duration: 1 day
+- [ ] Confirm transaction
 
-### Projections
+**Step 2: Place Bets (Wallet B)**
+- [ ] Disconnect Wallet A, Connect Wallet B
+- [ ] See the market card appear
+- [ ] Set bet amount ($5)
+- [ ] Swipe RIGHT (YES) - show confetti!
+- [ ] Swipe again on same market (demonstrate multiple bets)
+- [ ] Show streak counter increasing
 
-| Metric | Month 1 | Month 3 | Month 6 |
-|--------|---------|---------|---------|
-| Active Users | 100 | 500 | 2,000 |
-| Markets | 50 | 200 | 500 |
-| Monthly Volume | $50K | $250K | $1M |
-| **Monthly Revenue** | **$1K** | **$5K** | **$20K** |
+**Step 3: Resolve Market (Wallet A)**
+- [ ] Disconnect Wallet B, Connect Wallet A
+- [ ] Go to Admin panel
+- [ ] Find the market
+- [ ] Click "YES WON" to resolve
+- [ ] Confirm transaction
 
----
+**Step 4: Claim Winnings (Wallet B)**
+- [ ] Disconnect Wallet A, Connect Wallet B
+- [ ] Go to My Bets page
+- [ ] Find winning bet
+- [ ] Click "Claim Winnings"
+- [ ] Show USDC balance increase!
 
-## 🛣️ Roadmap
-
-### Phase 1: MVP (Hackathon) ✅
-- ✅ Smart contracts deployed
-- ✅ Core betting functionality
-- ✅ Beautiful UI/UX
-- ✅ Leaderboards
-- ✅ Mobile responsive
-
-### Phase 2: Growth (Post-Hackathon)
-- 🔄 Oracle integration (Switchboard/Pyth)
-- 🔄 User-created markets
-- 🔄 Mobile app (iOS/Android)
-- 🔄 Social features expansion
-
-### Phase 3: Scale (Q2 2025)
-- 📅 Token launch + governance
-- 📅 Cross-chain predictions
-- 📅 Partnerships with protocols
-- 📅 10,000+ active users
-
-### Phase 4: Dominate (Q3 2025)
-- 📅 Smart contract audit
-- 📅 Mainnet launch
-- 📅 Marketing campaign
-- 📅 100,000+ users
+**Step 5: Show Off Features**
+- [ ] Hover over card - show 3D tilt effect
+- [ ] Build streak to 5+ - show gold/fire theme
+- [ ] Build streak to 10+ - show WARP SPEED mode!
+- [ ] Toggle sound on/off
 
 ---
 
-## 🏁 Hackathon Submission
-
-### Deliverables
-
-- ✅ Working product on Solana Devnet
-- ✅ 5+ active prediction markets
-- ✅ Beautiful landing page
-- ✅ Functional betting flow
-- ✅ Leaderboard with stats
-- ✅ Mobile responsive design
-- ✅ 2-3 minute demo video
-- ✅ Professional documentation
-- ✅ Social media presence
-- ✅ GitHub repo (public)
-
-### Demo Video Script
-
-**Hook (0-15s)**:
-"What if you could bet on anything happening in the Solana ecosystem and win real money?"
-
-**Problem (15-30s)**:
-"Traditional prediction markets are slow, expensive, and boring. Solana changes everything."
-
-**Solution (30-90s)**:
-[Live demo showing]:
-- Browse exciting markets
-- Place a bet with one click
-- Watch odds update in real-time
-- Win and celebrate with confetti!
-
-**Social Proof (90-120s)**:
-- Show leaderboard
-- Highlight big wins
-- Display total volume
-
-**Call to Action (120-150s)**:
-"Join the Solana Saga. May the best predictor win."
-
----
-
-## 📊 Competitive Advantage
-
-### vs Traditional Prediction Markets
+## Competitive Advantage
 
 | Feature | Solana Saga | Polymarket | Augur |
 |---------|-------------|------------|-------|
-| Speed | ~400ms | Minutes | 15+ mins |
-| Fees | 2% | 2% + gas | High gas |
-| UX | Game-like | Complex | Complex |
-| Mobile | ✅ | ✅ | ❌ |
-| Social | ✅ | ❌ | ❌ |
-| Fun Factor | 🎮🎮🎮 | 📊 | 📊 |
-
-### Unique Selling Points
-
-1. **Gaming First** - Built for fun, not just finance
-2. **Solana Native** - Leverages SOL's speed and low costs
-3. **Social Virality** - Twitter integration, leaderboards
-4. **Mobile Optimized** - Works perfectly on phones
-5. **Instant Gratification** - Quick markets, fast payouts
+| **Speed** | ~400ms | Minutes | 15+ mins |
+| **UX** | Swipe = Done | Complex forms | Complex forms |
+| **Mobile** | Native feel | Okay | Poor |
+| **Gamification** | Full suite | None | None |
+| **Fun Factor** | 🎮🎮🎮 | 📊 | 📊 |
+| **Multiple Bets** | ✅ | ❌ | ❌ |
 
 ---
 
-## 🤝 Contributing
+## Roadmap
 
-We welcome contributions! Here's how you can help:
-
-1. 🐛 **Report bugs** - Open an issue
-2. 💡 **Suggest features** - Share your ideas
-3. 🔧 **Submit PRs** - Improve the code
-4. 📖 **Improve docs** - Help others understand
-5. 🎨 **Design assets** - Create marketing materials
+- [x] **Phase 1**: MVP - Swipe-to-bet interface, on-chain betting
+- [ ] **Phase 2**: Decentralized resolution (Pyth/Switchboard oracles)
+- [ ] **Phase 3**: Mobile app (React Native)
+- [ ] **Phase 4**: Token launch + governance
+- [ ] **Phase 5**: Mainnet deployment
 
 ---
 
-## 📄 License
+## License
 
-MIT License - see [LICENSE](LICENSE) for details
-
----
-
-## 🌟 Acknowledgments
-
-- **Solana Foundation** - For the incredible blockchain
-- **Anchor** - For making Solana development accessible
-- **Indie.fun** - For hosting this amazing hackathon
-- **RizqFi** - For the production-quality UI foundation
-
----
-
-## 📞 Contact
-
-- **Website**: [solanasaga.vercel.app](#)
-- **Twitter**: [@SolanaSaga](#)
-- **Telegram**: [Solana Saga Community](#)
-- **Email**: shariqshaukat786@gmail.com
+MIT License - Fork it, build on it, make predictions fun!
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for the Indie.fun Hackathon**
+**Built with caffeine and determination for the Indie.fun Hackathon**
 
 **Powered by Solana**
 
-**Bringing Fun to Prediction Markets**
+---
 
-[⭐ Star us on GitHub](#) • [🚀 Try it Live](#) • [🎮 Join the Saga](#)
+### Swipe. Bet. Win.
+
+[Live Demo](#) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet) | [GitHub](https://github.com/your-username/solana-saga)
 
 </div>
