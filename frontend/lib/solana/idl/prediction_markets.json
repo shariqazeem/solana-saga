@@ -125,7 +125,7 @@
     {
       "name": "create_market",
       "docs": [
-        "Create a new prediction market"
+        "Create a new prediction market (ADMIN ONLY)"
       ],
       "discriminator": [
         103,
@@ -428,6 +428,88 @@
           "type": "bool"
         }
       ]
+    },
+    {
+      "name": "withdraw_fees",
+      "docs": [
+        "Withdraw accumulated fees from a market's vault (ADMIN ONLY)",
+        "Fees are the surplus in the vault beyond the yes_pool + no_pool collateral"
+      ],
+      "discriminator": [
+        198,
+        212,
+        171,
+        109,
+        144,
+        215,
+        174,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin_token_account",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "market_id",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -551,6 +633,16 @@
       "code": 6015,
       "name": "MathOverflow",
       "msg": "Math overflow"
+    },
+    {
+      "code": 6016,
+      "name": "Unauthorized",
+      "msg": "Unauthorized: Admin access required"
+    },
+    {
+      "code": 6017,
+      "name": "NoFeesToWithdraw",
+      "msg": "No fees available to withdraw"
     }
   ],
   "types": [

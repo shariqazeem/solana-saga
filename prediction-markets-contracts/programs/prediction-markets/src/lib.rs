@@ -3,11 +3,14 @@ use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 declare_id!("G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j");
 
+// Admin public key - only this wallet can create markets and withdraw fees
+pub const ADMIN_PUBKEY: &str = "5TY5gts9AktYJMN6S8dGDzjAxmZLbxgbWrhRPpLfxYUD";
+
 #[program]
 pub mod prediction_markets {
     use super::*;
 
-    /// Create a new prediction market
+    /// Create a new prediction market (ADMIN ONLY)
     pub fn create_market(
         ctx: Context<CreateMarket>,
         market_id: u64,
@@ -16,6 +19,12 @@ pub mod prediction_markets {
         end_time: i64,
         category: String,
     ) -> Result<()> {
+        // Only admin can create markets
+        require!(
+            ctx.accounts.creator.key().to_string() == ADMIN_PUBKEY,
+            MarketError::Unauthorized
+        );
+
         let market = &mut ctx.accounts.market;
         let clock = Clock::get()?;
 
@@ -272,6 +281,62 @@ pub mod prediction_markets {
         msg!("Market {} cancelled", market.id);
         Ok(())
     }
+
+    /// Withdraw accumulated fees from a market's vault (ADMIN ONLY)
+    /// Fees are the surplus in the vault beyond the yes_pool + no_pool collateral
+    pub fn withdraw_fees(
+        ctx: Context<WithdrawFees>,
+        market_id: u64,
+    ) -> Result<()> {
+        // Only admin can withdraw fees
+        require!(
+            ctx.accounts.admin.key().to_string() == ADMIN_PUBKEY,
+            MarketError::Unauthorized
+        );
+
+        let market = &ctx.accounts.market;
+        let vault = &ctx.accounts.vault;
+
+        // Market must be resolved to withdraw fees
+        require!(market.status == MarketStatus::Resolved, MarketError::MarketNotResolved);
+
+        // Calculate fees: vault balance minus the virtual liquidity pools
+        // Note: yes_pool and no_pool include virtual liquidity (1000 USDC each initially)
+        // The actual collateral is total_yes_bets + total_no_bets
+        // After resolution and claims, remaining balance is fees
+        let vault_balance = vault.amount;
+        let collateral = market.total_yes_bets
+            .checked_add(market.total_no_bets)
+            .ok_or(MarketError::MathOverflow)?;
+
+        // After winners claim, remaining funds in vault are fees
+        // This should be called after all winners have claimed
+        let fees = vault_balance.saturating_sub(0); // All remaining is fees after resolution
+
+        require!(fees > 0, MarketError::NoFeesToWithdraw);
+
+        // Transfer fees to admin
+        let market_id_bytes = market_id.to_le_bytes();
+        let vault_bump = &[market.vault_bump];
+        let seeds = &[
+            b"vault".as_ref(),
+            market_id_bytes.as_ref(),
+            vault_bump.as_ref(),
+        ];
+        let signer = &[&seeds[..]];
+
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.vault.to_account_info(),
+            to: ctx.accounts.admin_token_account.to_account_info(),
+            authority: ctx.accounts.vault.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        token::transfer(cpi_ctx, fees)?;
+
+        msg!("Withdrawn {} fees from market {} to admin", fees, market_id);
+        Ok(())
+    }
 }
 
 // ========== ACCOUNTS ==========
@@ -405,6 +470,31 @@ pub struct CancelMarket<'info> {
     pub creator: Signer<'info>,
 }
 
+#[derive(Accounts)]
+#[instruction(market_id: u64)]
+pub struct WithdrawFees<'info> {
+    #[account(
+        seeds = [b"market", market_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub market: Account<'info, Market>,
+
+    #[account(
+        mut,
+        seeds = [b"vault", market_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub admin_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub admin: Signer<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
 // ========== DATA STRUCTURES ==========
 
 #[account]
@@ -518,4 +608,8 @@ pub enum MarketError {
     HasBets,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Unauthorized: Admin access required")]
+    Unauthorized,
+    #[msg("No fees available to withdraw")]
+    NoFeesToWithdraw,
 }

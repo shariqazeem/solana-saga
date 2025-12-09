@@ -1,13 +1,26 @@
 "use client";
 
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface RetroGridProps {
   streak?: number;
 }
 
+// Seeded random number generator for consistent values
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 export function RetroGrid({ streak = 0 }: RetroGridProps) {
+  const [mounted, setMounted] = useState(false);
+
+  // Only render random elements after client mount to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Determine mode based on streak
   const isFireMode = streak >= 5;
   const isWarpMode = streak >= 10;
@@ -22,14 +35,14 @@ export function RetroGrid({ streak = 0 }: RetroGridProps) {
   const gridSpeed = isWarpMode ? 0.5 : isFireMode ? 1 : 1.5;
   const scanSpeed = isWarpMode ? 1.5 : 4;
 
-  // Generate random positions for particles (memoized)
+  // Generate deterministic positions for particles using seeded random
   const particles = useMemo(() =>
     [...Array(20)].map((_, i) => ({
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
+      left: `${seededRandom(i * 1000 + 1) * 100}%`,
+      top: `${seededRandom(i * 1000 + 2) * 100}%`,
       isPrimary: i % 2 === 0,
-      delay: Math.random() * 2,
-      duration: 3 + Math.random() * 2,
+      delay: seededRandom(i * 1000 + 3) * 2,
+      duration: 3 + seededRandom(i * 1000 + 4) * 2,
     })),
     []
   );
@@ -58,29 +71,29 @@ export function RetroGrid({ streak = 0 }: RetroGridProps) {
       )}
 
       {/* Warp speed lines */}
-      {isWarpMode && (
+      {isWarpMode && mounted && (
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(30)].map((_, i) => (
             <motion.div
               key={`warp-${i}`}
               className="absolute"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: `${seededRandom(i * 100 + 10) * 100}%`,
+                top: `${seededRandom(i * 100 + 20) * 100}%`,
                 width: "2px",
                 height: "0px",
                 background: `linear-gradient(to bottom, transparent, ${i % 2 === 0 ? "#FFD700" : "#FF8C00"}, transparent)`,
                 transformOrigin: "center center",
-                transform: `rotate(${Math.random() * 360}deg)`,
+                transform: `rotate(${seededRandom(i * 100 + 30) * 360}deg)`,
               }}
               animate={{
                 height: ["0px", "100px", "200px", "0px"],
                 opacity: [0, 1, 1, 0],
               }}
               transition={{
-                duration: 0.5 + Math.random() * 0.5,
+                duration: 0.5 + seededRandom(i * 100 + 40) * 0.5,
                 repeat: Infinity,
-                delay: Math.random() * 0.5,
+                delay: seededRandom(i * 100 + 50) * 0.5,
                 ease: "easeOut",
               }}
             />
@@ -250,28 +263,28 @@ export function RetroGrid({ streak = 0 }: RetroGridProps) {
       />
 
       {/* Fire mode: floating embers */}
-      {isFireMode && (
+      {isFireMode && mounted && (
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(15)].map((_, i) => (
             <motion.div
               key={`ember-${i}`}
               className="absolute w-2 h-2 rounded-full"
               style={{
-                left: `${10 + Math.random() * 80}%`,
+                left: `${10 + seededRandom(i * 200 + 1) * 80}%`,
                 bottom: "0%",
                 background: i % 3 === 0 ? "#FFD700" : i % 3 === 1 ? "#FF8C00" : "#FF4400",
                 boxShadow: `0 0 10px ${i % 3 === 0 ? "#FFD700" : "#FF8C00"}`,
               }}
               animate={{
-                y: [0, -window.innerHeight * (0.5 + Math.random() * 0.5)],
-                x: [0, (Math.random() - 0.5) * 200],
+                y: [0, -500 * (0.5 + seededRandom(i * 200 + 2) * 0.5)],
+                x: [0, (seededRandom(i * 200 + 3) - 0.5) * 200],
                 opacity: [1, 0.8, 0],
                 scale: [1, 0.5, 0],
               }}
               transition={{
-                duration: 3 + Math.random() * 2,
+                duration: 3 + seededRandom(i * 200 + 4) * 2,
                 repeat: Infinity,
-                delay: Math.random() * 3,
+                delay: seededRandom(i * 200 + 5) * 3,
                 ease: "easeOut",
               }}
             />

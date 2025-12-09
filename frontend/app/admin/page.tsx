@@ -22,15 +22,26 @@ import {
   Users,
   Sparkles,
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  DollarSign
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Admin wallets that can access the admin panel
+const ADMIN_WALLETS = [
+  "5TY5gts9AktYJMN6S8dGDzjAxmZLbxgbWrhRPpLfxYUD", // Primary admin
+  // Add more admin wallets as needed
+];
+
 export default function AdminPage() {
   const wallet = useAnchorWallet();
   const { connection } = useConnection();
-  const { markets, loading: marketsLoading, refetch, resolveMarket: resolveMarketHook } = usePredictionMarkets();
+  const { markets, loading: marketsLoading, refetch, resolveMarket: resolveMarketHook, withdrawFees: withdrawFeesHook } = usePredictionMarkets();
+
+  // Check if current wallet is an admin
+  const isAdmin = wallet ? ADMIN_WALLETS.includes(wallet.publicKey.toString()) : false;
 
   // Create Market Form
   const [question, setQuestion] = useState("");
@@ -45,6 +56,11 @@ export default function AdminPage() {
   const [resolving, setResolving] = useState<string | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [resolveSuccess, setResolveSuccess] = useState<string | null>(null);
+
+  // Withdraw Fees
+  const [withdrawing, setWithdrawing] = useState<string | null>(null);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
 
   // UI State
   const [showCreateForm, setShowCreateForm] = useState(true);
@@ -143,6 +159,29 @@ export default function AdminPage() {
     }
   };
 
+  const handleWithdrawFees = async (marketAddress: string, marketId: number) => {
+    if (!wallet) {
+      setWithdrawError("Please connect your wallet");
+      return;
+    }
+
+    setWithdrawing(marketAddress);
+    setWithdrawError(null);
+    setWithdrawSuccess(null);
+
+    try {
+      const tx = await withdrawFeesHook(marketAddress, marketId);
+      setWithdrawSuccess(`Fees withdrawn successfully!`);
+      await new Promise(r => setTimeout(r, 2000));
+      await refetch();
+    } catch (error: any) {
+      console.error("Error withdrawing fees:", error);
+      setWithdrawError(error.message || "Failed to withdraw fees");
+    } finally {
+      setWithdrawing(null);
+    }
+  };
+
   const activeMarkets = markets.filter(m => m.status === "Active");
   const resolvedMarkets = markets.filter(m => m.status === "Resolved");
 
@@ -235,12 +274,52 @@ export default function AdminPage() {
               <WalletButton />
             </div>
           </motion.div>
+        ) : !isAdmin ? (
+          /* Access Denied for Non-Admins */
+          <motion.div
+            className="min-h-[60vh] flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div className="text-center max-w-md">
+              <motion.div
+                className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 flex items-center justify-center"
+                animate={{
+                  boxShadow: [
+                    "0 0 20px rgba(239, 68, 68, 0.3)",
+                    "0 0 40px rgba(239, 68, 68, 0.5)",
+                    "0 0 20px rgba(239, 68, 68, 0.3)",
+                  ]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Lock className="w-12 h-12 text-red-400" />
+              </motion.div>
+              <h1 className="text-3xl font-game text-white mb-4">ACCESS DENIED</h1>
+              <p className="text-gray-400 mb-4">
+                Administrators Only
+              </p>
+              <p className="text-gray-500 text-sm mb-8">
+                Your wallet ({wallet?.publicKey.toString().slice(0, 8)}...) is not authorized to access the admin panel.
+              </p>
+              <Link href="/">
+                <motion.button
+                  className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#00F3FF]/10 to-[#FF00FF]/10 border border-[#00F3FF]/30 text-[#00F3FF] hover:border-[#00F3FF]/60 transition-all font-game mx-auto"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Gamepad2 className="w-5 h-5" />
+                  <span>BACK TO ARENA</span>
+                </motion.button>
+              </Link>
+            </div>
+          </motion.div>
         ) : (
           /* Main Admin Content */
           <div className="space-y-8">
             {/* Stats Bar */}
             <motion.div
-              className="grid grid-cols-3 gap-4"
+              className="grid grid-cols-2 md:grid-cols-4 gap-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
@@ -265,6 +344,20 @@ export default function AdminPage() {
                   <div>
                     <p className="text-2xl font-numbers font-bold text-white">{resolvedMarkets.length}</p>
                     <p className="text-xs text-gray-500 font-game">RESOLVED</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FF00AA]/10 to-transparent border border-[#FF00AA]/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[#FF00AA]/20">
+                    <Users className="w-5 h-5 text-[#FF00AA]" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-numbers font-bold text-white">
+                      {markets.reduce((acc, m) => acc + m.totalBetsCount, 0)}
+                    </p>
+                    <p className="text-xs text-gray-500 font-game">TOTAL BETS</p>
                   </div>
                 </div>
               </div>
@@ -560,11 +653,13 @@ export default function AdminPage() {
                           <div className="flex items-center gap-4 text-sm">
                             <span className="flex items-center gap-1 text-gray-500">
                               <TrendingUp className="w-4 h-4 text-[#00FF88]" />
+                              <span className="text-gray-400">Volume:</span>
                               <span className="font-numbers text-white">${market.totalVolume.toFixed(2)}</span>
                             </span>
                             <span className="flex items-center gap-1 text-gray-500">
-                              <Users className="w-4 h-4 text-[#00F3FF]" />
-                              <span className="font-numbers text-white">{market.bettors}</span>
+                              <Users className="w-4 h-4 text-[#FF00AA]" />
+                              <span className="text-gray-400">Bets:</span>
+                              <span className="font-numbers text-white">{market.totalBetsCount}</span>
                             </span>
                           </div>
                         </div>
@@ -636,32 +731,91 @@ export default function AdminPage() {
                 transition={{ delay: 0.4 }}
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <Check className="w-5 h-5 text-gray-500" />
-                  <h2 className="text-xl font-game text-gray-500">RESOLVED MARKETS</h2>
-                  <span className="px-2 py-1 rounded-lg bg-white/5 text-gray-500 text-xs font-numbers">
+                  <Check className="w-5 h-5 text-[#00FF88]" />
+                  <h2 className="text-xl font-game text-white">RESOLVED MARKETS</h2>
+                  <span className="px-2 py-1 rounded-lg bg-[#00FF88]/10 text-[#00FF88] text-xs font-numbers">
                     {resolvedMarkets.length}
                   </span>
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                    <DollarSign className="w-4 h-4 text-yellow-400" />
+                    <span className="text-xs text-yellow-400 font-game">WITHDRAW FEES</span>
+                  </div>
                 </div>
 
-                <div className="space-y-3 opacity-60">
-                  {resolvedMarkets.map((market) => (
-                    <div
-                      key={market.publicKey}
-                      className="p-4 rounded-xl bg-white/5 border border-white/5"
+                {/* Withdraw Messages */}
+                <AnimatePresence>
+                  {withdrawError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                      <p className="text-red-400">{withdrawError}</p>
+                    </motion.div>
+                  )}
+                  {withdrawSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="mb-4 p-4 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/30 flex items-center gap-3"
+                    >
+                      <DollarSign className="w-5 h-5 text-[#00FF88]" />
+                      <p className="text-[#00FF88]">{withdrawSuccess}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="space-y-3">
+                  {resolvedMarkets.map((market) => (
+                    <motion.div
+                      key={market.publicKey}
+                      className="p-4 rounded-xl bg-gradient-to-br from-[#0a0a0f] to-[#12121a] border border-white/10 hover:border-white/20 transition-all"
+                      whileHover={{ scale: 1.005 }}
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
                           <p className="text-white font-medium">{market.question}</p>
-                          <p className="text-sm text-gray-500">
-                            Volume: ${market.totalVolume.toFixed(2)}
-                          </p>
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <span className="text-gray-500">
+                              Volume: <span className="text-white font-numbers">${market.totalVolume.toFixed(2)}</span>
+                            </span>
+                            <span className="text-gray-500">
+                              Bets: <span className="text-white font-numbers">{market.totalBetsCount}</span>
+                            </span>
+                          </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-lg font-game text-sm ${market.outcome ? "bg-[#00FF88]/20 text-[#00FF88]" : "bg-[#FF0044]/20 text-[#FF0044]"
-                          }`}>
-                          {market.outcome ? "YES" : "NO"}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-3 py-1 rounded-lg font-game text-sm ${market.outcome ? "bg-[#00FF88]/20 text-[#00FF88]" : "bg-[#FF0044]/20 text-[#FF0044]"
+                            }`}>
+                            {market.outcome ? "YES" : "NO"}
+                          </span>
+                          <motion.button
+                            onClick={() => handleWithdrawFees(market.publicKey, market.id)}
+                            disabled={withdrawing === market.publicKey}
+                            className="px-4 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-400 font-game text-sm hover:bg-yellow-500/20 transition-all disabled:opacity-50"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            {withdrawing === market.publicKey ? (
+                              <motion.div
+                                className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full"
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4" />
+                                <span>WITHDRAW</span>
+                              </div>
+                            )}
+                          </motion.button>
+                        </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </motion.div>

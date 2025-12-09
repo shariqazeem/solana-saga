@@ -1,10 +1,16 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings } from "lucide-react";
+import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
+
+// Admin wallets that can access the admin panel
+const ADMIN_WALLETS = [
+    "5TY5gts9AktYJMN6S8dGDzjAxmZLbxgbWrhRPpLfxYUD",
+];
 
 interface GameOverlayProps {
   streak: number;
@@ -39,7 +45,25 @@ export function GameOverlay({
   showAdmin = false,
 }: GameOverlayProps) {
   const { connected } = useWallet();
+  const wallet = useAnchorWallet();
   const [displayBalance, setDisplayBalance] = useState(balance);
+  const [showSettings, setShowSettings] = useState(false);
+  const [performanceMode, setPerformanceMode] = useState<"high" | "lite">("high");
+
+  // Check if current wallet is admin
+  const isAdmin = wallet ? ADMIN_WALLETS.includes(wallet.publicKey.toString()) : false;
+
+  // Load performance mode from localStorage
+  useEffect(() => {
+    const savedPerformance = localStorage.getItem("performanceMode");
+    if (savedPerformance) setPerformanceMode(savedPerformance as "high" | "lite");
+  }, []);
+
+  const togglePerformance = () => {
+    const newValue = performanceMode === "high" ? "lite" : "high";
+    setPerformanceMode(newValue);
+    localStorage.setItem("performanceMode", newValue);
+  };
 
   // Animate balance changes
   useEffect(() => {
@@ -177,20 +201,124 @@ export function GameOverlay({
               </div>
             </motion.div>
 
-            {/* Admin Button */}
+            {/* Settings Button */}
             {showAdmin && (
-              <Link href="/admin">
+              <div className="relative">
                 <motion.button
-                  className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border transition-all bg-purple-500/10 border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
-                  whileHover={{ scale: 1.1 }}
+                  className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border transition-all bg-white/5 border-white/20 text-gray-400 hover:bg-white/10 hover:text-white"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowSettings(!showSettings)}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
                   <Settings className="w-4 h-4 md:w-5 md:h-5" />
                 </motion.button>
-              </Link>
+
+                {/* Settings Dropdown */}
+                <AnimatePresence>
+                  {showSettings && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      className="absolute right-0 top-12 w-64 bg-[#0a0a0f]/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50"
+                    >
+                      {/* Header */}
+                      <div className="p-3 border-b border-white/10 flex items-center justify-between">
+                        <span className="font-game text-sm text-white">Settings</span>
+                        <button
+                          onClick={() => setShowSettings(false)}
+                          className="text-gray-400 hover:text-white transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="p-3 space-y-3">
+                        {/* Sound Effects Toggle */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {soundEnabled ? (
+                              <Volume2 className="w-4 h-4 text-[#00f0ff]" />
+                            ) : (
+                              <VolumeX className="w-4 h-4 text-gray-500" />
+                            )}
+                            <span className="text-xs text-gray-300">Sound Effects</span>
+                          </div>
+                          <button
+                            onClick={onToggleSound}
+                            className={`relative w-10 h-5 rounded-full transition-all ${
+                              soundEnabled
+                                ? "bg-[#00f0ff]/30 border border-[#00f0ff]/50"
+                                : "bg-white/10 border border-white/20"
+                            }`}
+                          >
+                            <motion.div
+                              className={`absolute top-0.5 w-4 h-4 rounded-full ${
+                                soundEnabled ? "bg-[#00f0ff]" : "bg-gray-500"
+                              }`}
+                              animate={{ left: soundEnabled ? 20 : 2 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Performance Mode Toggle */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Zap className={`w-4 h-4 ${
+                              performanceMode === "high" ? "text-[#ffd700]" : "text-gray-500"
+                            }`} />
+                            <div>
+                              <span className="text-xs text-gray-300">Animations</span>
+                              <p className="text-[10px] text-gray-500">
+                                {performanceMode === "high" ? "High Quality" : "Lite Mode"}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={togglePerformance}
+                            className={`relative w-10 h-5 rounded-full transition-all ${
+                              performanceMode === "high"
+                                ? "bg-[#ffd700]/30 border border-[#ffd700]/50"
+                                : "bg-white/10 border border-white/20"
+                            }`}
+                          >
+                            <motion.div
+                              className={`absolute top-0.5 w-4 h-4 rounded-full ${
+                                performanceMode === "high" ? "bg-[#ffd700]" : "bg-gray-500"
+                              }`}
+                              animate={{ left: performanceMode === "high" ? 20 : 2 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Admin Access - Only shown to admins */}
+                        {isAdmin && (
+                          <div className="border-t border-white/10 pt-3">
+                            <Link href="/admin" onClick={() => setShowSettings(false)}>
+                              <motion.button
+                                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 text-red-400 hover:border-red-500/50 transition-all"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <Shield className="w-4 h-4" />
+                                <div className="text-left">
+                                  <div className="font-game text-xs">Admin Command</div>
+                                  <div className="text-[10px] text-red-400/70">Access control panel</div>
+                                </div>
+                              </motion.button>
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
 
             {/* Sound Toggle */}

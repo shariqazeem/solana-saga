@@ -40,6 +40,8 @@ export interface Market {
   createdAt: number;
   yesPrice: number;
   noPrice: number;
+  yesMultiplier: string;
+  noMultiplier: string;
   endsIn: string;
   bettors: number;
   totalBetsCount: number;
@@ -141,6 +143,11 @@ export function usePredictionMarkets() {
         const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
         const noPrice = 100 - yesPrice;
 
+        // Calculate payout multipliers: Multiplier = TotalPool / SidePool
+        // This shows what you'd win for betting on each side
+        const yesMultiplier = yesPool > 0 ? (totalPool / yesPool).toFixed(2) + "x" : "2.00x";
+        const noMultiplier = noPool > 0 ? (totalPool / noPool).toFixed(2) + "x" : "2.00x";
+
         // Calculate time remaining - IDL uses camelCase field names!
         const endTime = toNum(data.endTime);
         const now = Math.floor(Date.now() / 1000);
@@ -177,6 +184,8 @@ export function usePredictionMarkets() {
           createdAt: toNum(data.createdAt),
           yesPrice,
           noPrice,
+          yesMultiplier,
+          noMultiplier,
           endsIn,
           bettors: toNum(data.uniqueBettors),
           totalBetsCount: toNum(data.totalBetsCount),
@@ -471,6 +480,66 @@ export function usePredictionMarkets() {
     }
   };
 
+  // Withdraw fees from a resolved market (ADMIN ONLY)
+  const withdrawFees = async (marketAddress: string, marketId: number): Promise<string> => {
+    if (!program || !wallet) {
+      throw new Error("Wallet not connected");
+    }
+
+    try {
+      const marketPubkey = new PublicKey(marketAddress);
+
+      // Get admin's USDC token account
+      const adminTokenAccount = await getAssociatedTokenAddress(
+        USDC_MINT,
+        wallet.publicKey
+      );
+
+      // Check if account exists, create if not
+      const accountInfo = await connection.getAccountInfo(adminTokenAccount);
+      if (!accountInfo) {
+        const transaction = new Transaction();
+        transaction.add(
+          createAssociatedTokenAccountInstruction(
+            wallet.publicKey,
+            adminTokenAccount,
+            wallet.publicKey,
+            USDC_MINT
+          )
+        );
+        const signature = await (wallet as any).signAndSendTransaction(transaction);
+        await connection.confirmTransaction(signature);
+      }
+
+      // Derive vault PDA
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new BN(marketId).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      const tx = await program.methods
+        .withdrawFees(new BN(marketId))
+        .accounts({
+          market: marketPubkey,
+          vault: vaultPda,
+          adminTokenAccount: adminTokenAccount,
+          admin: wallet.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      console.log("Fees withdrawn successfully:", tx);
+
+      // Refresh data
+      await Promise.all([fetchMarkets(), fetchUserBets()]);
+
+      return tx;
+    } catch (error: any) {
+      console.error("Error withdrawing fees:", error);
+      throw new Error(error.message || "Failed to withdraw fees");
+    }
+  };
+
   // Get a single market by address
   const getMarket = useCallback(async (marketAddress: string): Promise<Market | null> => {
     if (!readOnlyProgram) return null;
@@ -488,6 +557,10 @@ export function usePredictionMarkets() {
       const totalPool = yesPool + noPool;
       const yesPrice = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50;
       const noPrice = 100 - yesPrice;
+
+      // Calculate payout multipliers
+      const yesMultiplier = yesPool > 0 ? (totalPool / yesPool).toFixed(2) + "x" : "2.00x";
+      const noMultiplier = noPool > 0 ? (totalPool / noPool).toFixed(2) + "x" : "2.00x";
 
       // IDL uses camelCase field names!
       const endTime = toNum((data as any).endTime);
@@ -525,6 +598,8 @@ export function usePredictionMarkets() {
         createdAt: toNum((data as any).createdAt),
         yesPrice,
         noPrice,
+        yesMultiplier,
+        noMultiplier,
         endsIn,
         bettors: toNum((data as any).uniqueBettors),
         totalBetsCount: toNum((data as any).totalBetsCount),
@@ -558,6 +633,7 @@ export function usePredictionMarkets() {
     placeBet,
     claimWinnings,
     resolveMarket,
+    withdrawFees,
     getMarket,
     getUserUsdcAccount,
     refetch: () => Promise.all([fetchMarkets(), fetchUserBets()]),

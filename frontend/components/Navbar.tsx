@@ -5,14 +5,48 @@ import { usePathname } from "next/navigation";
 import { WalletButton } from "./WalletButton";
 import {
     Gamepad2, Trophy, LayoutGrid, User, Zap, Star,
-    Volume2, VolumeX, Bell, Settings, Sparkles
+    Volume2, VolumeX, Bell, Settings, Sparkles, X, Shield
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
+
+// Admin wallets that can access the admin panel
+const ADMIN_WALLETS = [
+    "5TY5gts9AktYJMN6S8dGDzjAxmZLbxgbWrhRPpLfxYUD",
+];
 export function Navbar() {
     const pathname = usePathname();
+    const wallet = useAnchorWallet();
     const [isScrolled, setIsScrolled] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    const [soundEnabled, setSoundEnabled] = useState(true);
+    const [performanceMode, setPerformanceMode] = useState<"high" | "lite">("high");
+
+    // Check if current wallet is admin
+    const isAdmin = wallet ? ADMIN_WALLETS.includes(wallet.publicKey.toString()) : false;
+
+    // Load settings from localStorage
+    useEffect(() => {
+        const savedSound = localStorage.getItem("soundEnabled");
+        const savedPerformance = localStorage.getItem("performanceMode");
+        if (savedSound !== null) setSoundEnabled(savedSound === "true");
+        if (savedPerformance) setPerformanceMode(savedPerformance as "high" | "lite");
+    }, []);
+
+    // Save settings to localStorage
+    const toggleSound = () => {
+        const newValue = !soundEnabled;
+        setSoundEnabled(newValue);
+        localStorage.setItem("soundEnabled", String(newValue));
+    };
+
+    const togglePerformance = () => {
+        const newValue = performanceMode === "high" ? "lite" : "high";
+        setPerformanceMode(newValue);
+        localStorage.setItem("performanceMode", newValue);
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -150,12 +184,128 @@ export function Navbar() {
                             className="hidden md:flex relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 items-center justify-center text-gray-400 hover:text-white transition-colors hover:bg-white/10"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            
+
                             onClick={() => {}}
                         >
                             <Bell className="w-4 h-4" />
                             <span className="absolute top-2 right-2 w-2 h-2 bg-[#ff0044] rounded-full animate-pulse shadow-[0_0_5px_#ff0044]" />
                         </motion.button>
+
+                        {/* Settings Button */}
+                        <div className="relative">
+                            <motion.button
+                                className="hidden md:flex w-10 h-10 rounded-xl bg-white/5 border border-white/10 items-center justify-center text-gray-400 hover:text-white transition-colors hover:bg-white/10"
+                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => setShowSettings(!showSettings)}
+                            >
+                                <Settings className="w-4 h-4" />
+                            </motion.button>
+
+                            {/* Settings Dropdown */}
+                            <AnimatePresence>
+                                {showSettings && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                        className="absolute right-0 top-14 w-72 bg-[#0a0a0f]/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50"
+                                    >
+                                        {/* Header */}
+                                        <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                                            <span className="font-game text-white">Settings</span>
+                                            <button
+                                                onClick={() => setShowSettings(false)}
+                                                className="text-gray-400 hover:text-white transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        <div className="p-4 space-y-4">
+                                            {/* Sound Effects Toggle */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    {soundEnabled ? (
+                                                        <Volume2 className="w-5 h-5 text-[#00f0ff]" />
+                                                    ) : (
+                                                        <VolumeX className="w-5 h-5 text-gray-500" />
+                                                    )}
+                                                    <span className="text-sm text-gray-300">Sound Effects</span>
+                                                </div>
+                                                <button
+                                                    onClick={toggleSound}
+                                                    className={`relative w-12 h-6 rounded-full transition-all ${
+                                                        soundEnabled
+                                                            ? "bg-[#00f0ff]/30 border border-[#00f0ff]/50"
+                                                            : "bg-white/10 border border-white/20"
+                                                    }`}
+                                                >
+                                                    <motion.div
+                                                        className={`absolute top-1 w-4 h-4 rounded-full ${
+                                                            soundEnabled ? "bg-[#00f0ff]" : "bg-gray-500"
+                                                        }`}
+                                                        animate={{ left: soundEnabled ? 26 : 4 }}
+                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                    />
+                                                </button>
+                                            </div>
+
+                                            {/* Performance Mode Toggle */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <Zap className={`w-5 h-5 ${
+                                                        performanceMode === "high" ? "text-[#ffd700]" : "text-gray-500"
+                                                    }`} />
+                                                    <div>
+                                                        <span className="text-sm text-gray-300">Animations</span>
+                                                        <p className="text-xs text-gray-500">
+                                                            {performanceMode === "high" ? "High Quality" : "Lite Mode"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={togglePerformance}
+                                                    className={`relative w-12 h-6 rounded-full transition-all ${
+                                                        performanceMode === "high"
+                                                            ? "bg-[#ffd700]/30 border border-[#ffd700]/50"
+                                                            : "bg-white/10 border border-white/20"
+                                                    }`}
+                                                >
+                                                    <motion.div
+                                                        className={`absolute top-1 w-4 h-4 rounded-full ${
+                                                            performanceMode === "high" ? "bg-[#ffd700]" : "bg-gray-500"
+                                                        }`}
+                                                        animate={{ left: performanceMode === "high" ? 26 : 4 }}
+                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                    />
+                                                </button>
+                                            </div>
+
+                                            {/* Divider */}
+                                            <div className="border-t border-white/10 pt-4">
+                                                {/* Admin Access - Only shown to admins */}
+                                                {isAdmin && (
+                                                    <Link href="/admin" onClick={() => setShowSettings(false)}>
+                                                        <motion.button
+                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 text-red-400 hover:border-red-500/50 transition-all"
+                                                            whileHover={{ scale: 1.02 }}
+                                                            whileTap={{ scale: 0.98 }}
+                                                        >
+                                                            <Shield className="w-5 h-5" />
+                                                            <div className="text-left">
+                                                                <div className="font-game text-sm">Admin Command</div>
+                                                                <div className="text-xs text-red-400/70">Access control panel</div>
+                                                            </div>
+                                                        </motion.button>
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
                         {/* Divider */}
                         <div className="hidden md:block h-8 w-px bg-white/10" />

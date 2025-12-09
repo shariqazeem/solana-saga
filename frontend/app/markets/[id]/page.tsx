@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { usePredictionMarkets, Market } from "@/lib/solana/hooks/usePredictionMarkets";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { BetSuccessModal } from "@/components/BetSuccessModal";
 
 const QUICK_AMOUNTS = [10, 25, 50, 100, 250, 500];
 
@@ -29,6 +30,14 @@ export default function MarketDetailPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
   const [betSuccess, setBetSuccess] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successBetData, setSuccessBetData] = useState<{
+    question: string;
+    side: boolean;
+    amount: number;
+    multiplier: string;
+    potentialPayout: number;
+  } | null>(null);
 
   // Fetch market data
   const fetchMarket = useCallback(async () => {
@@ -58,8 +67,16 @@ export default function MarketDetailPage() {
   const calculatePayout = () => {
     if (!betAmount || selectedSide === null || !market) return "0";
     const amount = parseFloat(betAmount);
-    const odds = selectedSide ? market.yesPrice : market.noPrice;
-    return (amount / (odds / 100)).toFixed(2);
+    // Use multiplier for more accurate payout calculation
+    const multiplierStr = selectedSide ? market.yesMultiplier : market.noMultiplier;
+    const multiplier = parseFloat(multiplierStr.replace("x", ""));
+    return (amount * multiplier).toFixed(2);
+  };
+
+  const getMultiplierValue = () => {
+    if (selectedSide === null || !market) return 1;
+    const multiplierStr = selectedSide ? market.yesMultiplier : market.noMultiplier;
+    return parseFloat(multiplierStr.replace("x", ""));
   };
 
   const handlePlaceBet = async () => {
@@ -73,20 +90,30 @@ export default function MarketDetailPage() {
     try {
       setIsPlacingBet(true);
       const amount = parseFloat(betAmount);
+      const multiplier = selectedSide ? market.yesMultiplier : market.noMultiplier;
+      const potentialPayout = parseFloat(calculatePayout());
 
       await placeBet(market.publicKey, amount, selectedSide);
 
-      setBetSuccess(true);
+      // Store bet data for success modal
+      setSuccessBetData({
+        question: market.question,
+        side: selectedSide,
+        amount: amount,
+        multiplier: multiplier,
+        potentialPayout: potentialPayout,
+      });
+
       setShowConfirm(false);
+      setShowSuccessModal(true);
 
       // Refresh market data
       setTimeout(async () => {
         const updated = await getMarket(marketId);
         if (updated) setMarket(updated);
-        setBetSuccess(false);
         setBetAmount("");
         setSelectedSide(null);
-      }, 2000);
+      }, 1000);
     } catch (err: any) {
       console.error("Error placing bet:", err);
       alert(err.message || "Failed to place bet");
@@ -142,20 +169,17 @@ export default function MarketDetailPage() {
           </Link>
         </div>
 
-        {/* Success Toast */}
-        <AnimatePresence>
-          {betSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: -50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              className="fixed top-24 left-1/2 -translate-x-1/2 z-50 game-card p-4 flex items-center gap-3"
-            >
-              <Check className="w-5 h-5 text-[#00ff88]" />
-              <span className="font-game text-white">Bet placed successfully!</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Bet Success Modal */}
+        {successBetData && (
+          <BetSuccessModal
+            isOpen={showSuccessModal}
+            onClose={() => {
+              setShowSuccessModal(false);
+              setSuccessBetData(null);
+            }}
+            betData={successBetData}
+          />
+        )}
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -197,7 +221,7 @@ export default function MarketDetailPage() {
 
               {/* Big Battle Bar */}
               <div className="mb-8">
-                <div className="relative h-20 rounded-2xl overflow-hidden bg-black/50">
+                <div className="relative h-24 rounded-2xl overflow-hidden bg-black/50">
                   {/* YES Side */}
                   <div
                     className="absolute left-0 top-0 bottom-0 flex items-center justify-start px-6 transition-all duration-1000"
@@ -209,10 +233,11 @@ export default function MarketDetailPage() {
                     <div className="flex items-center gap-3">
                       <TrendingUp className="w-8 h-8 text-[#00ff88]" />
                       <div>
-                        <div className="text-3xl font-numbers font-black text-[#00ff88]">
-                          {market.yesPrice}%
+                        <div className="text-2xl font-numbers font-black text-[#00ff88]">
+                          {market.yesMultiplier}
                         </div>
-                        <div className="text-sm font-game text-[#00ff88]/70">YES</div>
+                        <div className="text-sm font-game text-[#00ff88]/70">YES PAYOUT</div>
+                        <div className="text-xs font-numbers text-[#00ff88]/50">{market.yesPrice}% chance</div>
                       </div>
                     </div>
                   </div>
@@ -227,10 +252,11 @@ export default function MarketDetailPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <div className="text-3xl font-numbers font-black text-[#ff0044]">
-                          {market.noPrice}%
+                        <div className="text-2xl font-numbers font-black text-[#ff0044]">
+                          {market.noMultiplier}
                         </div>
-                        <div className="text-sm font-game text-[#ff0044]/70">NO</div>
+                        <div className="text-sm font-game text-[#ff0044]/70">NO PAYOUT</div>
+                        <div className="text-xs font-numbers text-[#ff0044]/50">{market.noPrice}% chance</div>
                       </div>
                       <TrendingDown className="w-8 h-8 text-[#ff0044]" />
                     </div>
@@ -334,10 +360,11 @@ export default function MarketDetailPage() {
                       <TrendingUp className={`w-8 h-8 mx-auto mb-2 ${
                         selectedSide === true ? "text-[#00ff88]" : "text-gray-400"
                       }`} />
-                      <div className={`font-game ${
+                      <div className={`font-game text-sm ${
                         selectedSide === true ? "text-[#00ff88]" : "text-gray-400"
                       }`}>YES</div>
-                      <div className="text-2xl font-numbers font-bold text-white">{market.yesPrice}%</div>
+                      <div className="text-2xl font-numbers font-bold text-white">{market.yesMultiplier}</div>
+                      <div className="text-xs text-gray-500 font-numbers">{market.yesPrice}% chance</div>
                     </button>
 
                     <button
@@ -351,10 +378,11 @@ export default function MarketDetailPage() {
                       <TrendingDown className={`w-8 h-8 mx-auto mb-2 ${
                         selectedSide === false ? "text-[#ff0044]" : "text-gray-400"
                       }`} />
-                      <div className={`font-game ${
+                      <div className={`font-game text-sm ${
                         selectedSide === false ? "text-[#ff0044]" : "text-gray-400"
                       }`}>NO</div>
-                      <div className="text-2xl font-numbers font-bold text-white">{market.noPrice}%</div>
+                      <div className="text-2xl font-numbers font-bold text-white">{market.noMultiplier}</div>
+                      <div className="text-xs text-gray-500 font-numbers">{market.noPrice}% chance</div>
                     </button>
                   </div>
 
@@ -390,7 +418,7 @@ export default function MarketDetailPage() {
 
                   {/* Payout Preview */}
                   {selectedSide !== null && betAmount && parseFloat(betAmount) > 0 && (
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 mb-6">
+                    <div className="p-4 rounded-xl bg-gradient-to-r from-[#00ff88]/5 to-[#00f0ff]/5 border border-[#00ff88]/20 mb-6">
                       <div className="flex justify-between mb-2">
                         <span className="text-gray-400">Potential Payout</span>
                         <span className="font-numbers font-bold text-[#00ff88] text-xl">
@@ -398,9 +426,9 @@ export default function MarketDetailPage() {
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Return</span>
-                        <span className="text-gray-400">
-                          {((parseFloat(calculatePayout()) / parseFloat(betAmount) - 1) * 100).toFixed(0)}%
+                        <span className="text-gray-500">Multiplier</span>
+                        <span className="text-[#ffd700] font-numbers font-bold">
+                          {selectedSide ? market.yesMultiplier : market.noMultiplier}
                         </span>
                       </div>
                     </div>
