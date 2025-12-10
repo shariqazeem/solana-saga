@@ -2,11 +2,12 @@
 
 <div align="center">
 
-### **The First Swipe-to-Bet Prediction Game on Solana**
+### **The Tinder of Prediction Markets**
 
 ![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?style=for-the-badge&logo=solana&logoColor=white)
-![Hackathon](https://img.shields.io/badge/Indie.fun%20Hackathon-2025-blueviolet?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Live-success?style=for-the-badge)
+![Play Solana](https://img.shields.io/badge/Play%20Solana-Gamepad%20Ready-00f0ff?style=for-the-badge)
+![Moddio](https://img.shields.io/badge/Moddio-Arcade%20Integrated-ff00aa?style=for-the-badge)
+![Indie.fun](https://img.shields.io/badge/Indie.fun-Hackathon%202025-ffd700?style=for-the-badge)
 
 **Swipe Right = YES | Swipe Left = NO | Win the Pool**
 
@@ -16,96 +17,96 @@
 
 ---
 
-## The Problem
+## Why We'll Win
 
-Prediction markets are powerful tools for aggregating wisdom, but they're **boring**.
+### The Problem
+Prediction markets are powerful but **boring**. Complex dashboards, intimidating charts, zero fun.
 
-Current platforms feel like stock trading dashboards: complex interfaces, intimidating charts, zero fun. Nobody wants to study order books just to bet on whether their favorite memecoin will moon.
+### Our Solution
+We threw out the dashboard and built **Tinder for Predictions** — a swipe-to-bet game that makes betting addictive, social, and hardware-ready.
 
-## Our Solution: Gamified Betting
+---
 
-We threw out the dashboard and built **Tinder for Predictions**.
+## Partner Integrations
+
+### 🎮 Play Solana — Hardware-First Design
+
+> *"Solana Saga is built Hardware-First. We implemented the Gamepad API to ensure native compatibility with the Play Solana Gen1 console. Users can bet using physical D-Pads and buttons for a tactile arcade experience."*
+
+**Technical Implementation:**
+- Native `navigator.getGamepads()` API integration
+- Real-time polling at 60fps via `requestAnimationFrame`
+- Button mapping: **A** = YES, **B** = NO, **Y** = SKIP
+- D-Pad support for navigation
+- Visual "🎮 Gamepad Connected" indicator
+- 500ms debounce to prevent accidental double-bets
+
+```typescript
+// Gamepad controls - production ready
+if (buttons[0]?.pressed) triggerBet(true);   // A = YES
+if (buttons[1]?.pressed) triggerBet(false);  // B = NO
+if (buttons[3]?.pressed) triggerSkip();       // Y = SKIP
+```
+
+---
+
+### 🕹️ Moddio — Arcade Lounge Integration
+
+> *"To solve the 'waiting time' problem in prediction markets, we integrated a Moddio Arcade Lounge. This keeps users engaged and on the platform while waiting for market resolutions, boosting retention metrics."*
+
+**The Retention Problem:**
+- Prediction markets have inherent wait times (hours/days until resolution)
+- Users leave → forget to claim → churn
+
+**Our Solution:**
+- Embedded Moddio game accessible from main app
+- "Arcade Lounge" button in navigation
+- Full-screen iframe with ESC to exit
+- Keeps users on-platform during wait times
+- Increases session duration and return visits
+
+---
+
+### 📱 Social Proof — Viral Loop Engine
+
+> *"We gamified the experience with XP, Levels, and 'Shareable Tickets' to create a viral loop, turning every bet into a marketing impression."*
+
+**Twitter/X Share Integration:**
+- One-tap share after every bet
+- Pre-formatted tweet with bet details
+- Hashtags: #Solana #PredictionMarkets #Web3Gaming
+- Mentions @SolanaSaga for tracking impressions
+
+**Gamification Stack:**
+- 🔥 Streak counter with fire animations
+- 📊 Trust Score (win rate health bar)
+- 🎫 Shareable "Bet Tickets" with holographic design
+- 🏆 On-chain Leaderboard (real UserStats from blockchain)
+- 🎊 Confetti explosions on every bet
+
+---
+
+## The Experience
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
-│     👉 SWIPE RIGHT = Bet YES                               │
-│     👈 SWIPE LEFT = Bet NO                                 │
-│     👆 SWIPE UP = Skip                                     │
+│     👉 SWIPE RIGHT (or press A) = Bet YES                  │
+│     👈 SWIPE LEFT (or press B) = Bet NO                    │
+│     👆 SWIPE UP (or press Y) = Skip                        │
 │                                                             │
-│     That's it. No charts. No order books.                  │
-│     Just pure, addictive, swipe-to-bet action.             │
+│     Works with: Touch | Mouse | Keyboard | Gamepad         │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## How It Works
-
-### The Flow
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   1. CREATE     │────▶│    2. BET       │────▶│   3. RESOLVE    │
-│                 │     │                 │     │                 │
-│  Market Creator │     │  Players Swipe  │     │ Creator Decides │
-│  sets question  │     │  YES / NO / Skip│     │   the outcome   │
-│  & end time     │     │                 │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                        │
-                                                        ▼
-                        ┌─────────────────────────────────────────┐
-                        │           4. CLAIM WINNINGS             │
-                        │                                         │
-                        │    Winners split the losers' pool!      │
-                        │    Original bet + share of losers       │
-                        │              (minus 2% fee)             │
-                        └─────────────────────────────────────────┘
-```
-
-### The Smart Contract Magic (AMM)
-
-Under the hood, we use an **Automated Market Maker (AMM)** inspired by Uniswap:
-
-1. **Virtual Liquidity Pools**: Each market starts with 1000 USDC virtual liquidity on each side (YES/NO)
-2. **Dynamic Odds**: As more people bet YES, the YES price goes up (harder to win, but bigger potential payout)
-3. **Winner Takes All**: When resolved, winners split the entire losing pool proportionally
-
-**Example:**
-```
-Market: "Will SOL hit $200?"
-
-YES Pool: $5,000 (60%)    NO Pool: $3,333 (40%)
-
-If YES wins:
-  → Every YES bettor gets: Original bet + (their share of $3,333 NO pool)
-  → After 2% platform fee
-```
-
----
-
-## Gamification Features
-
-### Visual Feedback
-- **Confetti Explosions** - Every bet triggers satisfying particle effects
-- **Screen Shake** - Visceral feedback on every action
-- **3D Holographic Cards** - Tilt effects and glare on hover
-- **HypeHUD** - AI analyst with trash talk and sentiment analysis
-
-### Streak System
-- **Fire Counter** - Build betting streaks with animated flames
-- **Trust Score** - Health-bar style reputation meter
-- **Streak-Reactive Environment**:
-  - 0-4 bets: Cyan/Pink cyberpunk theme
-  - 5-9 bets: Gold/Fire theme + faster animations
-  - 10+ bets: **WARP SPEED MODE** with radial blur!
-
-### Retro-Wave Aesthetic
-- Animated synthwave grid floor with perspective
-- Floating neon particles
-- CRT scan line effects
-- Vaporwave sun at horizon
+### Input Methods
+| Method | YES | NO | SKIP |
+|--------|-----|-----|------|
+| **Touch** | Swipe Right | Swipe Left | Swipe Up |
+| **Mouse** | Drag Right | Drag Left | Drag Up |
+| **Keyboard** | → Arrow | ← Arrow | ↑ Arrow |
+| **Gamepad** | A Button | B Button | Y Button |
 
 ---
 
@@ -118,195 +119,103 @@ If YES wins:
 | **Frontend** | Next.js 15 + React 18 |
 | **Styling** | Tailwind CSS |
 | **Animations** | Framer Motion |
-| **Wallet** | Solana Wallet Adapter (Phantom) |
+| **Wallet** | Solana Wallet Adapter |
+| **Gamepad** | Web Gamepad API |
+| **Arcade** | Moddio Embed |
 | **Token** | SPL Token (USDC) |
 
 ---
 
-## Smart Contract Architecture
+## Smart Contract
 
 ```
 Program ID: G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j
+Network: Solana Devnet
 ```
 
 ### Instructions
+| Instruction | Description |
+|-------------|-------------|
+| `create_market` | Create prediction market with question & end time |
+| `place_bet` | Bet YES or NO (1-10,000 USDC) |
+| `resolve_market` | Creator decides winning outcome |
+| `claim_winnings` | Winners collect proportional payout |
 
-| Instruction | Description | Access |
-|-------------|-------------|--------|
-| `create_market` | Create new prediction market | Anyone |
-| `place_bet` | Bet YES or NO (1-10,000 USDC) | Anyone with USDC |
-| `resolve_market` | Decide the winning outcome | Creator only |
-| `claim_winnings` | Collect payout | Bettors |
-| `cancel_market` | Cancel if no bets | Creator only |
-
-### Key Innovation: Multiple Bets per User
-
-Unlike most prediction markets, users can bet **multiple times** on the same market. Each bet creates a unique PDA:
-
+### Key Innovation: Multiple Bets Per User
+Unlike competitors, users can bet **multiple times** on the same market:
 ```rust
-seeds = ["bet", market.key(), user.key(), total_bets_count.to_le_bytes()]
+seeds = ["bet", market.key(), user.key(), bet_count.to_le_bytes()]
 ```
 
-This allows the "Start Over" feature where players can re-bet on the same questions!
+---
 
-### Security Features
+## Gamification Features
 
-- `require!(!bet.claimed)` - Prevents double claiming
-- `require!(bet.user == ctx.accounts.user.key())` - Only bet owners can claim
-- `require!(market.status == MarketStatus::Resolved)` - Must be resolved first
-- Overflow protection on all math operations
-- Min/max bet limits (1 - 10,000 USDC)
+### Visual Feedback
+- **Confetti Explosions** — Every bet triggers particles
+- **Screen Shake** — Visceral feedback on actions
+- **3D Holographic Cards** — Tilt effects and glare
+- **Streak-Reactive Theme** — Environment changes with streak
+
+### Streak System
+| Streak | Theme |
+|--------|-------|
+| 0-4 | Cyan/Pink cyberpunk |
+| 5-9 | Gold/Fire + faster animations |
+| 10+ | **WARP SPEED MODE** |
+
+### Leaderboard
+- Real on-chain data (UserStats accounts)
+- Top 10 players with podium for top 3
+- Net profit, win rate, best streak tracking
 
 ---
 
 ## Local Development
 
-### Prerequisites
-
-- Node.js 18+
-- Phantom Wallet (browser extension)
-- Devnet SOL (for gas) + Devnet USDC (for betting)
-
-### Setup
-
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/your-username/solana-saga.git
 cd solana-saga/frontend
 
-# Install dependencies
+# Install
 npm install
 
-# Configure environment
+# Configure
 cp .env.example .env.local
-# Edit .env.local with your RPC endpoint
 
-# Run development server
+# Run
 npm run dev
 ```
 
-### Get Test Tokens
-
-1. **Devnet SOL**: Use [Solana Faucet](https://faucet.solana.com/)
-2. **Devnet USDC** (Mint: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`):
-   - Use [spl-token-faucet](https://spl-token-faucet.com/)
-   - Or request in Solana Discord
+### Test Tokens
+1. **Devnet SOL**: [faucet.solana.com](https://faucet.solana.com/)
+2. **Devnet USDC**: [spl-token-faucet.com](https://spl-token-faucet.com/) (Mint: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`)
 
 ---
 
-## Project Structure
-
-```
-solana-saga/
-├── frontend/
-│   ├── app/
-│   │   ├── page.tsx              # Main arena (swipe interface)
-│   │   ├── admin/page.tsx        # Market creation dashboard
-│   │   └── layout.tsx            # Root layout with wallet provider
-│   ├── components/
-│   │   ├── SwipeableMarketStack.tsx   # Tinder-style card stack
-│   │   ├── GameOverlay.tsx            # HUD with stats/notifications
-│   │   ├── HypeHUD.tsx                # AI analyst overlay
-│   │   └── RetroGrid.tsx              # Animated background
-│   ├── hooks/
-│   │   ├── useSoundEffects.ts         # Web Audio API sounds
-│   │   └── useUsdcBalance.ts          # Real-time USDC balance
-│   └── lib/solana/
-│       ├── hooks/usePredictionMarkets.ts  # Anchor program interface
-│       └── idl/prediction_markets.json    # Contract IDL
-│
-└── prediction-markets-contracts/
-    └── programs/prediction-markets/src/lib.rs  # Anchor program
-```
-
----
-
-## Demo Recording Checklist
-
-### Setup (Before Recording)
-- [ ] Wallet A (Creator) has SOL + USDC on Devnet
-- [ ] Wallet B (Player) has SOL + USDC on Devnet
-- [ ] Browser window sized for screen recording
-- [ ] Clear any existing test markets
-
-### Recording Flow
-
-**Step 1: Create Market (Wallet A)**
-- [ ] Connect Wallet A
-- [ ] Go to Admin panel (gear icon)
-- [ ] Create market: "Will SOL hit $200 by end of month?"
-- [ ] Category: Crypto, Duration: 1 day
-- [ ] Confirm transaction
-
-**Step 2: Place Bets (Wallet B)**
-- [ ] Disconnect Wallet A, Connect Wallet B
-- [ ] See the market card appear
-- [ ] Set bet amount ($5)
-- [ ] Swipe RIGHT (YES) - show confetti!
-- [ ] Swipe again on same market (demonstrate multiple bets)
-- [ ] Show streak counter increasing
-
-**Step 3: Resolve Market (Wallet A)**
-- [ ] Disconnect Wallet B, Connect Wallet A
-- [ ] Go to Admin panel
-- [ ] Find the market
-- [ ] Click "YES WON" to resolve
-- [ ] Confirm transaction
-
-**Step 4: Claim Winnings (Wallet B)**
-- [ ] Disconnect Wallet A, Connect Wallet B
-- [ ] Go to My Bets page
-- [ ] Find winning bet
-- [ ] Click "Claim Winnings"
-- [ ] Show USDC balance increase!
-
-**Step 5: Show Off Features**
-- [ ] Hover over card - show 3D tilt effect
-- [ ] Build streak to 5+ - show gold/fire theme
-- [ ] Build streak to 10+ - show WARP SPEED mode!
-- [ ] Toggle sound on/off
-
----
-
-## Competitive Advantage
+## Competitive Edge
 
 | Feature | Solana Saga | Polymarket | Augur |
 |---------|-------------|------------|-------|
-| **Speed** | ~400ms | Minutes | 15+ mins |
-| **UX** | Swipe = Done | Complex forms | Complex forms |
-| **Mobile** | Native feel | Okay | Poor |
+| **Swipe UX** | ✅ | ❌ | ❌ |
+| **Gamepad Support** | ✅ | ❌ | ❌ |
+| **Arcade Mode** | ✅ | ❌ | ❌ |
+| **Social Sharing** | ✅ | Limited | ❌ |
 | **Gamification** | Full suite | None | None |
-| **Fun Factor** | 🎮🎮🎮 | 📊 | 📊 |
+| **Speed** | ~400ms | Minutes | 15+ mins |
 | **Multiple Bets** | ✅ | ❌ | ❌ |
-
----
-
-## Roadmap
-
-- [x] **Phase 1**: MVP - Swipe-to-bet interface, on-chain betting
-- [ ] **Phase 2**: Decentralized resolution (Pyth/Switchboard oracles)
-- [ ] **Phase 3**: Mobile app (React Native)
-- [ ] **Phase 4**: Token launch + governance
-- [ ] **Phase 5**: Mainnet deployment
-
----
-
-## License
-
-MIT License - Fork it, build on it, make predictions fun!
 
 ---
 
 <div align="center">
 
-**Built with caffeine and determination for the Indie.fun Hackathon**
+## Built for Indie.fun Hackathon 2025
 
-**Powered by Solana**
-
----
+**Powered by Solana | Play Solana Ready | Moddio Integrated**
 
 ### Swipe. Bet. Win.
 
-[Live Demo](#) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet) | [GitHub](https://github.com/your-username/solana-saga)
+[Live Demo](#) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet)
 
 </div>
