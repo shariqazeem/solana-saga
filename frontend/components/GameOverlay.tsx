@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings, Shield } from "lucide-react";
+import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings, Shield, BarChart3, Target, Gift } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
@@ -294,6 +294,37 @@ export function GameOverlay({
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             />
                           </button>
+                        </div>
+
+                        {/* Navigation Links */}
+                        <div className="border-t border-white/10 pt-3 space-y-2">
+                          <Link href="/my-bets" onClick={() => setShowSettings(false)}>
+                            <motion.button
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#ff00aa]/10 to-[#00f0ff]/10 border border-[#ff00aa]/30 text-[#ff00aa] hover:border-[#ff00aa]/50 transition-all"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Gift className="w-4 h-4" />
+                              <div className="text-left">
+                                <div className="font-game text-xs">My Bets</div>
+                                <div className="text-[10px] text-[#ff00aa]/70">View & claim winnings</div>
+                              </div>
+                            </motion.button>
+                          </Link>
+
+                          <Link href="/markets" onClick={() => setShowSettings(false)}>
+                            <motion.button
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#00f0ff]/10 to-[#00ff88]/10 border border-[#00f0ff]/30 text-[#00f0ff] hover:border-[#00f0ff]/50 transition-all"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Target className="w-4 h-4" />
+                              <div className="text-left">
+                                <div className="font-game text-xs">All Markets</div>
+                                <div className="text-[10px] text-[#00f0ff]/70">Browse all predictions</div>
+                              </div>
+                            </motion.button>
+                          </Link>
                         </div>
 
                         {/* Admin Access - Only shown to admins */}

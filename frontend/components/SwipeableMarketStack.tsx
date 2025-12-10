@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import {
   motion,
   useMotionValue,
@@ -27,16 +27,21 @@ interface SwipeableMarketStackProps {
   streak?: number;
 }
 
+export interface SwipeableMarketStackRef {
+  triggerBet: (prediction: boolean) => void;
+  triggerSkip: () => void;
+}
+
 const SWIPE_THRESHOLD = 100;
 
-export function SwipeableMarketStack({
+export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, SwipeableMarketStackProps>(({
   markets,
   onBet,
   onSkip,
   betAmount,
   soundEnabled,
   streak = 0,
-}: SwipeableMarketStackProps) {
+}, ref) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [cardHistory, setCardHistory] = useState<string[]>([]);
@@ -249,6 +254,16 @@ export function SwipeableMarketStack({
     controls.set({ x: 0, y: 0, opacity: 1 });
     setIsAnimating(false);
   };
+
+  // Expose methods for keyboard controls
+  useImperativeHandle(ref, () => ({
+    triggerBet: (prediction: boolean) => {
+      handleButtonBet(prediction);
+    },
+    triggerSkip: () => {
+      handleSkipButton();
+    },
+  }));
 
   // Empty state
   if (!hasMore || !currentMarket) {
@@ -472,13 +487,13 @@ export function SwipeableMarketStack({
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleButtonBet(true)}
                 >
-                  <div className="text-[10px] text-gray-400 font-game mb-0.5">YES</div>
+                  <div className="text-[10px] text-gray-400 font-game mb-0.5">YES PAYOUT</div>
                   <div className="flex items-baseline gap-0.5">
                     <span className="text-2xl md:text-3xl font-black text-[#00FF88] font-numbers">
-                      {currentMarket.yesPrice}
+                      {currentMarket.yesMultiplier}
                     </span>
-                    <span className="text-base md:text-lg text-[#00FF88]/70">%</span>
                   </div>
+                  <div className="text-[10px] text-gray-500 font-numbers">{currentMarket.yesPrice}% chance</div>
                 </motion.div>
 
                 {/* NO Side */}
@@ -488,13 +503,13 @@ export function SwipeableMarketStack({
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleButtonBet(false)}
                 >
-                  <div className="text-[10px] text-gray-400 font-game mb-0.5">NO</div>
+                  <div className="text-[10px] text-gray-400 font-game mb-0.5">NO PAYOUT</div>
                   <div className="flex items-baseline gap-0.5 justify-end">
                     <span className="text-2xl md:text-3xl font-black text-[#FF0044] font-numbers">
-                      {currentMarket.noPrice}
+                      {currentMarket.noMultiplier}
                     </span>
-                    <span className="text-base md:text-lg text-[#FF0044]/70">%</span>
                   </div>
+                  <div className="text-[10px] text-gray-500 font-numbers">{currentMarket.noPrice}% chance</div>
                 </motion.div>
               </div>
             </div>
@@ -574,4 +589,6 @@ export function SwipeableMarketStack({
       </div>
     </div>
   );
-}
+});
+
+SwipeableMarketStack.displayName = "SwipeableMarketStack";

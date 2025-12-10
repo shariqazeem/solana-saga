@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, Users, Clock, Flame, Target, ChevronRight } from "lucide-react";
+import { TrendingUp, Users, Clock, Flame, Target, ChevronRight, CheckCircle, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -15,6 +15,8 @@ interface MarketCardProps {
     bettors: number;
     trending?: boolean;
     delay?: number;
+    isResolved?: boolean;
+    outcome?: boolean | null;
 }
 
 export function MarketCard({
@@ -27,6 +29,8 @@ export function MarketCard({
     endsIn,
     bettors,
     trending,
+    isResolved,
+    outcome,
 }: MarketCardProps) {
     const [isHovered, setIsHovered] = useState(false);
     const isUrgent = endsIn.includes("hour") || endsIn === "Soon";
@@ -73,24 +77,40 @@ export function MarketCard({
                         <span className={`category-pill ${getCategoryStyle()}`}>
                             {category}
                         </span>
-                        {trending && (
+                        {trending && !isResolved && (
                             <span className="hot-badge">
                                 <Flame className="w-3 h-3" />
                                 HOT
                             </span>
                         )}
+                        {isResolved && (
+                            <span className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
+                                outcome ? "bg-[#00ff88]/20 text-[#00ff88] border border-[#00ff88]/30"
+                                       : "bg-[#ff0044]/20 text-[#ff0044] border border-[#ff0044]/30"
+                            }`}>
+                                <Trophy className="w-3 h-3" />
+                                {outcome ? "YES WON" : "NO WON"}
+                            </span>
+                        )}
                     </div>
 
-                    {/* Timer */}
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-            ${isUrgent
-                            ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse"
-                            : "bg-white/5 text-gray-400 border border-white/10"
-                        }`}
-                    >
-                        <Clock className="w-3 h-3" />
-                        <span className="font-numbers">{endsIn}</span>
-                    </div>
+                    {/* Timer / Resolved Badge */}
+                    {isResolved ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/30">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>RESOLVED</span>
+                        </div>
+                    ) : (
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+                ${isUrgent
+                                ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse"
+                                : "bg-white/5 text-gray-400 border border-white/10"
+                            }`}
+                        >
+                            <Clock className="w-3 h-3" />
+                            <span className="font-numbers">{endsIn}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Question */}
@@ -182,12 +202,22 @@ export function MarketCard({
 
                 {/* Quick Play Button */}
                 <Link href={`/markets/${id}`}>
-                    <button className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00aa]/10
-                       border border-[#00f0ff]/30 text-[#00f0ff] font-game text-sm
-                       hover:from-[#00f0ff]/20 hover:to-[#ff00aa]/20 hover:border-[#00f0ff]/50
-                       transition-all flex items-center justify-center gap-2 group/play">
-                        <Target className="w-4 h-4" />
-                        <span>PLACE BET</span>
+                    <button className={`w-full mt-4 py-3 rounded-xl font-game text-sm transition-all flex items-center justify-center gap-2 group/play ${
+                        isResolved
+                            ? "bg-[#ffd700]/10 border border-[#ffd700]/30 text-[#ffd700] hover:bg-[#ffd700]/20"
+                            : "bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00aa]/10 border border-[#00f0ff]/30 text-[#00f0ff] hover:from-[#00f0ff]/20 hover:to-[#ff00aa]/20 hover:border-[#00f0ff]/50"
+                    }`}>
+                        {isResolved ? (
+                            <>
+                                <Trophy className="w-4 h-4" />
+                                <span>VIEW RESULT</span>
+                            </>
+                        ) : (
+                            <>
+                                <Target className="w-4 h-4" />
+                                <span>PLACE BET</span>
+                            </>
+                        )}
                         <ChevronRight className="w-4 h-4 group-hover/play:translate-x-1 transition-transform" />
                     </button>
                 </Link>

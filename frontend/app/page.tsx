@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Minus, Plus, Wallet, AlertTriangle } from "lucide-react";
 import { RetroGrid } from "@/components/RetroGrid";
 import { SwipeableMarketStack } from "@/components/SwipeableMarketStack";
 import { GameOverlay } from "@/components/GameOverlay";
-import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { BetSuccessModal } from "@/components/BetSuccessModal";
+import { usePredictionMarkets, Market } from "@/lib/solana/hooks/usePredictionMarkets";
 import { useUsdcBalance, useSolBalance } from "@/hooks/useUsdcBalance";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { WalletButton } from "@/components/WalletButton";
@@ -34,6 +35,18 @@ export default function ArenaPage() {
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [isBetting, setIsBetting] = useState(false);
   const [comboText, setComboText] = useState<{ text: string; x: number; y: number; id: number } | null>(null);
+
+  // Bet success modal state
+  const [lastBet, setLastBet] = useState<{
+    question: string;
+    side: boolean;
+    amount: number;
+    multiplier: string;
+    potentialPayout: number;
+  } | null>(null);
+
+  // Ref for keyboard controls
+  const swipeStackRef = useRef<{ triggerBet: (prediction: boolean) => void; triggerSkip: () => void } | null>(null);
 
   const { playWin, playStreak, playError, playBet } = useSoundEffects(soundEnabled);
 
@@ -141,6 +154,9 @@ export default function ArenaPage() {
         return;
       }
 
+      // Find the market for bet details
+      const market = activeMarkets.find(m => m.publicKey === marketId);
+
       setIsBetting(true);
 
       try {
@@ -152,11 +168,21 @@ export default function ArenaPage() {
         // Spawn combo text
         spawnComboText(prediction ? "YES!" : "NO!", prediction);
 
-        addNotification({
-          type: "info",
-          message: `Bet placed! ${prediction ? "YES" : "NO"} for $${amount}`,
-          amount: amount,
-        });
+        // Calculate multiplier and payout for the success modal
+        if (market) {
+          const multiplier = prediction ? market.yesMultiplier : market.noMultiplier;
+          const multiplierValue = parseFloat(multiplier.replace("x", ""));
+          const potentialPayout = amount * multiplierValue;
+
+          // Show bet success modal
+          setLastBet({
+            question: market.question,
+            side: prediction,
+            amount: amount,
+            multiplier: multiplier,
+            potentialPayout: potentialPayout,
+          });
+        }
 
         // Update streak
         setStreak((prev) => prev + 1);
@@ -214,7 +240,7 @@ export default function ArenaPage() {
         setIsBetting(false);
       }
     },
-    [connected, usdcBalance, solBalance, placeBet, streak, playBet, playStreak, playError, addNotification, refetch, refetchBalance, spawnComboText]
+    [connected, usdcBalance, solBalance, placeBet, streak, playBet, playStreak, playError, addNotification, refetch, refetchBalance, spawnComboText, activeMarkets]
   );
 
   // Handle skip
@@ -252,6 +278,45 @@ export default function ArenaPage() {
       setBetAmount(Math.max(1, Math.floor(usdcBalance)));
     }
   }, [usdcBalance, betAmount]);
+
+  // Keyboard controls for gamer mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Don't trigger if modal is open or betting in progress
+      if (lastBet || isBetting || !connected || activeMarkets.length === 0) {
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowRight":
+          e.preventDefault();
+          if (swipeStackRef.current) {
+            swipeStackRef.current.triggerBet(true); // YES
+          }
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (swipeStackRef.current) {
+            swipeStackRef.current.triggerBet(false); // NO
+          }
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          if (swipeStackRef.current) {
+            swipeStackRef.current.triggerSkip(); // SKIP
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lastBet, isBetting, connected, activeMarkets.length]);
 
   return (
     <div className="fixed inset-0 flex flex-col h-[100dvh] overflow-hidden">
@@ -481,6 +546,7 @@ export default function ArenaPage() {
               {/* Swipeable Card Stack - Takes remaining space */}
               <div className="flex-1 min-h-0">
                 <SwipeableMarketStack
+                  ref={swipeStackRef}
                   markets={activeMarkets}
                   onBet={handleBet}
                   onSkip={handleSkip}
@@ -511,6 +577,15 @@ export default function ArenaPage() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Bet Success Modal - sits on top of everything */}
+      {lastBet && (
+        <BetSuccessModal
+          isOpen={!!lastBet}
+          onClose={() => setLastBet(null)}
+          betData={lastBet}
+        />
+      )}
 
       {/* Screen shake CSS */}
       <style jsx global>{`

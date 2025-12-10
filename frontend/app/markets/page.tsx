@@ -2,12 +2,15 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { MarketCard } from "@/components/MarketCard";
 import {
   Search, Filter, TrendingUp, Flame, Clock,
-  Grid, List, Zap, ChevronDown, Star, Target, Loader2
+  Grid, List, Zap, ChevronDown, Star, Target, Loader2,
+  CheckCircle, Timer, ArrowLeft
 } from "lucide-react";
 import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { RetroGrid } from "@/components/RetroGrid";
 
 const CATEGORIES = [
   { id: "all", name: "All Markets", icon: Grid, color: "#00f0ff" },
@@ -16,6 +19,12 @@ const CATEGORIES = [
   { id: "sports", name: "Sports", icon: Target, color: "#ff8800" },
   { id: "meme", name: "Meme", icon: Flame, color: "#ff00aa" },
   { id: "politics", name: "Politics", icon: Star, color: "#ffd700" },
+];
+
+const STATUS_FILTERS = [
+  { id: "active", name: "Active", icon: Timer, color: "#00ff88" },
+  { id: "resolved", name: "Resolved", icon: CheckCircle, color: "#ffd700" },
+  { id: "all", name: "All", icon: Grid, color: "#00f0ff" },
 ];
 
 const SORT_OPTIONS = [
@@ -27,6 +36,7 @@ const SORT_OPTIONS = [
 export default function MarketsPage() {
   const { markets, loading, error } = usePredictionMarkets();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeStatus, setActiveStatus] = useState("active");
   const [activeSort, setActiveSort] = useState("volume");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -38,8 +48,17 @@ export default function MarketsPage() {
         market.category.toLowerCase() === activeCategory.toLowerCase();
       const matchesSearch = market.question.toLowerCase()
         .includes(searchQuery.toLowerCase());
-      const isActive = market.status === "Active";
-      return matchesCategory && matchesSearch && isActive;
+
+      // Status filter
+      let matchesStatus = true;
+      if (activeStatus === "active") {
+        matchesStatus = market.status === "Active";
+      } else if (activeStatus === "resolved") {
+        matchesStatus = market.status === "Resolved";
+      }
+      // "all" shows everything
+
+      return matchesCategory && matchesSearch && matchesStatus;
     });
 
     // Sort markets
@@ -56,7 +75,7 @@ export default function MarketsPage() {
     }
 
     return filtered;
-  }, [markets, activeCategory, searchQuery, activeSort]);
+  }, [markets, activeCategory, activeStatus, searchQuery, activeSort]);
 
   // Calculate total volume
   const totalVolume = useMemo(() => {
@@ -64,18 +83,38 @@ export default function MarketsPage() {
   }, [filteredMarkets]);
 
   return (
-    <div className="min-h-screen pt-24 pb-32 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Target className="w-10 h-10 text-[#00f0ff]" />
-            <h1 className="text-4xl md:text-5xl font-game font-black">
+    <div className="min-h-screen bg-[#050505] relative">
+      {/* Background */}
+      <RetroGrid streak={0} />
+
+      {/* Top Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-black/50 backdrop-blur-md border-b border-white/5">
+        <div className="max-w-7xl mx-auto flex items-center gap-3">
+          <Link href="/">
+            <motion.button
+              className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </motion.button>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Target className="w-6 h-6 text-[#00f0ff]" />
+            <span className="font-game text-lg">
               <span className="text-white">ALL </span>
               <span className="text-[#00f0ff]">MARKETS</span>
-            </h1>
+            </span>
           </div>
-          <p className="text-gray-400">
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 pt-20 pb-8 px-4 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <p className="text-gray-400 text-sm">
             Find your edge. Pick your battles. Win big.
           </p>
         </div>
@@ -138,6 +177,28 @@ export default function MarketsPage() {
               </AnimatePresence>
             </div>
           </div>
+        </div>
+
+        {/* Status Filter */}
+        <div className="flex gap-2 mb-4">
+          {STATUS_FILTERS.map((status) => (
+            <button
+              key={status.id}
+              onClick={() => setActiveStatus(status.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-game text-xs whitespace-nowrap transition-all ${
+                activeStatus === status.id
+                  ? "text-black"
+                  : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+              }`}
+              style={{
+                background: activeStatus === status.id ? status.color : undefined,
+                boxShadow: activeStatus === status.id ? `0 0 15px ${status.color}40` : undefined,
+              }}
+            >
+              <status.icon className="w-3 h-3" />
+              {status.name}
+            </button>
+          ))}
         </div>
 
         {/* Categories */}
@@ -212,6 +273,8 @@ export default function MarketsPage() {
                   bettors={market.bettors}
                   trending={market.totalVolume > 100}
                   delay={0}
+                  isResolved={market.status === "Resolved"}
+                  outcome={market.outcome}
                 />
               ))}
             </div>
@@ -226,6 +289,7 @@ export default function MarketsPage() {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { WalletButton } from "./WalletButton";
 import {
     Gamepad2, Trophy, LayoutGrid, User, Zap, Star,
-    Volume2, VolumeX, Bell, Settings, Sparkles, X, Shield
+    Volume2, VolumeX, Bell, Settings, Sparkles, X, Shield, Rocket
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -169,15 +169,28 @@ export function Navbar() {
 
                     {/* Right Side */}
                     <div className="flex items-center gap-3">
-                        {/* Sound Toggle - Disabled for performance */}
-                        {/* <motion.button
-                            className="hidden md:flex w-10 h-10 rounded-xl items-center justify-center transition-all bg-white/5 text-gray-400 border border-white/10"
-                            onClick={() => {}}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
+                        {/* Indie.fun Badge */}
+                        <motion.a
+                            href="https://indie.fun"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF6B00]/20 to-[#FFD700]/20 border border-[#FF6B00]/50 text-[#FFD700] font-game text-xs hover:from-[#FF6B00]/30 hover:to-[#FFD700]/30 transition-all"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            animate={{
+                                boxShadow: [
+                                    "0 0 10px rgba(255, 107, 0, 0.3)",
+                                    "0 0 20px rgba(255, 215, 0, 0.5)",
+                                    "0 0 10px rgba(255, 107, 0, 0.3)",
+                                ],
+                            }}
+                            transition={{
+                                boxShadow: { duration: 2, repeat: Infinity },
+                            }}
                         >
-                            <Volume2 className="w-4 h-4" />
-                        </motion.button> */}
+                            <Rocket className="w-4 h-4" />
+                            <span>Back us on Indie.fun</span>
+                        </motion.a>
 
                         {/* Notification Bell */}
                         <motion.button
