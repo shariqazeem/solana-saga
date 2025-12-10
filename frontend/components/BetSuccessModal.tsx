@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Copy, Share2, X, Sparkles, Trophy, Ticket } from "lucide-react";
+import { Check, Copy, Share2, X, Sparkles, Trophy, Ticket, Twitter } from "lucide-react";
 import { useState } from "react";
 
 interface BetSuccessModalProps {
@@ -36,6 +36,19 @@ export function BetSuccessModal({ isOpen, onClose, betData }: BetSuccessModalPro
         } else {
             handleCopy();
         }
+    };
+
+    const handleTwitterShare = () => {
+        const tweetText = `I just bet $${betData.amount} ${betData.side ? "YES" : "NO"} on "${betData.question.slice(0, 100)}${betData.question.length > 100 ? '...' : ''}"
+
+Potential ${betData.multiplier} payout! 🎯
+
+Swipe to predict on @SolanaSaga - the Tinder of prediction markets 🔥
+
+#Solana #PredictionMarkets #Web3Gaming`;
+
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
     };
 
     return (
@@ -203,35 +216,51 @@ export function BetSuccessModal({ isOpen, onClose, betData }: BetSuccessModalPro
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5 }}
-                                    className="mt-6 flex gap-3"
+                                    className="mt-6 space-y-3"
                                 >
+                                    {/* Twitter Share - Primary CTA */}
                                     <motion.button
-                                        onClick={handleCopy}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-white/20 text-gray-300 font-game text-sm hover:bg-white/10 transition-all"
+                                        onClick={handleTwitterShare}
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1DA1F2] text-white font-game text-sm font-bold hover:bg-[#1a8cd8] transition-all"
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
-                                        {copied ? (
-                                            <>
-                                                <Check className="w-4 h-4 text-[#00ff88]" />
-                                                Copied!
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy className="w-4 h-4" />
-                                                Copy
-                                            </>
-                                        )}
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                                        </svg>
+                                        Share on X
                                     </motion.button>
-                                    <motion.button
-                                        onClick={handleShare}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-[#00ff88] to-[#00f0ff] text-black font-game text-sm font-bold"
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                    >
-                                        <Share2 className="w-4 h-4" />
-                                        Share
-                                    </motion.button>
+
+                                    {/* Secondary buttons */}
+                                    <div className="flex gap-3">
+                                        <motion.button
+                                            onClick={handleCopy}
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-white/20 text-gray-300 font-game text-sm hover:bg-white/10 transition-all"
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            {copied ? (
+                                                <>
+                                                    <Check className="w-4 h-4 text-[#00ff88]" />
+                                                    Copied!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-4 h-4" />
+                                                    Copy
+                                                </>
+                                            )}
+                                        </motion.button>
+                                        <motion.button
+                                            onClick={handleShare}
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-[#00ff88] to-[#00f0ff] text-black font-game text-sm font-bold"
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            <Share2 className="w-4 h-4" />
+                                            Share
+                                        </motion.button>
+                                    </div>
                                 </motion.div>
 
                                 {/* Close Text */}

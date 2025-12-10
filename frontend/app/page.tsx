@@ -8,6 +8,7 @@ import { RetroGrid } from "@/components/RetroGrid";
 import { SwipeableMarketStack } from "@/components/SwipeableMarketStack";
 import { GameOverlay } from "@/components/GameOverlay";
 import { BetSuccessModal } from "@/components/BetSuccessModal";
+import { ArcadeModal } from "@/components/ArcadeModal";
 import { usePredictionMarkets, Market } from "@/lib/solana/hooks/usePredictionMarkets";
 import { useUsdcBalance, useSolBalance } from "@/hooks/useUsdcBalance";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
@@ -44,6 +45,9 @@ export default function ArenaPage() {
     multiplier: string;
     potentialPayout: number;
   } | null>(null);
+
+  // Arcade modal state
+  const [showArcade, setShowArcade] = useState(false);
 
   // Ref for keyboard controls
   const swipeStackRef = useRef<{ triggerBet: (prediction: boolean) => void; triggerSkip: () => void } | null>(null);
@@ -335,6 +339,7 @@ export default function ArenaPage() {
         totalWins={userStats.totalWins}
         totalBets={userStats.totalBets}
         showAdmin={connected}
+        onOpenArcade={() => setShowArcade(true)}
       />
 
       {/* Floating Combo Text */}
@@ -386,11 +391,12 @@ export default function ArenaPage() {
           ) : !connected ? (
             <motion.div
               key="connect"
-              className="flex-1 flex flex-col items-center justify-center gap-8 text-center max-w-md mx-auto px-4"
+              className="flex-1 flex flex-col items-center justify-center gap-6 text-center max-w-lg mx-auto px-4 py-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
+              {/* Hero Icon */}
               <motion.div
                 animate={{
                   boxShadow: [
@@ -400,26 +406,89 @@ export default function ArenaPage() {
                   ],
                 }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="w-32 h-32 rounded-full bg-gradient-to-br from-[#00F3FF]/20 to-[#FF00FF]/20 flex items-center justify-center border border-[#00F3FF]/50"
+                className="w-28 h-28 rounded-full bg-gradient-to-br from-[#00F3FF]/20 to-[#FF00FF]/20 flex items-center justify-center border border-[#00F3FF]/50"
               >
-                <Wallet className="w-16 h-16 text-[#00F3FF]" />
+                <Zap className="w-14 h-14 text-[#00F3FF]" />
               </motion.div>
 
+              {/* Title & Description */}
               <div>
-                <h1 className="text-4xl font-game text-white mb-4">
-                  <span className="text-[#00F3FF]">PREDICTION</span> ARENA
+                <h1 className="text-3xl md:text-4xl font-game text-white mb-3">
+                  <span className="text-[#00F3FF]">SOLANA</span> SAGA
                 </h1>
-                <p className="text-gray-400 text-lg mb-2">
-                  Connect your Phantom wallet to start betting
+                <p className="text-xl text-[#ff00aa] font-game mb-3">
+                  The Tinder of Prediction Markets
                 </p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-400 text-sm mb-2">
                   Swipe right for YES, left for NO, up to skip
+                </p>
+                <p className="text-gray-500 text-xs">
+                  Fast, fun, and built on Solana
                 </p>
               </div>
 
+              {/* Features */}
+              <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <div className="text-2xl mb-1">👆</div>
+                  <div className="text-[10px] text-gray-400 font-game">SWIPE</div>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <div className="text-2xl mb-1">🎮</div>
+                  <div className="text-[10px] text-gray-400 font-game">GAMEPAD</div>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <div className="text-2xl mb-1">💰</div>
+                  <div className="text-[10px] text-gray-400 font-game">WIN</div>
+                </div>
+              </div>
+
+              {/* CTA */}
               <WalletButton />
 
-              <div className="text-xs text-gray-600 mt-4">
+              {/* Partner Badges */}
+              <div className="w-full">
+                <p className="text-[10px] text-gray-600 mb-3 font-game">POWERED BY</p>
+                <div className="flex items-center justify-center gap-4 flex-wrap">
+                  {/* Solana Badge */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#9945FF]/10 to-[#14F195]/10 border border-[#9945FF]/30">
+                    <svg className="w-4 h-4" viewBox="0 0 397.7 311.7" fill="none">
+                      <linearGradient id="solana-grad" x1="360.8791" y1="351.4553" x2="141.213" y2="-69.2936" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" style={{stopColor:"#00FFA3"}} />
+                        <stop offset="1" style={{stopColor:"#DC1FFF"}} />
+                      </linearGradient>
+                      <path fill="url(#solana-grad)" d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                      <path fill="url(#solana-grad)" d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                      <path fill="url(#solana-grad)" d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                    </svg>
+                    <span className="text-xs text-[#14F195] font-game">Solana</span>
+                  </div>
+
+                  {/* Play Solana Badge */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#00f0ff]/10 border border-[#00f0ff]/30">
+                    <svg className="w-4 h-4 text-[#00f0ff]" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                    </svg>
+                    <span className="text-xs text-[#00f0ff] font-game">Play Solana</span>
+                  </div>
+
+                  {/* Moddio Badge */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ff00aa]/10 border border-[#ff00aa]/30">
+                    <svg className="w-4 h-4 text-[#ff00aa]" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span className="text-xs text-[#ff00aa] font-game">Moddio</span>
+                  </div>
+
+                  {/* Indie.fun Badge */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ffd700]/10 border border-[#ffd700]/30">
+                    <span className="text-sm">🚀</span>
+                    <span className="text-xs text-[#ffd700] font-game">Indie.fun</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-gray-600">
                 <p>Requires: Phantom Wallet + Devnet USDC + SOL for gas</p>
               </div>
             </motion.div>
@@ -586,6 +655,12 @@ export default function ArenaPage() {
           betData={lastBet}
         />
       )}
+
+      {/* Arcade Modal - Moddio Integration */}
+      <ArcadeModal
+        isOpen={showArcade}
+        onClose={() => setShowArcade(false)}
+      />
 
       {/* Screen shake CSS */}
       <style jsx global>{`

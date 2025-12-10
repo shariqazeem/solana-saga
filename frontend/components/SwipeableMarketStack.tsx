@@ -12,11 +12,25 @@ import {
 } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { Flame, Clock, Users, TrendingUp, Zap, ChevronUp, SkipForward } from "lucide-react";
+import { Flame, Clock, Users, TrendingUp, Zap, ChevronUp, SkipForward, Gamepad2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { HypeHUD } from "./HypeHUD";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { Market } from "@/lib/solana/hooks/usePredictionMarkets";
+
+// Gamepad button mappings (Standard Controller Layout)
+const GAMEPAD_BUTTONS = {
+  A_X: 0,           // A (Xbox) / X (PlayStation) - Vote YES
+  B_CIRCLE: 1,      // B (Xbox) / Circle (PlayStation) - Vote NO
+  Y_TRIANGLE: 3,    // Y (Xbox) / Triangle (PlayStation) - Skip
+  DPAD_UP: 12,      // D-Pad Up - Skip
+  DPAD_DOWN: 13,    // D-Pad Down
+  DPAD_LEFT: 14,    // D-Pad Left - Vote NO
+  DPAD_RIGHT: 15,   // D-Pad Right - Vote YES
+};
+
+// Debounce time in ms
+const GAMEPAD_DEBOUNCE_MS = 500;
 
 interface SwipeableMarketStackProps {
   markets: Market[];
@@ -45,7 +59,11 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [cardHistory, setCardHistory] = useState<string[]>([]);
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  const [gamepadActive, setGamepadActive] = useState<"yes" | "no" | "skip" | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const lastGamepadActionRef = useRef<number>(0);
+  const gamepadAnimationRef = useRef<number | null>(null);
 
   const { connected } = useWallet();
   const { setVisible } = useWalletModal();
@@ -264,6 +282,84 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       handleSkipButton();
     },
   }));
+
+  // Gamepad support - Poll for controller input using requestAnimationFrame
+  useEffect(() => {
+    // Handle gamepad connection events
+    const handleGamepadConnected = (e: GamepadEvent) => {
+      console.log("Gamepad connected:", e.gamepad.id);
+      setGamepadConnected(true);
+    };
+
+    const handleGamepadDisconnected = (e: GamepadEvent) => {
+      console.log("Gamepad disconnected:", e.gamepad.id);
+      setGamepadConnected(false);
+    };
+
+    window.addEventListener("gamepadconnected", handleGamepadConnected);
+    window.addEventListener("gamepaddisconnected", handleGamepadDisconnected);
+
+    // Check if gamepad is already connected
+    const gamepads = navigator.getGamepads();
+    for (const gp of gamepads) {
+      if (gp) {
+        setGamepadConnected(true);
+        break;
+      }
+    }
+
+    // Polling loop for gamepad input
+    const pollGamepad = () => {
+      const gamepads = navigator.getGamepads();
+      const gamepad = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
+
+      if (gamepad && !isAnimating && currentMarket) {
+        const now = Date.now();
+        const timeSinceLastAction = now - lastGamepadActionRef.current;
+
+        // Only process if debounce time has passed
+        if (timeSinceLastAction >= GAMEPAD_DEBOUNCE_MS) {
+          // Check for YES actions (A/X button or D-Pad Right)
+          if (gamepad.buttons[GAMEPAD_BUTTONS.A_X]?.pressed ||
+              gamepad.buttons[GAMEPAD_BUTTONS.DPAD_RIGHT]?.pressed) {
+            lastGamepadActionRef.current = now;
+            setGamepadActive("yes");
+            handleButtonBet(true);
+            setTimeout(() => setGamepadActive(null), 200);
+          }
+          // Check for NO actions (B/Circle button or D-Pad Left)
+          else if (gamepad.buttons[GAMEPAD_BUTTONS.B_CIRCLE]?.pressed ||
+                   gamepad.buttons[GAMEPAD_BUTTONS.DPAD_LEFT]?.pressed) {
+            lastGamepadActionRef.current = now;
+            setGamepadActive("no");
+            handleButtonBet(false);
+            setTimeout(() => setGamepadActive(null), 200);
+          }
+          // Check for SKIP actions (Y/Triangle button or D-Pad Up)
+          else if (gamepad.buttons[GAMEPAD_BUTTONS.Y_TRIANGLE]?.pressed ||
+                   gamepad.buttons[GAMEPAD_BUTTONS.DPAD_UP]?.pressed) {
+            lastGamepadActionRef.current = now;
+            setGamepadActive("skip");
+            handleSkipButton();
+            setTimeout(() => setGamepadActive(null), 200);
+          }
+        }
+      }
+
+      gamepadAnimationRef.current = requestAnimationFrame(pollGamepad);
+    };
+
+    // Start polling
+    gamepadAnimationRef.current = requestAnimationFrame(pollGamepad);
+
+    return () => {
+      window.removeEventListener("gamepadconnected", handleGamepadConnected);
+      window.removeEventListener("gamepaddisconnected", handleGamepadDisconnected);
+      if (gamepadAnimationRef.current) {
+        cancelAnimationFrame(gamepadAnimationRef.current);
+      }
+    };
+  }, [isAnimating, currentMarket, handleButtonBet, handleSkipButton]);
 
   // Empty state
   if (!hasMore || !currentMarket) {
@@ -537,37 +633,63 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       <div className="flex items-center justify-center gap-3 md:gap-4 py-4 flex-shrink-0">
         {/* NO Button */}
         <motion.button
-          className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#FF0044]/20 border-2 border-[#FF0044] flex items-center justify-center text-[#FF0044] font-game text-lg md:text-xl hover:bg-[#FF0044]/30 transition-colors disabled:opacity-50"
+          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#FF0044]/20 border-2 border-[#FF0044] flex items-center justify-center text-[#FF0044] font-game text-lg md:text-xl hover:bg-[#FF0044]/30 transition-colors disabled:opacity-50 ${
+            gamepadActive === "no" ? "scale-90 bg-[#FF0044]/40" : ""
+          }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => handleButtonBet(false)}
           disabled={isAnimating}
+          animate={gamepadActive === "no" ? { scale: [1, 0.9, 1] } : {}}
         >
           ✕
         </motion.button>
 
         {/* Skip Button */}
         <motion.button
-          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-gray-400 hover:bg-white/20 transition-colors disabled:opacity-50"
+          className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-gray-400 hover:bg-white/20 transition-colors disabled:opacity-50 ${
+            gamepadActive === "skip" ? "scale-90 bg-[#FFD700]/40 border-[#FFD700]" : ""
+          }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleSkipButton}
           disabled={isAnimating}
+          animate={gamepadActive === "skip" ? { scale: [1, 0.9, 1] } : {}}
         >
           <SkipForward className="w-4 h-4 md:w-5 md:h-5" />
         </motion.button>
 
         {/* YES Button */}
         <motion.button
-          className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#00FF88]/20 border-2 border-[#00FF88] flex items-center justify-center text-[#00FF88] font-game text-lg md:text-xl hover:bg-[#00FF88]/30 transition-colors disabled:opacity-50"
+          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#00FF88]/20 border-2 border-[#00FF88] flex items-center justify-center text-[#00FF88] font-game text-lg md:text-xl hover:bg-[#00FF88]/30 transition-colors disabled:opacity-50 ${
+            gamepadActive === "yes" ? "scale-90 bg-[#00FF88]/40" : ""
+          }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => handleButtonBet(true)}
           disabled={isAnimating}
+          animate={gamepadActive === "yes" ? { scale: [1, 0.9, 1] } : {}}
         >
           ✓
         </motion.button>
       </div>
+
+      {/* Gamepad Connected Indicator */}
+      <AnimatePresence>
+        {gamepadConnected && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex items-center justify-center gap-2 pb-2"
+          >
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00F3FF]/10 border border-[#00F3FF]/30">
+              <Gamepad2 className="w-4 h-4 text-[#00F3FF]" />
+              <span className="text-[10px] text-[#00F3FF] font-game">CONTROLLER CONNECTED</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-1.5 md:gap-2 pb-2 flex-shrink-0">

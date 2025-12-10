@@ -65,6 +65,20 @@ export interface Bet {
   payout: number;
 }
 
+export interface UserStats {
+  publicKey: string;
+  user: string;
+  totalBets: number;
+  totalWagered: number;
+  totalWon: number;
+  totalLost: number;
+  winCount: number;
+  lossCount: number;
+  currentStreak: number;
+  bestStreak: number;
+  netProfit: number;
+}
+
 export function usePredictionMarkets() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -625,6 +639,39 @@ export function usePredictionMarkets() {
     }
   }, [readOnlyProgram, program, wallet, fetchMarkets, fetchUserBets]);
 
+  // Fetch all user stats for leaderboard
+  const fetchAllUserStats = useCallback(async (): Promise<UserStats[]> => {
+    if (!readOnlyProgram) return [];
+
+    try {
+      const userStatsAccounts = await (readOnlyProgram as any).account.userStats.all();
+
+      const stats: UserStats[] = userStatsAccounts.map((account: any) => {
+        const data = account.account;
+
+        return {
+          publicKey: account.publicKey.toString(),
+          user: data.user.toString(),
+          totalBets: toNum(data.totalBets),
+          totalWagered: toNum(data.totalWagered) / Math.pow(10, USDC_DECIMALS),
+          totalWon: toNum(data.totalWon) / Math.pow(10, USDC_DECIMALS),
+          totalLost: toNum(data.totalLost) / Math.pow(10, USDC_DECIMALS),
+          winCount: toNum(data.winCount),
+          lossCount: toNum(data.lossCount),
+          currentStreak: toNum(data.currentStreak),
+          bestStreak: toNum(data.bestStreak),
+          netProfit: toNum(data.netProfit) / Math.pow(10, USDC_DECIMALS),
+        };
+      });
+
+      // Sort by net profit (highest first)
+      return stats.sort((a, b) => b.netProfit - a.netProfit);
+    } catch (error: any) {
+      console.error("Error fetching user stats:", error);
+      return [];
+    }
+  }, [readOnlyProgram]);
+
   return {
     markets,
     userBets,
@@ -636,6 +683,7 @@ export function usePredictionMarkets() {
     withdrawFees,
     getMarket,
     getUserUsdcAccount,
+    fetchAllUserStats,
     refetch: () => Promise.all([fetchMarkets(), fetchUserBets()]),
   };
 }

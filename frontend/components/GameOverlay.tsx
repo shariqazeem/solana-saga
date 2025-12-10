@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings, Shield, BarChart3, Target, Gift } from "lucide-react";
+import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings, Shield, BarChart3, Target, Gift, Gamepad2, Crown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
@@ -23,6 +23,7 @@ interface GameOverlayProps {
   totalWins: number;
   totalBets: number;
   showAdmin?: boolean;
+  onOpenArcade?: () => void;
 }
 
 interface Notification {
@@ -43,6 +44,7 @@ export function GameOverlay({
   totalWins,
   totalBets,
   showAdmin = false,
+  onOpenArcade,
 }: GameOverlayProps) {
   const { connected } = useWallet();
   const wallet = useAnchorWallet();
@@ -325,6 +327,42 @@ export function GameOverlay({
                               </div>
                             </motion.button>
                           </Link>
+
+                          <Link href="/leaderboard" onClick={() => setShowSettings(false)}>
+                            <motion.button
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#ffd700]/10 to-[#ff8800]/10 border border-[#ffd700]/30 text-[#ffd700] hover:border-[#ffd700]/50 transition-all"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Crown className="w-4 h-4" />
+                              <div className="text-left">
+                                <div className="font-game text-xs">Leaderboard</div>
+                                <div className="text-[10px] text-[#ffd700]/70">Hall of Fame</div>
+                              </div>
+                            </motion.button>
+                          </Link>
+
+                          {/* Arcade Lounge Button */}
+                          {onOpenArcade && (
+                            <motion.button
+                              onClick={() => {
+                                setShowSettings(false);
+                                onOpenArcade();
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#ffd700]/10 to-[#ff8800]/10 border border-[#ffd700]/30 text-[#ffd700] hover:border-[#ffd700]/50 transition-all"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Gamepad2 className="w-4 h-4" />
+                              <div className="text-left">
+                                <div className="font-game text-xs flex items-center gap-1">
+                                  Arcade Lounge
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-[#ffd700]/20 text-[#ffd700]">MODDIO</span>
+                                </div>
+                                <div className="text-[10px] text-[#ffd700]/70">Play games while you wait</div>
+                              </div>
+                            </motion.button>
+                          )}
                         </div>
 
                         {/* Admin Access - Only shown to admins */}
