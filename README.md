@@ -11,7 +11,7 @@
 
 **Swipe Right = YES | Swipe Left = NO | Win the Pool**
 
-[Live Demo](#) | [Video Demo](#) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet)
+[Live Demo](https://solana-saga.vercel.app) | [Video Demo](https://youtu.be/9Q03su8p5c4?si=SUv1H5K1ngIfooiV) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet)
 
 </div>
 
@@ -175,7 +175,7 @@ seeds = ["bet", market.key(), user.key(), bet_count.to_le_bytes()]
 
 ```bash
 # Clone
-git clone https://github.com/your-username/solana-saga.git
+git clone https://github.com/shariqazeem/solana-saga.git
 cd solana-saga/frontend
 
 # Install
