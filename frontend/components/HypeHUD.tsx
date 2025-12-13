@@ -105,7 +105,7 @@ export function HypeHUD({ yesPool, noPool, question, volume = 0, bettors = 0 }: 
 
   return (
     <motion.div
-      className={`absolute top-4 left-4 right-4 z-20`}
+      className={`w-full z-20 mb-4`}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
@@ -183,7 +183,7 @@ export function HypeHUD({ yesPool, noPool, question, volume = 0, bettors = 0 }: 
           <div className="flex gap-0.5">
             {[...Array(5)].map((_, i) => {
               const threshold = sentiment === "NEUTRAL" ? 2 :
-                               Math.abs(yesRatio - 0.5) * 10;
+                Math.abs(yesRatio - 0.5) * 10;
               const isActive = i < Math.ceil(threshold);
               return (
                 <motion.div

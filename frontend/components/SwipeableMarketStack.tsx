@@ -490,17 +490,17 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
               SKIP
             </motion.div>
 
-            {/* Hype HUD */}
-            <HypeHUD
-              yesPool={currentMarket.yesPool}
-              noPool={currentMarket.noPool}
-              question={currentMarket.question}
-              volume={currentMarket.totalVolume}
-              bettors={displayBettors}
-            />
-
             {/* Card body - Flexible layout with safe z-index */}
-            <div className="relative pt-28 pb-4 px-4 md:px-6 flex flex-col h-full z-20">
+            <div className="relative p-4 md:p-6 flex flex-col h-full z-20">
+              {/* Hype HUD */}
+              <HypeHUD
+                yesPool={currentMarket.yesPool}
+                noPool={currentMarket.noPool}
+                question={currentMarket.question}
+                volume={currentMarket.totalVolume}
+                bettors={displayBettors}
+              />
+
               {/* Category & Timer */}
               <div className="flex items-center gap-2 flex-wrap mb-2 flex-shrink-0">
                 <span className={`px-2 py-1 rounded-full text-[10px] md:text-xs font-game ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} border`}>
