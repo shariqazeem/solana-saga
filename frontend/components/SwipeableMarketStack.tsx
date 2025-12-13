@@ -466,25 +466,25 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
               </div>
 
               {/* Main Subject: Question */}
-              <div className="flex-1 min-h-0 flex flex-col justify-center mb-4">
-                <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight tracking-tight drop-shadow-lg line-clamp-4">
+              <div className="flex-1 min-h-0 flex flex-col justify-center mb-2">
+                <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-white leading-tight tracking-tight drop-shadow-lg line-clamp-4 md:line-clamp-5">
                   {currentMarket.question}
                 </h2>
+              </div>
 
-                {/* Embedded Hype Ticker */}
-                <div className="mt-4">
-                  <HypeHUD
-                    yesPool={currentMarket.yesPool}
-                    noPool={currentMarket.noPool}
-                    question={currentMarket.question}
-                    volume={currentMarket.totalVolume}
-                    bettors={displayBettors}
-                  />
-                </div>
+              {/* Embedded Hype Ticker - separate from Question */}
+              <div className="mb-4 flex-shrink-0">
+                <HypeHUD
+                  yesPool={currentMarket.yesPool}
+                  noPool={currentMarket.noPool}
+                  question={currentMarket.question}
+                  volume={currentMarket.totalVolume}
+                  bettors={displayBettors}
+                />
               </div>
 
               {/* Stats & Volume */}
-              <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-4 px-1 flex-shrink-0">
+              <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-3 px-1 flex-shrink-0">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4 text-[#00F3FF]" />
                   <span className="text-gray-300 font-mono">{displayBettors}</span>
@@ -499,7 +499,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
               {/* Interaction Area */}
               <div className="flex-shrink-0">
                 {/* Battle Bar - Slim Neon */}
-                <div className="relative h-1.5 rounded-full bg-white/5 overflow-hidden mb-4">
+                <div className="relative h-1.5 rounded-full bg-white/5 overflow-hidden mb-3">
                   <motion.div
                     className="absolute left-0 top-0 bottom-0 bg-[#00FF88] shadow-[0_0_10px_#00FF88]"
                     initial={{ width: 0 }}
@@ -514,8 +514,8 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                   />
                 </div>
 
-                {/* Massive Trigger Buttons */}
-                <div className="flex gap-3 h-20 md:h-24">
+                {/* Massive Trigger Buttons - Slightly adjusted height */}
+                <div className="flex gap-3 h-16 md:h-20">
                   {/* YES Trigger */}
                   <motion.button
                     className="flex-1 relative rounded-xl border border-[#00FF88]/20 bg-gradient-to-b from-[#00FF88]/10 to-transparent overflow-hidden group"
@@ -525,11 +525,11 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                   >
                     <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
                     <div className="relative h-full flex flex-col items-center justify-center">
-                      <span className="text-[#00FF88] text-xs font-bold tracking-widest mb-1 group-hover:text-white transition-colors">VOTE YES</span>
-                      <span className="text-3xl md:text-4xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(0,255,136,0.5)]">
+                      <span className="text-[#00FF88] text-[10px] mobile:text-xs font-bold tracking-widest mb-0.5 group-hover:text-white transition-colors">VOTE YES</span>
+                      <span className="text-2xl md:text-3xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(0,255,136,0.5)]">
                         {currentMarket.yesMultiplier}x
                       </span>
-                      <span className="text-[10px] text-[#00FF88]/60 mt-1">{currentMarket.yesPrice}% PROB</span>
+                      <span className="text-[10px] text-[#00FF88]/60 mt-0.5">{currentMarket.yesPrice}% PROB</span>
                     </div>
                     {/* Corner accents */}
                     <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#00FF88]" />
@@ -545,11 +545,11 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                   >
                     <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
                     <div className="relative h-full flex flex-col items-center justify-center">
-                      <span className="text-[#FF0044] text-xs font-bold tracking-widest mb-1 group-hover:text-white transition-colors">VOTE NO</span>
-                      <span className="text-3xl md:text-4xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(255,0,68,0.5)]">
+                      <span className="text-[#FF0044] text-[10px] mobile:text-xs font-bold tracking-widest mb-0.5 group-hover:text-white transition-colors">VOTE NO</span>
+                      <span className="text-2xl md:text-3xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(255,0,68,0.5)]">
                         {currentMarket.noMultiplier}x
                       </span>
-                      <span className="text-[10px] text-[#FF0044]/60 mt-1">{currentMarket.noPrice}% PROB</span>
+                      <span className="text-[10px] text-[#FF0044]/60 mt-0.5">{currentMarket.noPrice}% PROB</span>
                     </div>
                     {/* Corner accents */}
                     <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#FF0044]" />
