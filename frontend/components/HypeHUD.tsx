@@ -105,99 +105,63 @@ export function HypeHUD({ yesPool, noPool, question, volume = 0, bettors = 0 }: 
 
   return (
     <motion.div
-      className={`w-full z-20 mb-4`}
-      initial={{ opacity: 0, y: -20 }}
+      className="w-full mb-3"
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
     >
       <div className={`
-        flex items-center gap-3 px-4 py-3 rounded-xl
-        backdrop-blur-md border ${config.border} ${config.bg}
-        ${config.glow}
+        flex items-center gap-3 px-3 py-2 rounded-lg
+        bg-black/40 border border-white/5 backdrop-blur-sm
       `}>
-        {/* AI Bot Icon */}
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{
-            background: `linear-gradient(135deg, ${config.color}33, transparent)`,
-            border: `1px solid ${config.color}66`
-          }}
-        >
-          <Brain className="w-5 h-5" style={{ color: config.color }} />
+        {/* Compact Status Indicator */}
+        <div className={`
+          flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase
+          border ${config.border}
+        `} style={{ background: `${config.color}15`, color: config.color }}>
+          <Icon className="w-3 h-3" />
+          {sentiment}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Sentiment Badge */}
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className="text-[10px] font-game tracking-wider"
-              style={{ color: config.color }}
-            >
-              AI HYPE-METER
-            </span>
-            <motion.div
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold"
-              style={{
-                background: `${config.color}22`,
-                color: config.color
-              }}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <Icon className="w-3 h-3" />
-              {sentiment}
-            </motion.div>
-          </div>
-
-          {/* Trash Talk Line */}
+        {/* Ticker Content */}
+        <div className="flex-1 min-w-0 flex items-center overflow-hidden">
           <AnimatePresence mode="wait">
-            {!isAnimating && (
-              <motion.p
-                key={currentLine}
-                className="text-sm font-bold text-white truncate"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
-              >
-                <span className="text-[#00F3FF] mr-1">&gt;</span>
-                {currentLine}
-              </motion.p>
-            )}
-            {isAnimating && (
+            {!isAnimating ? (
               <motion.div
-                className="flex items-center gap-2"
+                key={currentLine}
+                className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-300 truncate w-full"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+              >
+                <div className="w-1 h-1 rounded-full bg-current flex-shrink-0" style={{ color: config.color }} />
+                <span className="truncate">{currentLine}</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                className="flex items-center gap-2 text-xs text-gray-500 font-mono"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <Zap className="w-4 h-4 text-[#00F3FF] animate-pulse" />
-                <span className="text-sm text-gray-400 font-mono">analyzing...</span>
+                <Zap className="w-3 h-3 animate-pulse" />
+                ANALYZING...
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Power Indicator */}
-        <div className="flex flex-col items-end gap-1">
-          <span className="text-[10px] text-gray-500 font-game">CONFIDENCE</span>
-          <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => {
-              const threshold = sentiment === "NEUTRAL" ? 2 :
-                Math.abs(yesRatio - 0.5) * 10;
-              const isActive = i < Math.ceil(threshold);
-              return (
-                <motion.div
-                  key={i}
-                  className="w-2 h-4 rounded-sm"
-                  style={{
-                    background: isActive ? config.color : "rgba(255,255,255,0.1)"
-                  }}
-                  animate={isActive ? { opacity: [1, 0.5, 1] } : {}}
-                  transition={{ duration: 0.5, delay: i * 0.1, repeat: Infinity }}
-                />
-              );
-            })}
-          </div>
+        {/* Mini Confidence Bars */}
+        <div className="flex gap-0.5 flex-shrink-0 opacity-50">
+          {[...Array(5)].map((_, i) => {
+            const threshold = sentiment === "NEUTRAL" ? 2 : Math.abs(yesRatio - 0.5) * 10;
+            const isActive = i < Math.ceil(threshold);
+            return (
+              <div
+                key={i}
+                className="w-1 h-2 rounded-[1px]"
+                style={{ background: isActive ? config.color : "rgba(255,255,255,0.1)" }}
+              />
+            );
+          })}
         </div>
       </div>
     </motion.div>

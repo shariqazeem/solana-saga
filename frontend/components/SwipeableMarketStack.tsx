@@ -434,180 +434,128 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Card content */}
-          <div className="relative bg-gradient-to-b from-[#12121a] to-[#0a0a0f] rounded-3xl border border-white/10 overflow-hidden h-full flex flex-col">
-            {/* Holographic glare overlay */}
-            <motion.div
-              className="absolute inset-0 z-10 pointer-events-none rounded-3xl opacity-30"
-              style={{
-                background: `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.3) 0%, transparent 50%)`,
-              }}
-            />
+          {/* Card content - Obsidian Glass Aesthetic */}
+          <div className="relative bg-gradient-to-b from-[#0f1115] to-[#050505] rounded-[2rem] border border-white/5 overflow-hidden h-full flex flex-col shadow-2xl">
+            {/* Ambient background glow */}
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/5 blur-[100px] rounded-full pointer-events-none mix-blend-screen opacity-20" />
 
-            {/* Rainbow edge effect on high streak */}
-            {streak >= 5 && (
-              <motion.div
-                className="absolute inset-0 rounded-3xl pointer-events-none z-10"
-                style={{
-                  background: streak >= 10
-                    ? "linear-gradient(45deg, #FFD700, #FF8C00, #FF0044, #FF00FF, #00F3FF, #00FF88, #FFD700)"
-                    : "linear-gradient(45deg, #FF8C00, #FFD700, #FF8C00)",
-                  backgroundSize: "400% 400%",
-                  padding: "2px",
-                  WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                  WebkitMaskComposite: "xor",
-                  maskComposite: "exclude",
-                }}
-                animate={{
-                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                }}
-                transition={{
-                  duration: streak >= 10 ? 1 : 2,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              />
-            )}
+            {/* Holographic noise texture */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'url("/noise.png")' }} />
 
-            {/* Swipe indicators */}
-            <motion.div
-              className="absolute top-4 left-4 px-4 py-2 rounded-xl bg-[#00FF88] text-black font-game font-bold text-lg z-30"
-              style={{ opacity: yesOpacity }}
-            >
-              YES!
-            </motion.div>
-            <motion.div
-              className="absolute top-4 right-4 px-4 py-2 rounded-xl bg-[#FF0044] text-white font-game font-bold text-lg z-30"
-              style={{ opacity: noOpacity }}
-            >
-              NO!
-            </motion.div>
-            <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-3 rounded-xl bg-white/20 text-white font-game font-bold text-lg z-30 backdrop-blur-md"
-              style={{ opacity: skipOpacity }}
-            >
-              <ChevronUp className="w-8 h-8 mx-auto" />
-              SKIP
-            </motion.div>
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col h-full p-5 md:p-6">
 
-            {/* Card body - Flexible layout with safe z-index */}
-            <div className="relative p-4 md:p-6 flex flex-col h-full z-20">
-              {/* Hype HUD */}
-              <HypeHUD
-                yesPool={currentMarket.yesPool}
-                noPool={currentMarket.noPool}
-                question={currentMarket.question}
-                volume={currentMarket.totalVolume}
-                bettors={displayBettors}
-              />
+              {/* Header: Category & Meta */}
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase border ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} shadow-[0_0_10px_inset_rgba(255,255,255,0.05)]`}>
+                    {currentMarket.category}
+                  </span>
+                  {currentMarket.totalVolume > 1000 && (
+                    <span className="flex items-center gap-1 text-[10px] text-orange-400 font-bold animate-pulse">
+                      <Flame className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
 
-              {/* Category & Timer */}
-              <div className="flex items-center gap-2 flex-wrap mb-2 flex-shrink-0">
-                <span className={`px-2 py-1 rounded-full text-[10px] md:text-xs font-game ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} border`}>
-                  {currentMarket.category.toUpperCase()}
-                </span>
-
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] md:text-xs font-bold ${isUrgent
-                  ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse"
-                  : "bg-white/5 text-gray-400 border border-white/10"
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] md:text-xs font-mono font-bold ${isUrgent ? "bg-red-950/30 border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.2)]" : "bg-white/5 border-white/10 text-gray-400"
                   }`}>
                   <Clock className="w-3 h-3" />
-                  <span className="font-numbers">{currentMarket.endsIn}</span>
+                  <span>{currentMarket.endsIn}</span>
                 </div>
-
-                {currentMarket.totalVolume > 1000 && (
-                  <span className="flex items-center gap-1 px-2 py-1 rounded bg-orange-500/20 text-orange-400 text-[10px] md:text-xs font-bold">
-                    <Flame className="w-3 h-3" />
-                    HOT
-                  </span>
-                )}
               </div>
 
-              {/* Question - Allow shrinking/clamping */}
-              <div className="min-h-0 shrink mb-2">
-                <h2 className="text-base md:text-lg lg:text-xl font-bold text-white leading-snug line-clamp-4">
+              {/* Main Subject: Question */}
+              <div className="flex-1 min-h-0 flex flex-col justify-center mb-4">
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight tracking-tight drop-shadow-lg line-clamp-4">
                   {currentMarket.question}
                 </h2>
+
+                {/* Embedded Hype Ticker */}
+                <div className="mt-4">
+                  <HypeHUD
+                    yesPool={currentMarket.yesPool}
+                    noPool={currentMarket.noPool}
+                    question={currentMarket.question}
+                    volume={currentMarket.totalVolume}
+                    bettors={displayBettors}
+                  />
+                </div>
               </div>
 
-              {/* Stats */}
-              <div className="flex items-center gap-3 md:gap-4 mb-3 text-xs md:text-sm flex-shrink-0">
-                <div className="flex items-center gap-1 text-gray-400">
-                  <TrendingUp className="w-3 h-3 md:w-4 md:h-4 text-[#00FF88]" />
-                  <span className="font-numbers">${currentMarket.totalVolume.toLocaleString()}</span>
+              {/* Stats & Volume */}
+              <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-4 px-1 flex-shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-[#00F3FF]" />
+                  <span className="text-gray-300 font-mono">{displayBettors}</span>
+                  <span className="text-gray-500">players</span>
                 </div>
-                <div className="flex items-center gap-1 text-gray-400">
-                  <Users className="w-3 h-3 md:w-4 md:h-4 text-[#00F3FF]" />
-                  <span className="font-numbers">{displayBettors} {displayBettors === 1 ? 'bettor' : 'bettors'}</span>
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-[#00FF88]" />
+                  <span className="text-gray-300 font-mono">${currentMarket.totalVolume.toLocaleString()}</span>
                 </div>
               </div>
 
-              {/* Battle Bar */}
-              <div className="mb-3 flex-shrink-0">
-                <div className="relative h-5 md:h-6 rounded-full overflow-hidden bg-black/50 border border-white/10">
+              {/* Interaction Area */}
+              <div className="flex-shrink-0">
+                {/* Battle Bar - Slim Neon */}
+                <div className="relative h-1.5 rounded-full bg-white/5 overflow-hidden mb-4">
                   <motion.div
-                    className="absolute top-0 left-0 h-full rounded-l-full"
-                    style={{
-                      width: `${currentMarket.yesPrice}%`,
-                      background: "linear-gradient(90deg, #00ff88, #00cc66)",
-                      boxShadow: "0 0 20px rgba(0, 255, 136, 0.5)"
-                    }}
+                    className="absolute left-0 top-0 bottom-0 bg-[#00FF88] shadow-[0_0_10px_#00FF88]"
                     initial={{ width: 0 }}
                     animate={{ width: `${currentMarket.yesPrice}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    transition={{ duration: 0.5 }}
                   />
                   <motion.div
-                    className="absolute top-0 right-0 h-full rounded-r-full"
-                    style={{
-                      width: `${currentMarket.noPrice}%`,
-                      background: "linear-gradient(90deg, #cc0033, #ff0044)",
-                      boxShadow: "0 0 20px rgba(255, 0, 68, 0.5)"
-                    }}
+                    className="absolute right-0 top-0 bottom-0 bg-[#FF0044] shadow-[0_0_10px_#FF0044]"
                     initial={{ width: 0 }}
                     animate={{ width: `${currentMarket.noPrice}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    transition={{ duration: 0.5 }}
                   />
-
-                  {/* Center VS */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-pixel text-xs md:text-sm text-[#FFD700] drop-shadow-lg">VS</span>
-                  </div>
                 </div>
-              </div>
 
-              {/* Odds Display - Takes remaining space */}
-              <div className="flex items-stretch gap-3 mt-auto flex-shrink-0">
-                {/* YES Side */}
-                <motion.div
-                  className="flex-1 p-2.5 md:p-3 rounded-xl bg-[#00FF88]/5 border-2 border-[#00FF88]/30 hover:border-[#00FF88] hover:bg-[#00FF88]/10 transition-all cursor-pointer"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleButtonBet(true)}
-                >
-                  <div className="text-[10px] text-gray-400 font-game mb-0.5">YES PAYOUT</div>
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-2xl md:text-3xl font-black text-[#00FF88] font-numbers">
-                      {currentMarket.yesMultiplier}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-gray-500 font-numbers">{currentMarket.yesPrice}% chance</div>
-                </motion.div>
+                {/* Massive Trigger Buttons */}
+                <div className="flex gap-3 h-20 md:h-24">
+                  {/* YES Trigger */}
+                  <motion.button
+                    className="flex-1 relative rounded-xl border border-[#00FF88]/20 bg-gradient-to-b from-[#00FF88]/10 to-transparent overflow-hidden group"
+                    whileHover={{ scale: 1.02, backgroundColor: "rgba(0, 255, 136, 0.15)" }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleButtonBet(true)}
+                  >
+                    <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
+                    <div className="relative h-full flex flex-col items-center justify-center">
+                      <span className="text-[#00FF88] text-xs font-bold tracking-widest mb-1 group-hover:text-white transition-colors">VOTE YES</span>
+                      <span className="text-3xl md:text-4xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(0,255,136,0.5)]">
+                        {currentMarket.yesMultiplier}x
+                      </span>
+                      <span className="text-[10px] text-[#00FF88]/60 mt-1">{currentMarket.yesPrice}% PROB</span>
+                    </div>
+                    {/* Corner accents */}
+                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#00FF88]" />
+                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#00FF88]" />
+                  </motion.button>
 
-                {/* NO Side */}
-                <motion.div
-                  className="flex-1 p-2.5 md:p-3 rounded-xl bg-[#FF0044]/5 border-2 border-[#FF0044]/30 hover:border-[#FF0044] hover:bg-[#FF0044]/10 transition-all cursor-pointer text-right"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleButtonBet(false)}
-                >
-                  <div className="text-[10px] text-gray-400 font-game mb-0.5">NO PAYOUT</div>
-                  <div className="flex items-baseline gap-0.5 justify-end">
-                    <span className="text-2xl md:text-3xl font-black text-[#FF0044] font-numbers">
-                      {currentMarket.noMultiplier}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-gray-500 font-numbers">{currentMarket.noPrice}% chance</div>
-                </motion.div>
+                  {/* NO Trigger */}
+                  <motion.button
+                    className="flex-1 relative rounded-xl border border-[#FF0044]/20 bg-gradient-to-b from-[#FF0044]/10 to-transparent overflow-hidden group"
+                    whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 0, 68, 0.15)" }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleButtonBet(false)}
+                  >
+                    <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
+                    <div className="relative h-full flex flex-col items-center justify-center">
+                      <span className="text-[#FF0044] text-xs font-bold tracking-widest mb-1 group-hover:text-white transition-colors">VOTE NO</span>
+                      <span className="text-3xl md:text-4xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(255,0,68,0.5)]">
+                        {currentMarket.noMultiplier}x
+                      </span>
+                      <span className="text-[10px] text-[#FF0044]/60 mt-1">{currentMarket.noPrice}% PROB</span>
+                    </div>
+                    {/* Corner accents */}
+                    <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#FF0044]" />
+                    <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#FF0044]" />
+                  </motion.button>
+                </div>
               </div>
             </div>
           </div>
