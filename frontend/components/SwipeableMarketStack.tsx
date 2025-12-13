@@ -465,15 +465,13 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 </div>
               </div>
 
-              {/* Main Subject: Question */}
-              <div className="flex-1 min-h-0 flex flex-col justify-center mb-2">
-                <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-white leading-tight tracking-tight drop-shadow-lg line-clamp-4 md:line-clamp-5">
-                  {currentMarket.question}
-                </h2>
-              </div>
+              {/* Main Subject: Question - FORCED VISIBILITY */}
+              <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-white leading-tight tracking-tight drop-shadow-lg line-clamp-4 md:line-clamp-5 flex-shrink-0 mb-2 z-20">
+                {currentMarket.question}
+              </h2>
 
-              {/* Embedded Hype Ticker - separate from Question */}
-              <div className="mb-4 flex-shrink-0">
+              {/* Embedded Hype Ticker */}
+              <div className="mb-4 flex-shrink-0 z-10 relative">
                 <HypeHUD
                   yesPool={currentMarket.yesPool}
                   noPool={currentMarket.noPool}
