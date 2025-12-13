@@ -321,7 +321,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         if (timeSinceLastAction >= GAMEPAD_DEBOUNCE_MS) {
           // Check for YES actions (A/X button or D-Pad Right)
           if (gamepad.buttons[GAMEPAD_BUTTONS.A_X]?.pressed ||
-              gamepad.buttons[GAMEPAD_BUTTONS.DPAD_RIGHT]?.pressed) {
+            gamepad.buttons[GAMEPAD_BUTTONS.DPAD_RIGHT]?.pressed) {
             lastGamepadActionRef.current = now;
             setGamepadActive("yes");
             handleButtonBet(true);
@@ -329,7 +329,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
           }
           // Check for NO actions (B/Circle button or D-Pad Left)
           else if (gamepad.buttons[GAMEPAD_BUTTONS.B_CIRCLE]?.pressed ||
-                   gamepad.buttons[GAMEPAD_BUTTONS.DPAD_LEFT]?.pressed) {
+            gamepad.buttons[GAMEPAD_BUTTONS.DPAD_LEFT]?.pressed) {
             lastGamepadActionRef.current = now;
             setGamepadActive("no");
             handleButtonBet(false);
@@ -337,7 +337,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
           }
           // Check for SKIP actions (Y/Triangle button or D-Pad Up)
           else if (gamepad.buttons[GAMEPAD_BUTTONS.Y_TRIANGLE]?.pressed ||
-                   gamepad.buttons[GAMEPAD_BUTTONS.DPAD_UP]?.pressed) {
+            gamepad.buttons[GAMEPAD_BUTTONS.DPAD_UP]?.pressed) {
             lastGamepadActionRef.current = now;
             setGamepadActive("skip");
             handleSkipButton();
@@ -393,8 +393,8 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   const cardGlow = streak >= 10
     ? "shadow-[0_0_60px_rgba(255,215,0,0.5)]"
     : streak >= 5
-    ? "shadow-[0_0_40px_rgba(255,140,0,0.4)]"
-    : "shadow-2xl";
+      ? "shadow-[0_0_40px_rgba(255,140,0,0.4)]"
+      : "shadow-2xl";
 
   // Display bettors - use totalBetsCount as fallback if uniqueBettors is 0
   const displayBettors = currentMarket.bettors > 0 ? currentMarket.bettors : currentMarket.totalBetsCount;
@@ -435,7 +435,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
           onMouseLeave={handleMouseLeave}
         >
           {/* Card content */}
-          <div className="relative bg-gradient-to-b from-[#12121a] to-[#0a0a0f] rounded-3xl border border-white/10 overflow-hidden h-full">
+          <div className="relative bg-gradient-to-b from-[#12121a] to-[#0a0a0f] rounded-3xl border border-white/10 overflow-hidden h-full flex flex-col">
             {/* Holographic glare overlay */}
             <motion.div
               className="absolute inset-0 z-10 pointer-events-none rounded-3xl opacity-30"
@@ -447,7 +447,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
             {/* Rainbow edge effect on high streak */}
             {streak >= 5 && (
               <motion.div
-                className="absolute inset-0 rounded-3xl pointer-events-none"
+                className="absolute inset-0 rounded-3xl pointer-events-none z-10"
                 style={{
                   background: streak >= 10
                     ? "linear-gradient(45deg, #FFD700, #FF8C00, #FF0044, #FF00FF, #00F3FF, #00FF88, #FFD700)"
@@ -499,19 +499,18 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
               bettors={displayBettors}
             />
 
-            {/* Card body - NO scroll, fixed layout */}
-            <div className="pt-20 pb-4 px-4 md:px-6 flex flex-col h-full">
+            {/* Card body - Flexible layout with safe z-index */}
+            <div className="relative pt-28 pb-4 px-4 md:px-6 flex flex-col h-full z-20">
               {/* Category & Timer */}
               <div className="flex items-center gap-2 flex-wrap mb-2 flex-shrink-0">
                 <span className={`px-2 py-1 rounded-full text-[10px] md:text-xs font-game ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} border`}>
                   {currentMarket.category.toUpperCase()}
                 </span>
 
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] md:text-xs font-bold ${
-                  isUrgent
-                    ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse"
-                    : "bg-white/5 text-gray-400 border border-white/10"
-                }`}>
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] md:text-xs font-bold ${isUrgent
+                  ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse"
+                  : "bg-white/5 text-gray-400 border border-white/10"
+                  }`}>
                   <Clock className="w-3 h-3" />
                   <span className="font-numbers">{currentMarket.endsIn}</span>
                 </div>
@@ -524,10 +523,12 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 )}
               </div>
 
-              {/* Question */}
-              <h2 className="text-base md:text-lg lg:text-xl font-bold text-white leading-snug mb-2 flex-shrink-0 line-clamp-3">
-                {currentMarket.question}
-              </h2>
+              {/* Question - Allow shrinking/clamping */}
+              <div className="min-h-0 shrink mb-2">
+                <h2 className="text-base md:text-lg lg:text-xl font-bold text-white leading-snug line-clamp-4">
+                  {currentMarket.question}
+                </h2>
+              </div>
 
               {/* Stats */}
               <div className="flex items-center gap-3 md:gap-4 mb-3 text-xs md:text-sm flex-shrink-0">
@@ -575,7 +576,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
               </div>
 
               {/* Odds Display - Takes remaining space */}
-              <div className="flex items-stretch gap-3 mt-auto">
+              <div className="flex items-stretch gap-3 mt-auto flex-shrink-0">
                 {/* YES Side */}
                 <motion.div
                   className="flex-1 p-2.5 md:p-3 rounded-xl bg-[#00FF88]/5 border-2 border-[#00FF88]/30 hover:border-[#00FF88] hover:bg-[#00FF88]/10 transition-all cursor-pointer"
@@ -633,9 +634,8 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       <div className="flex items-center justify-center gap-3 md:gap-4 py-4 flex-shrink-0">
         {/* NO Button */}
         <motion.button
-          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#FF0044]/20 border-2 border-[#FF0044] flex items-center justify-center text-[#FF0044] font-game text-lg md:text-xl hover:bg-[#FF0044]/30 transition-colors disabled:opacity-50 ${
-            gamepadActive === "no" ? "scale-90 bg-[#FF0044]/40" : ""
-          }`}
+          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#FF0044]/20 border-2 border-[#FF0044] flex items-center justify-center text-[#FF0044] font-game text-lg md:text-xl hover:bg-[#FF0044]/30 transition-colors disabled:opacity-50 ${gamepadActive === "no" ? "scale-90 bg-[#FF0044]/40" : ""
+            }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => handleButtonBet(false)}
@@ -647,9 +647,8 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
         {/* Skip Button */}
         <motion.button
-          className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-gray-400 hover:bg-white/20 transition-colors disabled:opacity-50 ${
-            gamepadActive === "skip" ? "scale-90 bg-[#FFD700]/40 border-[#FFD700]" : ""
-          }`}
+          className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-gray-400 hover:bg-white/20 transition-colors disabled:opacity-50 ${gamepadActive === "skip" ? "scale-90 bg-[#FFD700]/40 border-[#FFD700]" : ""
+            }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleSkipButton}
@@ -661,9 +660,8 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
         {/* YES Button */}
         <motion.button
-          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#00FF88]/20 border-2 border-[#00FF88] flex items-center justify-center text-[#00FF88] font-game text-lg md:text-xl hover:bg-[#00FF88]/30 transition-colors disabled:opacity-50 ${
-            gamepadActive === "yes" ? "scale-90 bg-[#00FF88]/40" : ""
-          }`}
+          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#00FF88]/20 border-2 border-[#00FF88] flex items-center justify-center text-[#00FF88] font-game text-lg md:text-xl hover:bg-[#00FF88]/30 transition-colors disabled:opacity-50 ${gamepadActive === "yes" ? "scale-90 bg-[#00FF88]/40" : ""
+            }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => handleButtonBet(true)}
@@ -696,13 +694,12 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         {markets.slice(0, 10).map((_, i) => (
           <div
             key={i}
-            className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all ${
-              i < currentIndex
-                ? "bg-[#00F3FF]"
-                : i === currentIndex
+            className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all ${i < currentIndex
+              ? "bg-[#00F3FF]"
+              : i === currentIndex
                 ? "bg-[#FF00FF] w-3 md:w-4"
                 : "bg-white/20"
-            }`}
+              }`}
           />
         ))}
         {markets.length > 10 && (
