@@ -43,7 +43,7 @@ export function BetSuccessModal({ isOpen, onClose, betData }: BetSuccessModalPro
 
 Potential ${betData.multiplier} payout! 🎯
 
-Swipe to predict on @SolanaSaga - the Tinder of prediction markets 🔥
+Swipe to predict on @playsolanasaga - the Tinder of prediction markets 🔥
 
 #Solana #PredictionMarkets #Web3Gaming`;
 
