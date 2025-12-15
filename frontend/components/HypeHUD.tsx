@@ -105,12 +105,12 @@ export function HypeHUD({ yesPool, noPool, question, volume = 0, bettors = 0 }: 
 
   return (
     <motion.div
-      className="w-full mb-3"
+      className="w-full"
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
     >
       <div className={`
-        flex items-center gap-3 px-3 py-2 rounded-lg
+        flex items-center gap-2 px-2 py-1.5 rounded-lg
         bg-black/40 border border-white/5 backdrop-blur-sm
       `}>
         {/* Compact Status Indicator */}

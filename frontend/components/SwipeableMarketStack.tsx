@@ -443,10 +443,10 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'url("/noise.png")' }} />
 
             {/* Content Container */}
-            <div className="relative z-10 flex flex-col h-full p-5 md:p-6">
+            <div className="relative z-10 flex flex-col h-full p-4 md:p-5">
 
               {/* Header: Category & Meta */}
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <div className="flex items-center justify-between mb-2 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <span className={`px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase border ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} shadow-[0_0_10px_inset_rgba(255,255,255,0.05)]`}>
                     {currentMarket.category}
@@ -465,13 +465,13 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 </div>
               </div>
 
-              {/* Main Subject: Question - FORCED VISIBILITY */}
-              <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-white leading-tight tracking-tight drop-shadow-lg line-clamp-4 md:line-clamp-5 flex-shrink-0 mb-2 z-20">
+              {/* Main Subject: Question - Fixed height */}
+              <h2 className="text-base md:text-lg font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-2 flex-shrink-0 mb-2 z-20 max-h-[3rem] md:max-h-[3.5rem] overflow-hidden">
                 {currentMarket.question}
               </h2>
 
               {/* Embedded Hype Ticker */}
-              <div className="mb-4 flex-shrink-0 z-10 relative">
+              <div className="mb-2 flex-shrink-0 z-10 relative">
                 <HypeHUD
                   yesPool={currentMarket.yesPool}
                   noPool={currentMarket.noPool}
@@ -482,7 +482,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
               </div>
 
               {/* Stats & Volume */}
-              <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-3 px-1 flex-shrink-0">
+              <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-2 px-1 flex-shrink-0">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4 text-[#00F3FF]" />
                   <span className="text-gray-300 font-mono">{displayBettors}</span>
@@ -494,10 +494,24 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 </div>
               </div>
 
-              {/* Interaction Area */}
-              <div className="flex-shrink-0">
+              {/* Battle Bar with Odds */}
+              <div className="flex-shrink-0 mt-auto">
+                {/* Odds Display */}
+                <div className="flex justify-between items-center mb-2 px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[#00FF88] text-xs font-bold">YES</span>
+                    <span className="text-white text-sm font-black">{currentMarket.yesMultiplier}x</span>
+                    <span className="text-[10px] text-gray-500">({currentMarket.yesPrice}%)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-500">({currentMarket.noPrice}%)</span>
+                    <span className="text-white text-sm font-black">{currentMarket.noMultiplier}x</span>
+                    <span className="text-[#FF0044] text-xs font-bold">NO</span>
+                  </div>
+                </div>
+
                 {/* Battle Bar - Slim Neon */}
-                <div className="relative h-1.5 rounded-full bg-white/5 overflow-hidden mb-3">
+                <div className="relative h-2 rounded-full bg-white/5 overflow-hidden">
                   <motion.div
                     className="absolute left-0 top-0 bottom-0 bg-[#00FF88] shadow-[0_0_10px_#00FF88]"
                     initial={{ width: 0 }}
@@ -510,49 +524,6 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                     animate={{ width: `${currentMarket.noPrice}%` }}
                     transition={{ duration: 0.5 }}
                   />
-                </div>
-
-                {/* Massive Trigger Buttons - Slightly adjusted height */}
-                <div className="flex gap-3 h-16 md:h-20">
-                  {/* YES Trigger */}
-                  <motion.button
-                    className="flex-1 relative rounded-xl border border-[#00FF88]/20 bg-gradient-to-b from-[#00FF88]/10 to-transparent overflow-hidden group"
-                    whileHover={{ scale: 1.02, backgroundColor: "rgba(0, 255, 136, 0.15)" }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleButtonBet(true)}
-                  >
-                    <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
-                    <div className="relative h-full flex flex-col items-center justify-center">
-                      <span className="text-[#00FF88] text-[10px] mobile:text-xs font-bold tracking-widest mb-0.5 group-hover:text-white transition-colors">VOTE YES</span>
-                      <span className="text-2xl md:text-3xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(0,255,136,0.5)]">
-                        {currentMarket.yesMultiplier}x
-                      </span>
-                      <span className="text-[10px] text-[#00FF88]/60 mt-0.5">{currentMarket.yesPrice}% PROB</span>
-                    </div>
-                    {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#00FF88]" />
-                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#00FF88]" />
-                  </motion.button>
-
-                  {/* NO Trigger */}
-                  <motion.button
-                    className="flex-1 relative rounded-xl border border-[#FF0044]/20 bg-gradient-to-b from-[#FF0044]/10 to-transparent overflow-hidden group"
-                    whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 0, 68, 0.15)" }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleButtonBet(false)}
-                  >
-                    <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
-                    <div className="relative h-full flex flex-col items-center justify-center">
-                      <span className="text-[#FF0044] text-[10px] mobile:text-xs font-bold tracking-widest mb-0.5 group-hover:text-white transition-colors">VOTE NO</span>
-                      <span className="text-2xl md:text-3xl font-black text-white font-numbers drop-shadow-[0_0_10px_rgba(255,0,68,0.5)]">
-                        {currentMarket.noMultiplier}x
-                      </span>
-                      <span className="text-[10px] text-[#FF0044]/60 mt-0.5">{currentMarket.noPrice}% PROB</span>
-                    </div>
-                    {/* Corner accents */}
-                    <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#FF0044]" />
-                    <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#FF0044]" />
-                  </motion.button>
                 </div>
               </div>
             </div>
