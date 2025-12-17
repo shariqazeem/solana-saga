@@ -111,12 +111,16 @@ export function usePredictionMarkets() {
   /**
    * Sends a transaction with proper mobile wallet adapter handling.
    *
-   * The key insight: wallet.sendTransaction() REQUIRES recentBlockhash to be set,
-   * but it will RE-SIGN the transaction. The "missing signature" error happens when
-   * there's a mismatch between the transaction structure and what gets signed.
+   * CRITICAL FIX for "Signature verification failed, missing signature":
    *
-   * Solution: Always use sendTransaction for mobile (it handles signing internally),
-   * and ensure we're using the SAME public key throughout the transaction building.
+   * On Mobile Wallet Adapter (deep link flow):
+   * - DO NOT set recentBlockhash/feePayer before calling sendTransaction
+   * - The wallet adapter's sendTransaction() handles this internally
+   * - Setting these beforehand can cause signature verification to fail
+   *
+   * On Desktop/In-App Browser:
+   * - We MUST set recentBlockhash/feePayer before signTransaction
+   * - Then send the raw signed transaction ourselves
    */
   const sendMobileCompatibleTransaction = useCallback(
     async (transaction: Transaction, txId?: string): Promise<string> => {
@@ -139,31 +143,22 @@ export function usePredictionMarkets() {
         const isInApp = isPhantomInAppBrowser();
 
         console.log(`[TX] Environment: mobile=${isMobile}, inAppBrowser=${isInApp}`);
-        console.log(`[TX] Wallet adapter publicKey: ${walletAdapter.publicKey.toString()}`);
-        console.log(`[TX] Transaction feePayer before: ${transaction.feePayer?.toString() || 'not set'}`);
-
-        // Get fresh blockhash - required for all transaction types
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-
-        // Set transaction properties
-        transaction.recentBlockhash = blockhash;
-
-        // Only set feePayer if not already set (Anchor may have set it)
-        if (!transaction.feePayer) {
-          transaction.feePayer = walletAdapter.publicKey;
-        }
-
-        console.log(`[TX] Transaction feePayer after: ${transaction.feePayer.toString()}`);
+        console.log(`[TX] Wallet publicKey: ${walletAdapter.publicKey.toString()}`);
 
         let signature: string;
+        let blockhash: string;
+        let lastValidBlockHeight: number;
 
-        if (isMobile) {
-          // MOBILE FLOW: Use sendTransaction which handles signing internally
-          // This is the atomic signAndSendTransaction that mobile wallets expect
-          console.log("[TX] Using mobile sendTransaction flow");
+        if (isMobile && !isInApp) {
+          // MOBILE WALLET ADAPTER FLOW (Deep Link)
+          // CRITICAL: Do NOT set blockhash/feePayer - let sendTransaction handle it
+          // The wallet adapter will set these when it processes the transaction
+          console.log("[TX] Using mobile wallet adapter flow - letting wallet handle blockhash/feePayer");
 
-          // CRITICAL: sendTransaction will sign the transaction internally
-          // Do NOT sign before calling this
+          // Ensure feePayer is set to the connected wallet (required for instruction building)
+          // but sendTransaction will refresh the blockhash
+          transaction.feePayer = walletAdapter.publicKey;
+
           signature = await walletAdapter.sendTransaction(transaction, connection, {
             skipPreflight: false,
             preflightCommitment: "confirmed",
@@ -171,13 +166,27 @@ export function usePredictionMarkets() {
 
           console.log("[TX] Mobile transaction sent:", signature);
 
+          // Get blockhash for confirmation (we need it for confirmTransaction)
+          const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+          blockhash = latestBlockhash.blockhash;
+          lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
         } else {
-          // DESKTOP FLOW: Sign then send raw transaction
-          console.log("[TX] Using desktop signTransaction flow");
+          // DESKTOP / IN-APP BROWSER FLOW
+          // Here we MUST set blockhash and feePayer before signing
+          console.log("[TX] Using desktop/in-app browser flow");
 
           if (!walletAdapter.signTransaction) {
             throw new Error("Wallet does not support signTransaction");
           }
+
+          const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+          blockhash = latestBlockhash.blockhash;
+          lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = walletAdapter.publicKey;
+          transaction.lastValidBlockHeight = lastValidBlockHeight;
 
           const signedTx = await walletAdapter.signTransaction(transaction);
           signature = await connection.sendRawTransaction(signedTx.serialize(), {
@@ -499,33 +508,29 @@ export function usePredictionMarkets() {
       );
 
       console.log("User stats PDA:", userStatsPda.toString());
-
-      // Debug: Check if wallet public keys match
-      console.log("Anchor wallet pubkey:", wallet.publicKey.toString());
-      console.log("Wallet adapter pubkey:", walletAdapter.publicKey?.toString());
-      console.log("Keys match:", wallet.publicKey.equals(walletAdapter.publicKey!));
       console.log("=== END DEBUG ===\n");
 
       // MOBILE WALLET ADAPTER FIX:
       // Use our mobile-compatible sender for ALL mobile contexts
+      // This ensures proper handling of blockhash/feePayer
       const isMobile = isMobileDevice();
 
       let signature: string;
 
       if (isMobile) {
         // ALL MOBILE CONTEXTS - Use mobile-compatible transaction flow
+        // This works for both deep link AND in-app browser
         console.log("[PlaceBet] Using mobile-compatible transaction flow");
 
         // Build the transaction using Anchor's transaction() method
-        // CRITICAL: Use wallet.publicKey (from useAnchorWallet) for consistency
-        // since the Anchor program/provider was created with this wallet
+        // IMPORTANT: Use walletAdapter.publicKey for consistency
         const betTx = await program.methods
           .placeBet(new BN(marketId), amountInSmallestUnits, prediction)
           .accounts({
             market: marketPubkey,
             userStats: userStatsPda,
             userTokenAccount: userUsdcAccount.address,
-            user: wallet.publicKey, // Use Anchor wallet's key for consistency
+            user: walletAdapter.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
           })
@@ -649,7 +654,7 @@ export function usePredictionMarkets() {
             userStats: userStatsPda,
             vault: vaultPda,
             userTokenAccount: userUsdcAccount.address,
-            user: wallet.publicKey, // Use Anchor wallet's key for consistency
+            user: walletAdapter.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
           .transaction();
@@ -786,7 +791,7 @@ export function usePredictionMarkets() {
             market: marketPubkey,
             vault: vaultPda,
             adminTokenAccount: adminTokenAccount,
-            admin: wallet.publicKey, // Use Anchor wallet's key for consistency
+            admin: walletAdapter.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
           .transaction();
