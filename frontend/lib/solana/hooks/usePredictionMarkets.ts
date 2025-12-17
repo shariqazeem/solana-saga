@@ -111,18 +111,20 @@ export function usePredictionMarkets() {
   /**
    * Sends a transaction with proper mobile wallet adapter handling.
    *
-   * CRITICAL: This function handles the key differences between:
-   * 1. Desktop wallets (signTransaction + sendRawTransaction)
-   * 2. Mobile wallet adapters (signAndSendTransaction - atomic operation)
-   * 3. Phantom in-app browser (hybrid approach)
+   * CRITICAL FIX for "Signature verification failed, missing signature":
    *
-   * The key fix for "Signature verification failed" error:
-   * - Always set recentBlockhash and feePayer BEFORE signing
-   * - Use wallet.sendTransaction for mobile (handles signing internally)
+   * On Mobile Wallet Adapter (deep link flow):
+   * - DO NOT set recentBlockhash/feePayer before calling sendTransaction
+   * - The wallet adapter's sendTransaction() handles this internally
+   * - Setting these beforehand can cause signature verification to fail
+   *
+   * On Desktop/In-App Browser:
+   * - We MUST set recentBlockhash/feePayer before signTransaction
+   * - Then send the raw signed transaction ourselves
    */
   const sendMobileCompatibleTransaction = useCallback(
     async (transaction: Transaction, txId?: string): Promise<string> => {
-      if (!walletAdapter.publicKey || !walletAdapter.signTransaction) {
+      if (!walletAdapter.publicKey) {
         throw new Error("Wallet not connected");
       }
 
@@ -137,36 +139,54 @@ export function usePredictionMarkets() {
       }
 
       try {
-        // CRITICAL: Get fresh blockhash and set feePayer BEFORE any signing
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = walletAdapter.publicKey;
-        transaction.lastValidBlockHeight = lastValidBlockHeight;
-
         const isMobile = isMobileDevice();
         const isInApp = isPhantomInAppBrowser();
 
         console.log(`[TX] Environment: mobile=${isMobile}, inAppBrowser=${isInApp}`);
+        console.log(`[TX] Wallet publicKey: ${walletAdapter.publicKey.toString()}`);
 
         let signature: string;
+        let blockhash: string;
+        let lastValidBlockHeight: number;
 
-        if (isMobile && !isInApp && walletAdapter.sendTransaction) {
-          // MOBILE DEEP LINK FLOW
-          // Use wallet.sendTransaction which internally does signAndSendTransaction
-          // This is the ATOMIC operation that mobile wallets expect
-          console.log("[TX] Using mobile wallet adapter flow");
+        if (isMobile && !isInApp) {
+          // MOBILE WALLET ADAPTER FLOW (Deep Link)
+          // CRITICAL: Do NOT set blockhash/feePayer - let sendTransaction handle it
+          // The wallet adapter will set these when it processes the transaction
+          console.log("[TX] Using mobile wallet adapter flow - letting wallet handle blockhash/feePayer");
 
-          const sendOptions: SendOptions = {
+          // Ensure feePayer is set to the connected wallet (required for instruction building)
+          // but sendTransaction will refresh the blockhash
+          transaction.feePayer = walletAdapter.publicKey;
+
+          signature = await walletAdapter.sendTransaction(transaction, connection, {
             skipPreflight: false,
             preflightCommitment: "confirmed",
-            maxRetries: 3,
-          };
+          });
 
-          signature = await walletAdapter.sendTransaction(transaction, connection, sendOptions);
+          console.log("[TX] Mobile transaction sent:", signature);
+
+          // Get blockhash for confirmation (we need it for confirmTransaction)
+          const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+          blockhash = latestBlockhash.blockhash;
+          lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
         } else {
           // DESKTOP / IN-APP BROWSER FLOW
-          // Sign first, then send raw transaction
+          // Here we MUST set blockhash and feePayer before signing
           console.log("[TX] Using desktop/in-app browser flow");
+
+          if (!walletAdapter.signTransaction) {
+            throw new Error("Wallet does not support signTransaction");
+          }
+
+          const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+          blockhash = latestBlockhash.blockhash;
+          lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = walletAdapter.publicKey;
+          transaction.lastValidBlockHeight = lastValidBlockHeight;
 
           const signedTx = await walletAdapter.signTransaction(transaction);
           signature = await connection.sendRawTransaction(signedTx.serialize(), {
@@ -174,11 +194,13 @@ export function usePredictionMarkets() {
             preflightCommitment: "confirmed",
             maxRetries: 3,
           });
+
+          console.log("[TX] Desktop transaction sent:", signature);
         }
 
-        console.log("[TX] Transaction sent:", signature);
+        // Confirm the transaction with timeout protection
+        console.log("[TX] Confirming transaction...");
 
-        // Confirm with timeout protection for mobile
         const confirmPromise = connection.confirmTransaction(
           {
             signature,
@@ -200,7 +222,6 @@ export function usePredictionMarkets() {
           }
         } catch (confirmError: any) {
           // On mobile, the transaction might have succeeded even if confirmation times out
-          // Check transaction status instead of failing
           if (confirmError.message === "Confirmation timeout") {
             console.log("[TX] Confirmation timed out, checking status...");
             const status = await connection.getSignatureStatus(signature);
@@ -490,25 +511,26 @@ export function usePredictionMarkets() {
       console.log("=== END DEBUG ===\n");
 
       // MOBILE WALLET ADAPTER FIX:
-      // Instead of using .rpc() which uses signTransaction internally,
-      // we build the transaction and use our mobile-compatible sender
+      // Use our mobile-compatible sender for ALL mobile contexts
+      // This ensures proper handling of blockhash/feePayer
       const isMobile = isMobileDevice();
-      const isInApp = isPhantomInAppBrowser();
 
       let signature: string;
 
-      if (isMobile && !isInApp) {
-        // MOBILE DEEP LINK FLOW - Build transaction manually
+      if (isMobile) {
+        // ALL MOBILE CONTEXTS - Use mobile-compatible transaction flow
+        // This works for both deep link AND in-app browser
         console.log("[PlaceBet] Using mobile-compatible transaction flow");
 
         // Build the transaction using Anchor's transaction() method
+        // IMPORTANT: Use walletAdapter.publicKey for consistency
         const betTx = await program.methods
           .placeBet(new BN(marketId), amountInSmallestUnits, prediction)
           .accounts({
             market: marketPubkey,
             userStats: userStatsPda,
             userTokenAccount: userUsdcAccount.address,
-            user: wallet.publicKey,
+            user: walletAdapter.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
           })
@@ -517,7 +539,7 @@ export function usePredictionMarkets() {
         // Send using our mobile-compatible method
         signature = await sendMobileCompatibleTransaction(betTx, txId);
       } else {
-        // DESKTOP / IN-APP BROWSER FLOW - Use Anchor's RPC
+        // DESKTOP FLOW - Use Anchor's RPC (handles signing internally)
         console.log("[PlaceBet] Using standard Anchor RPC flow");
 
         signature = await program.methods
@@ -617,12 +639,11 @@ export function usePredictionMarkets() {
       );
 
       const isMobile = isMobileDevice();
-      const isInApp = isPhantomInAppBrowser();
 
       let signature: string;
 
-      if (isMobile && !isInApp) {
-        // MOBILE DEEP LINK FLOW
+      if (isMobile) {
+        // ALL MOBILE CONTEXTS - Use mobile-compatible transaction flow
         console.log("[ClaimWinnings] Using mobile-compatible transaction flow");
 
         const claimTx = await program.methods
@@ -633,14 +654,14 @@ export function usePredictionMarkets() {
             userStats: userStatsPda,
             vault: vaultPda,
             userTokenAccount: userUsdcAccount.address,
-            user: wallet.publicKey,
+            user: walletAdapter.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
           .transaction();
 
         signature = await sendMobileCompatibleTransaction(claimTx, txId);
       } else {
-        // DESKTOP / IN-APP BROWSER FLOW
+        // DESKTOP FLOW
         console.log("[ClaimWinnings] Using standard Anchor RPC flow");
 
         signature = await program.methods
@@ -757,12 +778,11 @@ export function usePredictionMarkets() {
       );
 
       const isMobile = isMobileDevice();
-      const isInApp = isPhantomInAppBrowser();
 
       let signature: string;
 
-      if (isMobile && !isInApp) {
-        // MOBILE DEEP LINK FLOW
+      if (isMobile) {
+        // ALL MOBILE CONTEXTS - Use mobile-compatible transaction flow
         console.log("[WithdrawFees] Using mobile-compatible transaction flow");
 
         const withdrawTx = await program.methods
@@ -771,14 +791,14 @@ export function usePredictionMarkets() {
             market: marketPubkey,
             vault: vaultPda,
             adminTokenAccount: adminTokenAccount,
-            admin: wallet.publicKey,
+            admin: walletAdapter.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
           .transaction();
 
         signature = await sendMobileCompatibleTransaction(withdrawTx, txId);
       } else {
-        // DESKTOP / IN-APP BROWSER FLOW
+        // DESKTOP FLOW
         console.log("[WithdrawFees] Using standard Anchor RPC flow");
 
         signature = await program.methods
