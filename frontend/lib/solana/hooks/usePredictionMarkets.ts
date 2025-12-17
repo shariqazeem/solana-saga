@@ -1,15 +1,32 @@
-import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { Program, AnchorProvider, Idl, BN } from "@coral-xyz/anchor";
-import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import { PublicKey, SystemProgram, Transaction, SendOptions } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { PROGRAM_ID, RPC_ENDPOINT } from "../config";
 import idl from "../idl/prediction_markets.json";
+
+// Mobile detection utilities
+function isMobileDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+}
+
+function isPhantomInAppBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent;
+  return (
+    ua.includes("Phantom") ||
+    (isMobileDevice() && typeof (window as any).phantom?.solana !== "undefined")
+  );
+}
 
 // USDC Devnet mint address
 export const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
@@ -82,10 +99,130 @@ export interface UserStats {
 export function usePredictionMarkets() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
+  const walletAdapter = useWallet(); // For mobile-compatible signing
   const [markets, setMarkets] = useState<Market[]>([]);
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Track pending transactions to prevent duplicate submissions on mobile
+  const pendingTxRef = useRef<Set<string>>(new Set());
+
+  /**
+   * Sends a transaction with proper mobile wallet adapter handling.
+   *
+   * CRITICAL: This function handles the key differences between:
+   * 1. Desktop wallets (signTransaction + sendRawTransaction)
+   * 2. Mobile wallet adapters (signAndSendTransaction - atomic operation)
+   * 3. Phantom in-app browser (hybrid approach)
+   *
+   * The key fix for "Signature verification failed" error:
+   * - Always set recentBlockhash and feePayer BEFORE signing
+   * - Use wallet.sendTransaction for mobile (handles signing internally)
+   */
+  const sendMobileCompatibleTransaction = useCallback(
+    async (transaction: Transaction, txId?: string): Promise<string> => {
+      if (!walletAdapter.publicKey || !walletAdapter.signTransaction) {
+        throw new Error("Wallet not connected");
+      }
+
+      // Prevent duplicate transaction submissions (mobile re-render protection)
+      if (txId && pendingTxRef.current.has(txId)) {
+        console.log("[TX] Duplicate transaction blocked:", txId);
+        throw new Error("Transaction already pending");
+      }
+
+      if (txId) {
+        pendingTxRef.current.add(txId);
+      }
+
+      try {
+        // CRITICAL: Get fresh blockhash and set feePayer BEFORE any signing
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = walletAdapter.publicKey;
+        transaction.lastValidBlockHeight = lastValidBlockHeight;
+
+        const isMobile = isMobileDevice();
+        const isInApp = isPhantomInAppBrowser();
+
+        console.log(`[TX] Environment: mobile=${isMobile}, inAppBrowser=${isInApp}`);
+
+        let signature: string;
+
+        if (isMobile && !isInApp && walletAdapter.sendTransaction) {
+          // MOBILE DEEP LINK FLOW
+          // Use wallet.sendTransaction which internally does signAndSendTransaction
+          // This is the ATOMIC operation that mobile wallets expect
+          console.log("[TX] Using mobile wallet adapter flow");
+
+          const sendOptions: SendOptions = {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+            maxRetries: 3,
+          };
+
+          signature = await walletAdapter.sendTransaction(transaction, connection, sendOptions);
+        } else {
+          // DESKTOP / IN-APP BROWSER FLOW
+          // Sign first, then send raw transaction
+          console.log("[TX] Using desktop/in-app browser flow");
+
+          const signedTx = await walletAdapter.signTransaction(transaction);
+          signature = await connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+            maxRetries: 3,
+          });
+        }
+
+        console.log("[TX] Transaction sent:", signature);
+
+        // Confirm with timeout protection for mobile
+        const confirmPromise = connection.confirmTransaction(
+          {
+            signature,
+            blockhash,
+            lastValidBlockHeight,
+          },
+          "confirmed"
+        );
+
+        // Add timeout for mobile contexts where app might lose focus
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Confirmation timeout")), 60000);
+        });
+
+        try {
+          const confirmation = await Promise.race([confirmPromise, timeoutPromise]);
+          if (confirmation.value?.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          }
+        } catch (confirmError: any) {
+          // On mobile, the transaction might have succeeded even if confirmation times out
+          // Check transaction status instead of failing
+          if (confirmError.message === "Confirmation timeout") {
+            console.log("[TX] Confirmation timed out, checking status...");
+            const status = await connection.getSignatureStatus(signature);
+            if (status.value?.confirmationStatus === "confirmed" ||
+                status.value?.confirmationStatus === "finalized") {
+              console.log("[TX] Transaction confirmed despite timeout");
+              return signature;
+            }
+          }
+          throw confirmError;
+        }
+
+        console.log("[TX] Transaction confirmed:", signature);
+        return signature;
+      } finally {
+        if (txId) {
+          pendingTxRef.current.delete(txId);
+        }
+      }
+    },
+    [connection, walletAdapter]
+  );
 
   // Read-only program for fetching data (doesn't require wallet)
   const readOnlyProgram = useMemo(() => {
@@ -276,11 +413,14 @@ export function usePredictionMarkets() {
     };
   };
 
-  // Place a bet
+  // Place a bet - Mobile Wallet Adapter Compatible
   const placeBet = async (marketAddress: string, amount: number, prediction: boolean): Promise<string> => {
-    if (!program || !wallet) {
+    if (!program || !wallet || !walletAdapter.publicKey) {
       throw new Error("Wallet not connected");
     }
+
+    // Create unique transaction ID for duplicate prevention
+    const txId = `bet-${marketAddress}-${Date.now()}`;
 
     try {
       // marketPubkey is already the market PDA (from .env addresses)
@@ -297,6 +437,8 @@ export function usePredictionMarkets() {
       console.log("Total bets count (current):", totalBetsCount);
       console.log("User wallet:", wallet.publicKey.toString());
       console.log("Program ID:", program.programId.toString());
+      console.log("Mobile device:", isMobileDevice());
+      console.log("In-app browser:", isPhantomInAppBrowser());
 
       // Verify the market address matches the expected PDA
       const [expectedMarketPda] = PublicKey.findProgramAddressSync(
@@ -304,7 +446,7 @@ export function usePredictionMarkets() {
         program.programId
       );
       console.log("Expected market PDA for ID", marketId, ":", expectedMarketPda.toString());
-      console.log("Market PDA matches:", marketPubkey.equals(expectedMarketPda) ? "✓ YES" : "✗ NO - USING WRONG ADDRESS!");
+      console.log("Market PDA matches:", marketPubkey.equals(expectedMarketPda) ? "YES" : "NO - USING WRONG ADDRESS!");
 
       // Convert amount to USDC smallest units (6 decimals)
       const amountInSmallestUnits = new BN(amount * Math.pow(10, USDC_DECIMALS));
@@ -320,20 +462,22 @@ export function usePredictionMarkets() {
       // Get user's USDC token account
       const userUsdcAccount = await getUserUsdcAccount();
 
-      // If user doesn't have USDC account, create it
+      // If user doesn't have USDC account, create it using mobile-compatible method
       if (!userUsdcAccount.exists) {
-        const transaction = new Transaction();
-        transaction.add(
+        console.log("[PlaceBet] Creating USDC token account...");
+        const ataTransaction = new Transaction();
+        ataTransaction.add(
           createAssociatedTokenAccountInstruction(
-            wallet.publicKey,
+            walletAdapter.publicKey,
             userUsdcAccount.address,
-            wallet.publicKey,
+            walletAdapter.publicKey,
             USDC_MINT
           )
         );
 
-        const signature = await (wallet as any).signAndSendTransaction(transaction);
-        await connection.confirmTransaction(signature);
+        // Use mobile-compatible transaction sending
+        await sendMobileCompatibleTransaction(ataTransaction, `ata-${txId}`);
+        console.log("[PlaceBet] USDC token account created");
       }
 
       // Derive user stats PDA (always needed)
@@ -344,41 +488,82 @@ export function usePredictionMarkets() {
 
       console.log("User stats PDA:", userStatsPda.toString());
       console.log("=== END DEBUG ===\n");
-      console.log("Note: Letting Anchor auto-derive bet PDA and vault PDA from on-chain state to avoid race conditions");
 
-      // Place bet - let Anchor auto-derive bet and vault PDAs from on-chain market state
-      // This prevents race conditions with stale total_bets_count
-      const tx = await program.methods
-        .placeBet(new BN(marketId), amountInSmallestUnits, prediction)
-        .accounts({
-          market: marketPubkey,
-          // bet: auto-derived by Anchor from market.total_bets_count
-          userStats: userStatsPda,
-          // vault: auto-derived by Anchor from market_id
-          userTokenAccount: userUsdcAccount.address,
-          user: wallet.publicKey,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
+      // MOBILE WALLET ADAPTER FIX:
+      // Instead of using .rpc() which uses signTransaction internally,
+      // we build the transaction and use our mobile-compatible sender
+      const isMobile = isMobileDevice();
+      const isInApp = isPhantomInAppBrowser();
 
-      console.log("Bet placed successfully:", tx);
+      let signature: string;
 
-      // Refresh data
-      await Promise.all([fetchMarkets(), fetchUserBets()]);
+      if (isMobile && !isInApp) {
+        // MOBILE DEEP LINK FLOW - Build transaction manually
+        console.log("[PlaceBet] Using mobile-compatible transaction flow");
 
-      return tx;
+        // Build the transaction using Anchor's transaction() method
+        const betTx = await program.methods
+          .placeBet(new BN(marketId), amountInSmallestUnits, prediction)
+          .accounts({
+            market: marketPubkey,
+            userStats: userStatsPda,
+            userTokenAccount: userUsdcAccount.address,
+            user: wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .transaction();
+
+        // Send using our mobile-compatible method
+        signature = await sendMobileCompatibleTransaction(betTx, txId);
+      } else {
+        // DESKTOP / IN-APP BROWSER FLOW - Use Anchor's RPC
+        console.log("[PlaceBet] Using standard Anchor RPC flow");
+
+        signature = await program.methods
+          .placeBet(new BN(marketId), amountInSmallestUnits, prediction)
+          .accounts({
+            market: marketPubkey,
+            userStats: userStatsPda,
+            userTokenAccount: userUsdcAccount.address,
+            user: wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .rpc();
+      }
+
+      console.log("Bet placed successfully:", signature);
+
+      // Refresh data (non-blocking to prevent UI issues on mobile)
+      Promise.all([fetchMarkets(), fetchUserBets()]).catch(console.error);
+
+      return signature;
     } catch (error: any) {
       console.error("Error placing bet:", error);
+
+      // Provide user-friendly error messages
+      if (error.message?.includes("User rejected")) {
+        throw new Error("Transaction was cancelled");
+      }
+      if (error.message?.includes("insufficient funds")) {
+        throw new Error("Insufficient USDC balance");
+      }
+      if (error.message?.includes("already pending")) {
+        throw new Error("Please wait for the previous transaction to complete");
+      }
+
       throw new Error(error.message || "Failed to place bet");
     }
   };
 
-  // Claim winnings
+  // Claim winnings - Mobile Wallet Adapter Compatible
   const claimWinnings = async (betAddress: string): Promise<string> => {
-    if (!program || !wallet) {
+    if (!program || !wallet || !walletAdapter.publicKey) {
       throw new Error("Wallet not connected");
     }
+
+    const txId = `claim-${betAddress}-${Date.now()}`;
 
     try {
       // Check SOL balance first (transaction fees ~0.00001 SOL)
@@ -431,28 +616,65 @@ export function usePredictionMarkets() {
         program.programId
       );
 
-      const tx = await program.methods
-        .claimWinnings(new BN(marketId))
-        .accounts({
-          market: marketPubkey,
-          bet: betPubkey,
-          userStats: userStatsPda,
-          vault: vaultPda,
-          userTokenAccount: userUsdcAccount.address,
-          user: wallet.publicKey,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+      const isMobile = isMobileDevice();
+      const isInApp = isPhantomInAppBrowser();
 
-      console.log("Winnings claimed successfully:", tx);
+      let signature: string;
 
-      // Refresh data after a short delay
-      await new Promise(r => setTimeout(r, 2000));
-      await Promise.all([fetchMarkets(), fetchUserBets()]);
+      if (isMobile && !isInApp) {
+        // MOBILE DEEP LINK FLOW
+        console.log("[ClaimWinnings] Using mobile-compatible transaction flow");
 
-      return tx;
+        const claimTx = await program.methods
+          .claimWinnings(new BN(marketId))
+          .accounts({
+            market: marketPubkey,
+            bet: betPubkey,
+            userStats: userStatsPda,
+            vault: vaultPda,
+            userTokenAccount: userUsdcAccount.address,
+            user: wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .transaction();
+
+        signature = await sendMobileCompatibleTransaction(claimTx, txId);
+      } else {
+        // DESKTOP / IN-APP BROWSER FLOW
+        console.log("[ClaimWinnings] Using standard Anchor RPC flow");
+
+        signature = await program.methods
+          .claimWinnings(new BN(marketId))
+          .accounts({
+            market: marketPubkey,
+            bet: betPubkey,
+            userStats: userStatsPda,
+            vault: vaultPda,
+            userTokenAccount: userUsdcAccount.address,
+            user: wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .rpc();
+      }
+
+      console.log("Winnings claimed successfully:", signature);
+
+      // Refresh data (non-blocking for mobile)
+      setTimeout(() => {
+        Promise.all([fetchMarkets(), fetchUserBets()]).catch(console.error);
+      }, 2000);
+
+      return signature;
     } catch (error: any) {
       console.error("Error claiming winnings:", error);
+
+      if (error.message?.includes("User rejected")) {
+        throw new Error("Transaction was cancelled");
+      }
+      if (error.message?.includes("already pending")) {
+        throw new Error("Please wait for the previous transaction to complete");
+      }
+
       throw new Error(error.message || "Failed to claim winnings");
     }
   };
@@ -494,11 +716,13 @@ export function usePredictionMarkets() {
     }
   };
 
-  // Withdraw fees from a resolved market (ADMIN ONLY)
+  // Withdraw fees from a resolved market (ADMIN ONLY) - Mobile Wallet Adapter Compatible
   const withdrawFees = async (marketAddress: string, marketId: number): Promise<string> => {
-    if (!program || !wallet) {
+    if (!program || !wallet || !walletAdapter.publicKey) {
       throw new Error("Wallet not connected");
     }
+
+    const txId = `withdraw-${marketAddress}-${Date.now()}`;
 
     try {
       const marketPubkey = new PublicKey(marketAddress);
@@ -509,20 +733,21 @@ export function usePredictionMarkets() {
         wallet.publicKey
       );
 
-      // Check if account exists, create if not
+      // Check if account exists, create if not using mobile-compatible method
       const accountInfo = await connection.getAccountInfo(adminTokenAccount);
       if (!accountInfo) {
-        const transaction = new Transaction();
-        transaction.add(
+        console.log("[WithdrawFees] Creating admin USDC token account...");
+        const ataTransaction = new Transaction();
+        ataTransaction.add(
           createAssociatedTokenAccountInstruction(
-            wallet.publicKey,
+            walletAdapter.publicKey,
             adminTokenAccount,
-            wallet.publicKey,
+            walletAdapter.publicKey,
             USDC_MINT
           )
         );
-        const signature = await (wallet as any).signAndSendTransaction(transaction);
-        await connection.confirmTransaction(signature);
+        await sendMobileCompatibleTransaction(ataTransaction, `ata-${txId}`);
+        console.log("[WithdrawFees] Admin USDC token account created");
       }
 
       // Derive vault PDA
@@ -531,25 +756,56 @@ export function usePredictionMarkets() {
         program.programId
       );
 
-      const tx = await program.methods
-        .withdrawFees(new BN(marketId))
-        .accounts({
-          market: marketPubkey,
-          vault: vaultPda,
-          adminTokenAccount: adminTokenAccount,
-          admin: wallet.publicKey,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+      const isMobile = isMobileDevice();
+      const isInApp = isPhantomInAppBrowser();
 
-      console.log("Fees withdrawn successfully:", tx);
+      let signature: string;
 
-      // Refresh data
-      await Promise.all([fetchMarkets(), fetchUserBets()]);
+      if (isMobile && !isInApp) {
+        // MOBILE DEEP LINK FLOW
+        console.log("[WithdrawFees] Using mobile-compatible transaction flow");
 
-      return tx;
+        const withdrawTx = await program.methods
+          .withdrawFees(new BN(marketId))
+          .accounts({
+            market: marketPubkey,
+            vault: vaultPda,
+            adminTokenAccount: adminTokenAccount,
+            admin: wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .transaction();
+
+        signature = await sendMobileCompatibleTransaction(withdrawTx, txId);
+      } else {
+        // DESKTOP / IN-APP BROWSER FLOW
+        console.log("[WithdrawFees] Using standard Anchor RPC flow");
+
+        signature = await program.methods
+          .withdrawFees(new BN(marketId))
+          .accounts({
+            market: marketPubkey,
+            vault: vaultPda,
+            adminTokenAccount: adminTokenAccount,
+            admin: wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .rpc();
+      }
+
+      console.log("Fees withdrawn successfully:", signature);
+
+      // Refresh data (non-blocking for mobile)
+      Promise.all([fetchMarkets(), fetchUserBets()]).catch(console.error);
+
+      return signature;
     } catch (error: any) {
       console.error("Error withdrawing fees:", error);
+
+      if (error.message?.includes("User rejected")) {
+        throw new Error("Transaction was cancelled");
+      }
+
       throw new Error(error.message || "Failed to withdraw fees");
     }
   };

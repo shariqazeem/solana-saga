@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Orbitron, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { WalletProvider } from "@/providers/WalletProvider";
+import { TransactionStateProvider } from "@/providers/TransactionStateProvider";
+import { TransactionOverlay } from "@/components/TransactionOverlay";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,7 +49,10 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} font-sans antialiased bg-[#050505] text-white`}>
         <WalletProvider>
-          {children}
+          <TransactionStateProvider>
+            {children}
+            <TransactionOverlay />
+          </TransactionStateProvider>
         </WalletProvider>
       </body>
     </html>
