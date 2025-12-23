@@ -22,12 +22,12 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
-  title: "Solana Saga | Prediction Arena",
-  description: "The ultimate gamified prediction market on Solana. Swipe to bet, build streaks, and win big!",
-  keywords: ["prediction market", "solana", "crypto", "betting", "defi", "web3", "gaming"],
+  title: "Solana Saga | Prediction Market",
+  description: "A decentralized prediction market platform on Solana blockchain. Make predictions on real-world events with cryptocurrency.",
+  keywords: ["prediction market", "solana", "crypto", "defi", "web3", "blockchain", "forecasting"],
   openGraph: {
-    title: "Solana Saga | Prediction Arena",
-    description: "Swipe. Bet. Win. The gamified prediction market on Solana.",
+    title: "Solana Saga | Prediction Market",
+    description: "Decentralized prediction market platform built on Solana blockchain.",
     type: "website",
   },
 };
