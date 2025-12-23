@@ -563,7 +563,7 @@ export default function MyBetsPage() {
                       <p className="text-gray-400 text-sm mb-6">
                         {activeTab === "claimable"
                           ? "Win some bets to claim rewards!"
-                          : "Start betting to see them here!"}
+                          : "Start predicting to see them here!"}
                       </p>
                       <Link href="/">
                         <motion.button
@@ -572,7 +572,7 @@ export default function MyBetsPage() {
                           whileTap={{ scale: 0.95 }}
                         >
                           <Zap className="w-4 h-4" />
-                          START BETTING
+                          START PREDICTING
                         </motion.button>
                       </Link>
                     </motion.div>

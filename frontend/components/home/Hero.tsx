@@ -69,7 +69,7 @@ export function Hero() {
                 filter: "drop-shadow(0 0 20px rgba(0,240,255,0.3))"
               }}
             >
-              WIN BIG
+              & EARN
             </span>
           </h1>
         </div>
@@ -78,7 +78,7 @@ export function Hero() {
         <p className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed font-light">
           The most <span className="text-[#00ff88] font-bold font-game">addictive</span> prediction market on Solana.
           <br />
-          <span className="text-white/60">Bet on crypto, sports, and culture. Win real money.</span>
+          <span className="text-white/60">Predict crypto, sports, and culture. Earn rewards.</span>
         </p>
 
         {/* Stats Row */}

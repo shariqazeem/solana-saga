@@ -155,7 +155,7 @@ export default function LeaderboardPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Zap className="w-4 h-4 inline mr-2" />
-                  START BETTING
+                  START PREDICTING
                 </motion.button>
               </Link>
             </motion.div>
@@ -419,7 +419,7 @@ export default function LeaderboardPage() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Target className="w-4 h-4 inline mr-2" />
-                    Start Betting
+                    Start Predicting
                   </motion.button>
                 </Link>
               </motion.div>

@@ -115,7 +115,7 @@ export default function MarketsPage() {
         {/* Header */}
         <div className="mb-6">
           <p className="text-gray-400 text-sm">
-            Find your edge. Pick your battles. Win big.
+            Find your edge. Pick your markets. Make your move.
           </p>
         </div>
 

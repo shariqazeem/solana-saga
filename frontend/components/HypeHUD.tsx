@@ -14,14 +14,14 @@ interface HypeHUDProps {
 
 // Trash talk / hype lines for different scenarios
 const BULLISH_LINES = [
-  "Whales are betting YES. Are you scared?",
-  "FREE MONEY GLITCH DETECTED. APING IN.",
+  "Whales are going YES. Are you scared?",
+  "ALPHA DETECTED. APING IN.",
   "Smart money is loading. NGMI if you fade.",
   "This is giving 100x energy. LFG!",
   "The degen play is obvious here...",
   "Insiders know something. Just saying.",
-  "Your grandma could win this bet.",
-  "Literally can't go tits up.",
+  "Your grandma could predict this.",
+  "Conviction level: Maximum.",
 ];
 
 const BEARISH_LINES = [
@@ -37,12 +37,12 @@ const BEARISH_LINES = [
 
 const NEUTRAL_LINES = [
   "50/50 chaos mode engaged.",
-  "Flip a coin or trust your gut.",
+  "Trust your gut on this one.",
   "The market is confused AF right now.",
   "High IQ play: wait for momentum.",
   "Volatility about to go crazy...",
   "Whales are baiting both sides.",
-  "Pure gambling territory. I respect it.",
+  "Pure prediction territory. I respect it.",
   "This is anyone's game.",
 ];
 
