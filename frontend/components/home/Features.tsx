@@ -9,7 +9,7 @@ import {
 const features = [
   {
     title: "Lightning Speed",
-    description: "Solana's 400ms blocks mean your bets execute instantly. No waiting, no lag, pure action.",
+    description: "Solana's 400ms blocks mean your predictions execute instantly. No waiting, no lag, pure action.",
     icon: Zap,
     color: "#00f0ff",
     gradient: "from-[#00f0ff] to-[#0088ff]",
@@ -23,7 +23,7 @@ const features = [
   },
   {
     title: "Real Money",
-    description: "Bet with USDC, win real money. Only 2% fee on winnings. The rest is all yours.",
+    description: "Trade with USDC, earn real rewards. Only 2% fee on winnings. The rest is all yours.",
     icon: Gift,
     color: "#00ff88",
     gradient: "from-[#00ff88] to-[#00cc66]",
@@ -37,7 +37,7 @@ const features = [
   },
   {
     title: "Live Odds",
-    description: "Watch prices update in real-time as others bet. AMM-powered fair pricing that never sleeps.",
+    description: "Watch prices update in real-time as others trade. AMM-powered fair pricing that never sleeps.",
     icon: TrendingUp,
     color: "#ff8800",
     gradient: "from-[#ff8800] to-[#ff4400]",

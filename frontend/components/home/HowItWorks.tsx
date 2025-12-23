@@ -18,11 +18,11 @@ const steps = [
     description: "Will it happen? YES or NO. Check the odds, analyze the situation, and make your prediction.",
     icon: Target,
     color: "#ff00aa",
-    hint: "Early bettors often get better odds!",
+    hint: "Early predictors often get better odds!",
   },
   {
     number: "03",
-    title: "Place Your Bet",
+    title: "Make Your Move",
     description: "Connect your wallet, choose your stake, and execute instantly. Solana means no waiting around.",
     icon: Zap,
     color: "#00ff88",

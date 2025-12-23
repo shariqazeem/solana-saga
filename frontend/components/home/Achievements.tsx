@@ -11,7 +11,7 @@ const achievements = [
   {
     id: 1,
     name: "First Blood",
-    description: "Place your first bet",
+    description: "Make your first prediction",
     icon: Target,
     color: "#00ff88",
     progress: 100,
@@ -21,7 +21,7 @@ const achievements = [
   {
     id: 2,
     name: "Hot Streak",
-    description: "Win 5 bets in a row",
+    description: "Win 5 predictions in a row",
     icon: Flame,
     color: "#ff8800",
     progress: 60,
@@ -31,7 +31,7 @@ const achievements = [
   {
     id: 3,
     name: "Big Spender",
-    description: "Bet 1,000 USDC total",
+    description: "Trade 1,000 USDC total",
     icon: TrendingUp,
     color: "#00f0ff",
     progress: 75,
@@ -41,7 +41,7 @@ const achievements = [
   {
     id: 4,
     name: "Oracle",
-    description: "Achieve 80% win rate (min 20 bets)",
+    description: "Achieve 80% win rate (min 20 predictions)",
     icon: Star,
     color: "#ffd700",
     progress: 40,

@@ -147,7 +147,7 @@ export default function LeaderboardPage() {
             >
               <div className="text-6xl mb-4">🏆</div>
               <h3 className="text-xl font-game text-white mb-2">No Rankings Yet</h3>
-              <p className="text-gray-400 mb-6">Be the first to place a bet and claim the top spot!</p>
+              <p className="text-gray-400 mb-6">Be the first to make a prediction and claim the top spot!</p>
               <Link href="/">
                 <motion.button
                   className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#ffd700]/20 to-[#ff8800]/20 border border-[#ffd700]/30 text-[#ffd700] font-game text-sm hover:border-[#ffd700]/50 transition-all"
