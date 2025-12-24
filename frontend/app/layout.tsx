@@ -25,6 +25,17 @@ export const metadata: Metadata = {
   title: "Solana Saga | Prediction Market",
   description: "A decentralized prediction market platform on Solana blockchain. Make predictions on real-world events with cryptocurrency.",
   keywords: ["prediction market", "solana", "crypto", "defi", "web3", "blockchain", "forecasting"],
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
     title: "Solana Saga | Prediction Market",
     description: "Decentralized prediction market platform built on Solana blockchain.",
