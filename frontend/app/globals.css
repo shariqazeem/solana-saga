@@ -1519,3 +1519,305 @@
   0% { top: -2px; }
   100% { top: 100vh; }
 }
+
+/* ========== PSG1 CONSOLE OPTIMIZATIONS ========== */
+/* PSG1 Screen: 1240x1080 @ 3.92" - slightly taller than 16:9 */
+
+/* PSG1 Container - Locked to device dimensions */
+.psg1-container {
+  width: 100vw;
+  height: 100vh;
+  max-width: 1240px;
+  max-height: 1080px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+/* PSG1 Mode - Larger touch targets and text */
+.psg1-mode {
+  --touch-target-min: 48px;
+  --font-scale: 1.1;
+  --spacing-scale: 1.15;
+}
+
+.psg1-mode .arcade-btn {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  padding: 16px 28px;
+  font-size: 15px;
+}
+
+.psg1-mode .game-card {
+  border-radius: 20px;
+  padding: 20px;
+}
+
+/* PSG1 Button Hints - Controller overlay */
+.psg1-button-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-family: var(--font-game);
+  font-weight: 800;
+  font-size: 14px;
+  border: 2px solid;
+  margin-right: 8px;
+}
+
+.psg1-button-hint-a {
+  background: rgba(0, 255, 136, 0.2);
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+}
+
+.psg1-button-hint-b {
+  background: rgba(255, 0, 68, 0.2);
+  border-color: var(--neon-red);
+  color: var(--neon-red);
+}
+
+.psg1-button-hint-y {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: var(--neon-yellow);
+  color: var(--neon-yellow);
+}
+
+/* PSG1 Control Legend */
+.psg1-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.psg1-control-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-game);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* PSG1 Safe Area - Account for console bezel */
+.psg1-safe-area {
+  padding: 16px;
+  padding-bottom: 24px; /* Extra padding for bottom controls */
+}
+
+/* PSG1 Optimized Card Stack */
+.psg1-mode .arena-card {
+  border-radius: 28px;
+  box-shadow:
+    0 0 0 2px rgba(0, 243, 255, 0.1),
+    0 30px 60px -15px rgba(0, 0, 0, 0.9);
+}
+
+/* PSG1 Large Action Buttons */
+.psg1-action-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  border: 3px solid;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.psg1-action-btn:active {
+  transform: scale(0.92);
+}
+
+.psg1-action-btn-yes {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.3) 0%, rgba(0, 200, 100, 0.2) 100%);
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+}
+
+.psg1-action-btn-no {
+  background: linear-gradient(135deg, rgba(255, 0, 68, 0.3) 0%, rgba(200, 0, 50, 0.2) 100%);
+  border-color: var(--neon-red);
+  color: var(--neon-red);
+  box-shadow: 0 0 30px rgba(255, 0, 68, 0.4);
+}
+
+.psg1-action-btn-skip {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+}
+
+/* PSG1 Header - Compact for small screen */
+.psg1-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* PSG1 Footer Controls */
+.psg1-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgba(5, 5, 5, 0.95) 0%, transparent 100%);
+}
+
+/* PSG1 Responsive - Scale down for smaller devices */
+@media (max-width: 1240px) {
+  .psg1-container {
+    max-width: 100vw;
+    max-height: 100vh;
+  }
+}
+
+/* PSG1 Aspect Ratio Lock */
+@media (min-aspect-ratio: 1240/1080) {
+  .psg1-container {
+    height: 100vh;
+    width: calc(100vh * 1240 / 1080);
+  }
+}
+
+@media (max-aspect-ratio: 1240/1080) {
+  .psg1-container {
+    width: 100vw;
+    height: calc(100vw * 1080 / 1240);
+  }
+}
+
+/* ========== JUPITER WALLET OVERRIDES ========== */
+/* Jupiter Unified Wallet Kit styling */
+.unified-wallet-modal {
+  font-family: var(--font-body) !important;
+}
+
+.unified-wallet-modal-button {
+  font-family: var(--font-game) !important;
+  background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-cyan) 100%) !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 0 #00aa55, 0 8px 20px rgba(0, 255, 136, 0.3) !important;
+}
+
+/* Jupiter badge */
+.jupiter-powered {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Kalshi/DFlow badge */
+.kalshi-powered {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(170, 0, 255, 0.1);
+  border: 1px solid rgba(170, 0, 255, 0.3);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--neon-purple);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========== HACKATHON BADGES ========== */
+.hackathon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.1) 0%, rgba(170, 0, 255, 0.1) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 12px;
+  font-family: var(--font-game);
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hackathon-badge-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+/* Play Solana branded */
+.playsolana-gradient {
+  background: linear-gradient(135deg, #14F195 0%, #9945FF 50%, #00D1FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ========== HIDE MOBILE WALLET ADAPTER IN JUPITER MODAL ========== */
+/* Hide MWA option - PSG1 doesn't have wallet apps installed */
+/* Target by wallet name text */
+button[data-testid*="mobile"],
+button[data-testid*="Mobile"],
+li:has(span:contains("Mobile Wallet")),
+div:has(> span:contains("Mobile Wallet Adapter")),
+/* Target wallet list items containing MWA */
+[class*="wallet-list"] button:has(img[alt*="Mobile"]),
+[class*="wallet-list"] button:has(img[alt*="mobile"]),
+[class*="wallet-list"] li:has(img[alt*="Mobile"]),
+/* Jupiter specific selectors */
+[class*="WalletList"] button:has([alt*="Mobile Wallet"]),
+[class*="walletList"] button:has([alt*="Mobile Wallet"]) {
+  display: none !important;
+}
+
+/* Alternative: Hide by matching wallet icon src or aria-label */
+button[aria-label*="Mobile Wallet Adapter"],
+button[aria-label*="mobile wallet adapter"],
+div[role="button"]:has(span:contains("Mobile")) {
+  display: none !important;
+}
+
+/* Hide any element with MWA text (broad catch-all) */
+*:has(> *:contains("Mobile Wallet Adapter")) {
+  /* Can't reliably use :contains, so use attribute selectors instead */
+}

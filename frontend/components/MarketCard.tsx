@@ -114,7 +114,7 @@ export function MarketCard({
                 </div>
 
                 {/* Question */}
-                <Link href={`/markets/${id}`} className="flex-grow">
+                <Link href={`/market?id=${id}`} className="flex-grow">
                     <h3 className="text-xl font-bold mb-4 leading-snug text-white group-hover:text-[#00f0ff] transition-colors">
                         {question}
                     </h3>
@@ -165,7 +165,7 @@ export function MarketCard({
                 {/* VS Display */}
                 <div className="flex items-center justify-between">
                     {/* YES Button */}
-                    <Link href={`/markets/${id}`} className="flex-1">
+                    <Link href={`/market?id=${id}`} className="flex-1">
                         <div className="text-left p-3 rounded-xl bg-[#00ff88]/5 border border-[#00ff88]/20
                          hover:bg-[#00ff88]/20 hover:border-[#00ff88]/50 transition-all cursor-pointer">
                             <div className="text-xs text-gray-400 mb-1 font-game">YES</div>
@@ -186,7 +186,7 @@ export function MarketCard({
                     </div>
 
                     {/* NO Button */}
-                    <Link href={`/markets/${id}`} className="flex-1">
+                    <Link href={`/market?id=${id}`} className="flex-1">
                         <div className="text-right p-3 rounded-xl bg-[#ff0044]/5 border border-[#ff0044]/20
                          hover:bg-[#ff0044]/20 hover:border-[#ff0044]/50 transition-all cursor-pointer">
                             <div className="text-xs text-gray-400 mb-1 font-game text-right">NO</div>
@@ -201,7 +201,7 @@ export function MarketCard({
                 </div>
 
                 {/* Quick Play Button */}
-                <Link href={`/markets/${id}`}>
+                <Link href={`/market?id=${id}`}>
                     <button className={`w-full mt-4 py-3 rounded-xl font-game text-sm transition-all flex items-center justify-center gap-2 group/play ${
                         isResolved
                             ? "bg-[#ffd700]/10 border border-[#ffd700]/30 text-[#ffd700] hover:bg-[#ffd700]/20"

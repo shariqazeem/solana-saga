@@ -11,7 +11,7 @@ import {
   AnimatePresence,
 } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useWalletModalUnified } from "@/hooks/useWalletModalUnified";
 import { Flame, Clock, Users, TrendingUp, Zap, ChevronUp, SkipForward, Gamepad2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { HypeHUD } from "./HypeHUD";
@@ -66,7 +66,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   const gamepadAnimationRef = useRef<number | null>(null);
 
   const { connected } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { setVisible } = useWalletModalUnified();
   const { playHover, playSwipeYes, playSwipeNo, playSkip, playBet } = useSoundEffects(soundEnabled);
 
   // Swipe motion values

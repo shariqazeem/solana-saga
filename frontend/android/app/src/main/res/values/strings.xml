@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Solana Saga</string>
+    <string name="title_activity_main">Solana Saga</string>
+    <string name="package_name">fun.solanasaga.app</string>
+    <string name="custom_url_scheme">fun.solanasaga.app</string>
+</resources>
