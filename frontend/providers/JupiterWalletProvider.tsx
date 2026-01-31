@@ -1,80 +1,59 @@
 "use client";
 
-import { ReactNode, useMemo } from "react";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
-import { ConnectionProvider } from "@solana/wallet-adapter-react";
-import { clusterApiUrl } from "@solana/web3.js";
-import {
-  UnifiedWalletProvider,
-  UnifiedWalletButton,
-} from "@jup-ag/wallet-adapter";
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
+import { ReactNode } from "react";
+import { UnifiedWalletProvider, UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 
 interface JupiterWalletProviderProps {
   children: ReactNode;
 }
 
 /**
- * Simplified Jupiter Wallet Provider
- * Uses Jupiter's Unified Wallet Kit with Phantom and Solflare
+ * Jupiter Unified Wallet Kit Provider
+ *
+ * Features:
+ * - Built-in Wallet Standard support (auto-discovers installed wallets)
+ * - Built-in Mobile Wallet Adapter (MWA) support
+ * - Mobile responsive
+ * - Theming support
+ *
+ * Pass empty wallets array to use auto-discovery via Wallet Standard + MWA
  */
 export function JupiterWalletProvider({ children }: JupiterWalletProviderProps) {
-  const network = WalletAdapterNetwork.Devnet;
-
-  const endpoint = useMemo(() => {
-    const customRpc = process.env.NEXT_PUBLIC_SOLANA_RPC_HOST;
-    if (customRpc) {
-      return customRpc;
-    }
-    return clusterApiUrl(network);
-  }, [network]);
-
-  const connectionConfig = useMemo(
-    () => ({
-      commitment: "confirmed" as const,
-      confirmTransactionInitialTimeout: 60000,
-    }),
-    []
-  );
-
-  // Simple wallet list - Phantom and Solflare
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter({ network }),
-    ],
-    [network]
-  );
-
   return (
-    <ConnectionProvider endpoint={endpoint} config={connectionConfig}>
-      <UnifiedWalletProvider
-        wallets={wallets}
-        config={{
-          autoConnect: true,
-          env: "devnet",
-          metadata: {
-            name: "Solana Saga",
-            description: "Prediction Market Game for PSG1",
-            url: typeof window !== "undefined" ? window.location.origin : "https://frontend-alpha-khaki.vercel.app",
-            iconUrls: ["https://frontend-alpha-khaki.vercel.app/icons/icon-192x192.png"],
+    <UnifiedWalletProvider
+      wallets={[]} // Empty array - uses Wallet Standard + MWA auto-discovery
+      config={{
+        autoConnect: true,
+        env: "devnet",
+        metadata: {
+          name: "Solana Saga",
+          description: "Prediction Market Game for PSG1",
+          url: typeof window !== "undefined" ? window.location.origin : "https://frontend-alpha-khaki.vercel.app",
+          iconUrls: ["https://frontend-alpha-khaki.vercel.app/icons/icon-192x192.png"],
+        },
+        notificationCallback: {
+          onConnect: (props) => {
+            console.log("[Wallet] Connected:", props.walletName);
           },
-          notificationCallback: {
-            onConnect: () => console.log("[Wallet] Connected"),
-            onConnecting: () => console.log("[Wallet] Connecting..."),
-            onDisconnect: () => console.log("[Wallet] Disconnected"),
-            onNotInstalled: () => console.log("[Wallet] Not installed"),
+          onConnecting: (props) => {
+            console.log("[Wallet] Connecting to:", props.walletName);
           },
-          theme: "jupiter",
-          lang: "en",
-        }}
-      >
-        {children}
-      </UnifiedWalletProvider>
-    </ConnectionProvider>
+          onDisconnect: (props) => {
+            console.log("[Wallet] Disconnected:", props.walletName);
+          },
+          onNotInstalled: (props) => {
+            console.log("[Wallet] Not installed:", props.walletName);
+          },
+        },
+        walletlistExplanation: {
+          href: "https://station.jup.ag/docs/additional-topics/wallet-list",
+        },
+        theme: "jupiter",
+        lang: "en",
+      }}
+    >
+      {children}
+    </UnifiedWalletProvider>
   );
 }
 
