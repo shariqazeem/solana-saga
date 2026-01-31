@@ -4,13 +4,19 @@
   "description": "The ultimate prediction market on Solana - Predict, Play, Win!",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --turbopack",
+    "dev:webpack": "next dev --webpack",
+    "build": "next build --webpack",
+    "build:turbo": "next build --turbopack",
+    "build:apk": "bash scripts/build-apk.sh",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
+    "@jup-ag/jup-mobile-adapter": "^0.0.2",
+    "@jup-ag/wallet-adapter": "^0.2.6",
     "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
@@ -36,6 +42,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "15.0.3",
     "postcss": "^8.4.49",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3"
   }

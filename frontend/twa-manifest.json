@@ -1,0 +1,66 @@
+{
+  "packageId": "gg.playsolana.solanasaga",
+  "host": "solana-saga.vercel.app",
+  "name": "Solana Saga",
+  "launcherName": "Solana Saga",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#050505",
+  "navigationColor": "#050505",
+  "navigationColorDark": "#050505",
+  "navigationDividerColor": "#00F3FF",
+  "navigationDividerColorDark": "#00F3FF",
+  "backgroundColor": "#050505",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://solana-saga.vercel.app/icons/icon-512x512.png",
+  "maskableIconUrl": "https://solana-saga.vercel.app/icons/icon-512x512.png",
+  "monochromeIconUrl": "https://solana-saga.vercel.app/icons/icon-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./solana-saga.keystore",
+    "alias": "solanasaga"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "Arena",
+      "shortName": "Arena",
+      "url": "/",
+      "chosenIconUrl": "https://solana-saga.vercel.app/icons/icon-96x96.png"
+    },
+    {
+      "name": "Markets",
+      "shortName": "Markets",
+      "url": "/markets",
+      "chosenIconUrl": "https://solana-saga.vercel.app/icons/icon-96x96.png"
+    },
+    {
+      "name": "Leaderboard",
+      "shortName": "Leaders",
+      "url": "/leaderboard",
+      "chosenIconUrl": "https://solana-saga.vercel.app/icons/icon-96x96.png"
+    }
+  ],
+  "generatorApp": "pwa-to-twa",
+  "webManifestUrl": "https://solana-saga.vercel.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://solana-saga.vercel.app/",
+  "minSdkVersion": 28,
+  "fingerprints": []
+}

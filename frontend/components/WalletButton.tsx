@@ -1,13 +1,9 @@
 "use client";
 
-import dynamic from 'next/dynamic';
-
-// Dynamically import WalletMultiButton with no SSR to avoid hydration issues
-const WalletMultiButtonDynamic = dynamic(
-  async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
-  { ssr: false }
-);
+import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
+import { createElement } from 'react';
 
 export function WalletButton() {
-  return <WalletMultiButtonDynamic />;
+  // Workaround for React types mismatch between packages
+  return createElement(UnifiedWalletButton as any);
 }

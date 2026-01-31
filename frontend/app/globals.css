@@ -1092,6 +1092,142 @@
   }
 }
 
+/* ========== PSG1 DEVICE STYLES (1240x1080) ========== */
+/* PSG1 is a portrait device - optimize for taller aspect ratio */
+@media (max-width: 1240px) and (min-height: 900px) {
+  .psg1-mode {
+    /* Full height utilization for PSG1's portrait screen */
+    --card-max-width: 95%;
+    --card-max-height: 70vh;
+  }
+
+  .psg1-mode .psg1-card {
+    max-width: var(--card-max-width);
+    max-height: var(--card-max-height);
+    width: 100%;
+  }
+
+  /* Larger touch targets for PSG1 hardware buttons */
+  .psg1-mode .psg1-btn {
+    min-width: 72px;
+    min-height: 72px;
+  }
+
+  /* PSG1 button hints */
+  .psg1-mode .psg1-btn-hint {
+    display: flex !important;
+  }
+}
+
+/* PSG1 Button Hint Styles */
+.psg1-btn-hint {
+  display: none;
+  position: absolute;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-family: var(--font-game);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.psg1-btn-hint-a {
+  color: var(--neon-green);
+  border-color: var(--neon-green);
+}
+
+.psg1-btn-hint-b {
+  color: var(--neon-red);
+  border-color: var(--neon-red);
+}
+
+.psg1-btn-hint-y {
+  color: var(--neon-yellow);
+  border-color: var(--neon-yellow);
+}
+
+/* PSG1 Gamepad Visual Feedback */
+.psg1-gamepad-overlay {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(5, 5, 5, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  z-index: 1000;
+}
+
+.psg1-gamepad-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.psg1-gamepad-btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.psg1-gamepad-btn-label {
+  font-size: 10px;
+  font-family: var(--font-game);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.psg1-gamepad-btn.active {
+  transform: scale(0.95);
+}
+
+.psg1-gamepad-btn.active .psg1-gamepad-btn-icon {
+  box-shadow: 0 0 20px currentColor;
+}
+
+/* D-Pad visual */
+.psg1-dpad {
+  display: grid;
+  grid-template-columns: 24px 24px 24px;
+  grid-template-rows: 24px 24px 24px;
+  gap: 2px;
+}
+
+.psg1-dpad-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.15s ease;
+}
+
+.psg1-dpad-btn.active {
+  background: var(--neon-cyan);
+  color: black;
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+
 /* ========== SPECIAL EFFECTS ========== */
 /* Matrix rain effect overlay (optional) */
 .matrix-bg {

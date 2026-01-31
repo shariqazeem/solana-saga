@@ -8,6 +8,11 @@ export default {
   ],
   theme: {
     extend: {
+      // PSG1 screen: 1240x1080 (portrait, 3.92" OLED)
+      screens: {
+        'psg1': { 'raw': '(max-width: 1240px) and (max-height: 1080px) and (min-height: 900px)' },
+        'psg1-landscape': { 'raw': '(max-width: 1080px) and (max-height: 1240px)' },
+      },
       colors: {
         neon: {
           green: "#00ff88",

@@ -11,12 +11,14 @@ import {
   AnimatePresence,
 } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useWalletModalCompat } from "@/hooks/useWalletModalCompat";
 import { Flame, Clock, Users, TrendingUp, Zap, ChevronUp, SkipForward, Gamepad2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { HypeHUD } from "./HypeHUD";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { Market } from "@/lib/solana/hooks/usePredictionMarkets";
+import { usePSG1Mode } from "@/hooks/usePSG1Mode";
+import { PSG1ControllerHints } from "./PSG1ControllerHints";
 
 // Gamepad button mappings (Standard Controller Layout)
 const GAMEPAD_BUTTONS = {
@@ -66,8 +68,9 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   const gamepadAnimationRef = useRef<number | null>(null);
 
   const { connected } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { setVisible } = useWalletModalCompat();
   const { playHover, playSwipeYes, playSwipeNo, playSkip, playBet } = useSoundEffects(soundEnabled);
+  const psg1Config = usePSG1Mode();
 
   // Swipe motion values
   const x = useMotionValue(0);
@@ -399,14 +402,20 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   // Display bettors - use totalBetsCount as fallback if uniqueBettors is 0
   const displayBettors = currentMarket.bettors > 0 ? currentMarket.bettors : currentMarket.totalBetsCount;
 
+  // PSG1-optimized card dimensions
+  const cardWidth = psg1Config.isPSG1 ? "w-[95%]" : "w-[92%]";
+  const cardMaxWidth = psg1Config.isPSG1 ? "max-w-[420px]" : "max-w-[380px]";
+  const cardHeight = psg1Config.isPSG1 ? "h-[70%]" : "h-[85%]";
+  const cardMaxHeight = psg1Config.isPSG1 ? "max-h-[580px]" : "max-h-[500px]";
+
   return (
-    <div className="relative w-full h-full flex flex-col">
+    <div className={`relative w-full h-full flex flex-col ${psg1Config.isPSG1 ? "psg1-mode" : ""}`}>
       {/* Card Stack Container - Flexbox to fill space */}
       <div className="relative flex-1 flex items-center justify-center min-h-0 py-2">
         {/* Background card (next card preview) */}
         {nextMarket && (
           <motion.div
-            className="absolute w-[92%] max-w-[380px] h-[85%] max-h-[500px] rounded-3xl bg-[#0a0a0f]/80 border border-white/5"
+            className={`absolute ${cardWidth} ${cardMaxWidth} ${cardHeight} ${cardMaxHeight} rounded-3xl bg-[#0a0a0f]/80 border border-white/5`}
             style={{ scale: 0.95, y: 15 }}
           />
         )}
@@ -414,7 +423,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         {/* Main swipeable card with 3D tilt */}
         <motion.div
           ref={cardRef}
-          className={`absolute w-[92%] max-w-[380px] h-[85%] max-h-[500px] cursor-grab active:cursor-grabbing ${cardGlow}`}
+          className={`absolute ${cardWidth} ${cardMaxWidth} ${cardHeight} ${cardMaxHeight} cursor-grab active:cursor-grabbing ${cardGlow}`}
           style={{
             x,
             y,
@@ -548,11 +557,13 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       </div>
 
       {/* Action Buttons - Fixed at bottom of card stack */}
-      <div className="flex items-center justify-center gap-3 md:gap-4 py-4 flex-shrink-0">
+      {/* PSG1 mode: larger buttons for hardware controls */}
+      <div className={`flex items-center justify-center gap-3 md:gap-4 py-4 flex-shrink-0 ${psg1Config.isPSG1 ? "gap-6" : ""}`}>
         {/* NO Button */}
         <motion.button
-          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#FF0044]/20 border-2 border-[#FF0044] flex items-center justify-center text-[#FF0044] font-game text-lg md:text-xl hover:bg-[#FF0044]/30 transition-colors disabled:opacity-50 ${gamepadActive === "no" ? "scale-90 bg-[#FF0044]/40" : ""
-            }`}
+          className={`rounded-full bg-[#FF0044]/20 border-2 border-[#FF0044] flex items-center justify-center text-[#FF0044] font-game hover:bg-[#FF0044]/30 transition-colors disabled:opacity-50 ${
+            psg1Config.isPSG1 ? "w-[72px] h-[72px] text-2xl" : "w-14 h-14 md:w-16 md:h-16 text-lg md:text-xl"
+          } ${gamepadActive === "no" ? "scale-90 bg-[#FF0044]/40" : ""}`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => handleButtonBet(false)}
@@ -564,21 +575,23 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
         {/* Skip Button */}
         <motion.button
-          className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-gray-400 hover:bg-white/20 transition-colors disabled:opacity-50 ${gamepadActive === "skip" ? "scale-90 bg-[#FFD700]/40 border-[#FFD700]" : ""
-            }`}
+          className={`rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-gray-400 hover:bg-white/20 transition-colors disabled:opacity-50 ${
+            psg1Config.isPSG1 ? "w-14 h-14" : "w-10 h-10 md:w-12 md:h-12"
+          } ${gamepadActive === "skip" ? "scale-90 bg-[#FFD700]/40 border-[#FFD700]" : ""}`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleSkipButton}
           disabled={isAnimating}
           animate={gamepadActive === "skip" ? { scale: [1, 0.9, 1] } : {}}
         >
-          <SkipForward className="w-4 h-4 md:w-5 md:h-5" />
+          <SkipForward className={psg1Config.isPSG1 ? "w-6 h-6" : "w-4 h-4 md:w-5 md:h-5"} />
         </motion.button>
 
         {/* YES Button */}
         <motion.button
-          className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#00FF88]/20 border-2 border-[#00FF88] flex items-center justify-center text-[#00FF88] font-game text-lg md:text-xl hover:bg-[#00FF88]/30 transition-colors disabled:opacity-50 ${gamepadActive === "yes" ? "scale-90 bg-[#00FF88]/40" : ""
-            }`}
+          className={`rounded-full bg-[#00FF88]/20 border-2 border-[#00FF88] flex items-center justify-center text-[#00FF88] font-game hover:bg-[#00FF88]/30 transition-colors disabled:opacity-50 ${
+            psg1Config.isPSG1 ? "w-[72px] h-[72px] text-2xl" : "w-14 h-14 md:w-16 md:h-16 text-lg md:text-xl"
+          } ${gamepadActive === "yes" ? "scale-90 bg-[#00FF88]/40" : ""}`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => handleButtonBet(true)}
@@ -589,19 +602,28 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         </motion.button>
       </div>
 
-      {/* Gamepad Connected Indicator */}
+      {/* PSG1/Gamepad Controller Hints */}
       <AnimatePresence>
-        {gamepadConnected && (
+        {(gamepadConnected || psg1Config.showButtonHints) && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="flex items-center justify-center gap-2 pb-2"
+            className="flex flex-col items-center gap-2 pb-2"
           >
+            {/* Controller status badge */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00F3FF]/10 border border-[#00F3FF]/30">
               <Gamepad2 className="w-4 h-4 text-[#00F3FF]" />
-              <span className="text-[10px] text-[#00F3FF] font-game">CONTROLLER CONNECTED</span>
+              <span className="text-[10px] text-[#00F3FF] font-game">
+                {psg1Config.isPSG1 ? "PSG1 MODE" : "CONTROLLER CONNECTED"}
+              </span>
             </div>
+            {/* Button hints - show when gamepad active or in PSG1 mode */}
+            <PSG1ControllerHints
+              show={true}
+              activeButton={gamepadActive}
+              compact={!psg1Config.isPSG1}
+            />
           </motion.div>
         )}
       </AnimatePresence>

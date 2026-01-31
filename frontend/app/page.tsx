@@ -443,8 +443,29 @@ export default function ArenaPage() {
                 </div>
               </div>
 
-              {/* CTA */}
-              <WalletButton />
+              {/* CTA - Two Options */}
+              <div className="flex flex-col gap-3 w-full max-w-xs">
+                {/* Primary: Game Mode */}
+                <a
+                  href="/game"
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00F3FF] to-[#00FF88] text-black font-game font-bold text-lg hover:scale-105 transition-transform text-center flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-5 h-5" />
+                  PLAY FREE GAME
+                </a>
+
+                {/* Secondary: Real Betting */}
+                <div className="relative">
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#FFD700] text-black text-[8px] font-game">
+                    DEVNET
+                  </div>
+                  <WalletButton />
+                </div>
+
+                <p className="text-[10px] text-gray-500 text-center">
+                  Game mode uses play money. Real mode uses devnet USDC.
+                </p>
+              </div>
 
               {/* Partner Badges */}
               <div className="w-full">
