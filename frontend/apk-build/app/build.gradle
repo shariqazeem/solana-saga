@@ -1,0 +1,28 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'gg.playsolana.solanasaga'
+    compileSdkVersion 34
+    
+    defaultConfig {
+        applicationId "gg.playsolana.solanasaga"
+        minSdkVersion 24
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+    
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

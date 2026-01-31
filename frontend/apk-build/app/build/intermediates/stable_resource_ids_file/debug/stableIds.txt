@@ -1,0 +1,3 @@
+gg.playsolana.solanasaga:style/AppTheme = 0x7f030000
+gg.playsolana.solanasaga:string/app_name = 0x7f020000
+gg.playsolana.solanasaga:drawable/ic_launcher = 0x7f010000

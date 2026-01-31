@@ -1,6 +1,6 @@
 {
   "packageId": "gg.playsolana.solanasaga",
-  "host": "solana-saga.vercel.app",
+  "host": "frontend-alpha-khaki.vercel.app",
   "name": "Solana Saga",
   "launcherName": "Solana Saga",
   "display": "standalone",
@@ -13,9 +13,9 @@
   "backgroundColor": "#050505",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://solana-saga.vercel.app/icons/icon-512x512.png",
-  "maskableIconUrl": "https://solana-saga.vercel.app/icons/icon-512x512.png",
-  "monochromeIconUrl": "https://solana-saga.vercel.app/icons/icon-512x512.png",
+  "iconUrl": "https://frontend-alpha-khaki.vercel.app/icons/icon-512x512.png",
+  "maskableIconUrl": "https://frontend-alpha-khaki.vercel.app/icons/icon-512x512.png",
+  "monochromeIconUrl": "https://frontend-alpha-khaki.vercel.app/icons/icon-512x512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./solana-saga.keystore",
@@ -28,23 +28,23 @@
       "name": "Arena",
       "shortName": "Arena",
       "url": "/",
-      "chosenIconUrl": "https://solana-saga.vercel.app/icons/icon-96x96.png"
+      "chosenIconUrl": "https://frontend-alpha-khaki.vercel.app/icons/icon-96x96.png"
     },
     {
       "name": "Markets",
       "shortName": "Markets",
       "url": "/markets",
-      "chosenIconUrl": "https://solana-saga.vercel.app/icons/icon-96x96.png"
+      "chosenIconUrl": "https://frontend-alpha-khaki.vercel.app/icons/icon-96x96.png"
     },
     {
       "name": "Leaderboard",
       "shortName": "Leaders",
       "url": "/leaderboard",
-      "chosenIconUrl": "https://solana-saga.vercel.app/icons/icon-96x96.png"
+      "chosenIconUrl": "https://frontend-alpha-khaki.vercel.app/icons/icon-96x96.png"
     }
   ],
   "generatorApp": "pwa-to-twa",
-  "webManifestUrl": "https://solana-saga.vercel.app/manifest.json",
+  "webManifestUrl": "https://frontend-alpha-khaki.vercel.app/manifest.json",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {
@@ -60,7 +60,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://solana-saga.vercel.app/",
+  "fullScopeUrl": "https://frontend-alpha-khaki.vercel.app/",
   "minSdkVersion": 28,
   "fingerprints": []
 }

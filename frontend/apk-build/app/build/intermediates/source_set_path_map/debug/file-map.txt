@@ -1,0 +1,7 @@
+gg.playsolana.solanasaga.app-pngs-0 /Users/macbookair/projects/solana-saga/frontend/apk-build/app/build/generated/res/pngs/debug
+gg.playsolana.solanasaga.app-resValues-1 /Users/macbookair/projects/solana-saga/frontend/apk-build/app/build/generated/res/resValues/debug
+gg.playsolana.solanasaga.app-packageDebugResources-2 /Users/macbookair/projects/solana-saga/frontend/apk-build/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+gg.playsolana.solanasaga.app-packageDebugResources-3 /Users/macbookair/projects/solana-saga/frontend/apk-build/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+gg.playsolana.solanasaga.app-merged_res-4 /Users/macbookair/projects/solana-saga/frontend/apk-build/app/build/intermediates/merged_res/debug
+gg.playsolana.solanasaga.app-debug-5 /Users/macbookair/projects/solana-saga/frontend/apk-build/app/src/debug/res
+gg.playsolana.solanasaga.app-main-6 /Users/macbookair/projects/solana-saga/frontend/apk-build/app/src/main/res
