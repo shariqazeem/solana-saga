@@ -1,48 +1,91 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useMemo, useState, useEffect } from "react";
 import { UnifiedWalletProvider, UnifiedWalletButton } from "@jup-ag/wallet-adapter";
+
+// Hardcode the project ID to ensure it's available
+const REOWN_PROJECT_ID = "28d5bd001f01f925b327ed9405773ba3";
 
 interface JupiterWalletProviderProps {
   children: ReactNode;
 }
 
 /**
- * Jupiter Unified Wallet Kit Provider
+ * Jupiter Unified Wallet Kit with Jupiter Mobile Adapter
  *
  * Features:
- * - Built-in Wallet Standard support (auto-discovers installed wallets)
+ * - Jupiter Mobile wallet support (scan QR with Jupiter Mobile app)
+ * - Built-in Wallet Standard support
  * - Built-in Mobile Wallet Adapter (MWA) support
- * - Mobile responsive
- * - Theming support
- *
- * Pass empty wallets array to use auto-discovery via Wallet Standard + MWA
+ * - Social login (Google, X, Apple) via Reown
  */
 export function JupiterWalletProvider({ children }: JupiterWalletProviderProps) {
+  const [mounted, setMounted] = useState(false);
+  const [jupiterAdapter, setJupiterAdapter] = useState<any>(null);
+
+  // Load Jupiter Mobile Adapter only on client side
+  useEffect(() => {
+    setMounted(true);
+
+    // Dynamically import the Reown adapter
+    import("@jup-ag/jup-mobile-adapter").then(({ createReownAdapter }) => {
+      try {
+        const adapter = createReownAdapter({
+          metadata: {
+            name: "Solana Saga",
+            description: "Prediction Market Game for PSG1 - Matrix Hackathon",
+            url: window.location.origin,
+            icons: ["https://frontend-alpha-khaki.vercel.app/icons/icon-192x192.png"],
+          },
+          projectId: REOWN_PROJECT_ID,
+          features: {
+            analytics: false,
+            socials: ["google", "x", "apple"],
+            email: false,
+          },
+          enableWallets: true,
+        });
+        setJupiterAdapter(adapter);
+      } catch (error) {
+        console.error("[Jupiter] Failed to create Reown adapter:", error);
+      }
+    }).catch((error) => {
+      console.error("[Jupiter] Failed to load jup-mobile-adapter:", error);
+    });
+  }, []);
+
+  // Combine Jupiter Mobile adapter with auto-discovered wallets
+  const wallets = useMemo(() => {
+    if (jupiterAdapter && jupiterAdapter.name && jupiterAdapter.icon) {
+      return [jupiterAdapter];
+    }
+    return [];
+  }, [jupiterAdapter]);
+
   return (
     <UnifiedWalletProvider
-      wallets={[]} // Empty array - uses Wallet Standard + MWA auto-discovery
+      wallets={wallets}
       config={{
-        autoConnect: true,
+        autoConnect: mounted, // Only auto-connect after mounting
         env: "devnet",
         metadata: {
           name: "Solana Saga",
-          description: "Prediction Market Game for PSG1",
+          description: "Prediction Market Game for PSG1 - Matrix Hackathon",
           url: typeof window !== "undefined" ? window.location.origin : "https://frontend-alpha-khaki.vercel.app",
           iconUrls: ["https://frontend-alpha-khaki.vercel.app/icons/icon-192x192.png"],
         },
         notificationCallback: {
           onConnect: (props) => {
-            console.log("[Wallet] Connected:", props.walletName);
+            console.log("[Jupiter] Connected:", props.walletName);
           },
           onConnecting: (props) => {
-            console.log("[Wallet] Connecting to:", props.walletName);
+            console.log("[Jupiter] Connecting to:", props.walletName);
           },
           onDisconnect: (props) => {
-            console.log("[Wallet] Disconnected:", props.walletName);
+            console.log("[Jupiter] Disconnected:", props.walletName);
           },
           onNotInstalled: (props) => {
-            console.log("[Wallet] Not installed:", props.walletName);
+            console.log("[Jupiter] Not installed:", props.walletName);
           },
         },
         walletlistExplanation: {
