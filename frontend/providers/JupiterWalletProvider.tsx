@@ -1,7 +1,9 @@
 "use client";
 
 import { ReactNode, useMemo, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { UnifiedWalletProvider, UnifiedWalletButton } from "@jup-ag/wallet-adapter";
+import { useWrappedReownAdapter } from "@jup-ag/jup-mobile-adapter";
 
 // Hardcode the project ID to ensure it's available
 const REOWN_PROJECT_ID = "28d5bd001f01f925b327ed9405773ba3";
@@ -11,48 +13,27 @@ interface JupiterWalletProviderProps {
 }
 
 /**
- * Jupiter Unified Wallet Kit with Jupiter Mobile Adapter
- *
- * Features:
- * - Jupiter Mobile wallet support (scan QR with Jupiter Mobile app)
- * - Built-in Wallet Standard support
- * - Built-in Mobile Wallet Adapter (MWA) support
- * - Social login (Google, X, Apple) via Reown
+ * Inner provider that uses the Jupiter Mobile Adapter hook
  */
-export function JupiterWalletProvider({ children }: JupiterWalletProviderProps) {
-  const [mounted, setMounted] = useState(false);
-  const [jupiterAdapter, setJupiterAdapter] = useState<any>(null);
-
-  // Load Jupiter Mobile Adapter only on client side
-  useEffect(() => {
-    setMounted(true);
-
-    // Dynamically import the Reown adapter
-    import("@jup-ag/jup-mobile-adapter").then(({ createReownAdapter }) => {
-      try {
-        const adapter = createReownAdapter({
-          metadata: {
-            name: "Solana Saga",
-            description: "Prediction Market Game for PSG1 - Matrix Hackathon",
-            url: window.location.origin,
-            icons: ["https://frontend-alpha-khaki.vercel.app/icons/icon-192x192.png"],
-          },
-          projectId: REOWN_PROJECT_ID,
-          features: {
-            analytics: false,
-            socials: ["google", "x", "apple"],
-            email: false,
-          },
-          enableWallets: true,
-        });
-        setJupiterAdapter(adapter);
-      } catch (error) {
-        console.error("[Jupiter] Failed to create Reown adapter:", error);
-      }
-    }).catch((error) => {
-      console.error("[Jupiter] Failed to load jup-mobile-adapter:", error);
-    });
-  }, []);
+function JupiterWalletProviderInner({ children }: JupiterWalletProviderProps) {
+  // Jupiter Mobile Adapter with Reown integration
+  const { jupiterAdapter } = useWrappedReownAdapter({
+    appKitOptions: {
+      metadata: {
+        name: "Solana Saga",
+        description: "Prediction Market Game for PSG1 - Matrix Hackathon",
+        url: typeof window !== "undefined" ? window.location.origin : "https://frontend-alpha-khaki.vercel.app",
+        icons: ["https://frontend-alpha-khaki.vercel.app/icons/icon-192x192.png"],
+      },
+      projectId: REOWN_PROJECT_ID,
+      features: {
+        analytics: false,
+        socials: ["google", "x", "apple"],
+        email: false,
+      },
+      enableWallets: true,
+    },
+  });
 
   // Combine Jupiter Mobile adapter with auto-discovered wallets
   const wallets = useMemo(() => {
@@ -66,7 +47,7 @@ export function JupiterWalletProvider({ children }: JupiterWalletProviderProps) 
     <UnifiedWalletProvider
       wallets={wallets}
       config={{
-        autoConnect: mounted, // Only auto-connect after mounting
+        autoConnect: true,
         env: "devnet",
         metadata: {
           name: "Solana Saga",
@@ -98,6 +79,49 @@ export function JupiterWalletProvider({ children }: JupiterWalletProviderProps) 
       {children}
     </UnifiedWalletProvider>
   );
+}
+
+/**
+ * Fallback provider without Jupiter Mobile (for SSR)
+ */
+function FallbackWalletProvider({ children }: JupiterWalletProviderProps) {
+  return (
+    <UnifiedWalletProvider
+      wallets={[]}
+      config={{
+        autoConnect: false,
+        env: "devnet",
+        metadata: {
+          name: "Solana Saga",
+          description: "Prediction Market Game for PSG1 - Matrix Hackathon",
+          url: "https://frontend-alpha-khaki.vercel.app",
+          iconUrls: ["https://frontend-alpha-khaki.vercel.app/icons/icon-192x192.png"],
+        },
+        theme: "jupiter",
+        lang: "en",
+      }}
+    >
+      {children}
+    </UnifiedWalletProvider>
+  );
+}
+
+/**
+ * Main export - dynamically loaded to avoid SSR issues
+ */
+export function JupiterWalletProvider({ children }: JupiterWalletProviderProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use fallback during SSR, full provider after mount
+  if (!mounted) {
+    return <FallbackWalletProvider>{children}</FallbackWalletProvider>;
+  }
+
+  return <JupiterWalletProviderInner>{children}</JupiterWalletProviderInner>;
 }
 
 export { UnifiedWalletButton };
