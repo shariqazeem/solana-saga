@@ -125,6 +125,25 @@ export function PSG1ControllerHints({ show, activeButton, compact = false }: PSG
           </span>
         </motion.div>
       </motion.div>
+
+      {/* Secondary controls row */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.7 }}
+        className="flex items-center justify-center gap-4 mt-1"
+      >
+        <div className="flex items-center gap-1.5 text-[9px] text-gray-500">
+          <span className="px-1.5 py-0.5 rounded bg-[#00F3FF]/10 text-[#00F3FF] font-game">L1</span>
+          <span>/</span>
+          <span className="px-1.5 py-0.5 rounded bg-[#00F3FF]/10 text-[#00F3FF] font-game">R1</span>
+          <span className="text-gray-600 ml-1">Bet $</span>
+        </div>
+        <div className="w-px h-3 bg-white/10" />
+        <div className="flex items-center gap-1.5 text-[9px] text-gray-500">
+          <span className="px-1.5 py-0.5 rounded bg-[#FF00FF]/10 text-[#FF00FF] font-game">START</span>
+          <span className="text-gray-600 ml-1">Wallet</span>
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 }

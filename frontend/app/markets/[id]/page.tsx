@@ -9,27 +9,26 @@ import {
   ArrowLeft, Flame, Target, Trophy, Loader2
 } from "lucide-react";
 import Link from "next/link";
-import { usePredictionMarkets, Market } from "@/lib/solana/hooks/usePredictionMarkets";
+import { useJupiterPrediction, Market } from "@/hooks/useJupiterPrediction";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { BetSuccessModal } from "@/components/BetSuccessModal";
 
-const QUICK_AMOUNTS = [10, 25, 50, 100, 250, 500];
+const QUICK_AMOUNTS = [1, 5, 10, 25, 50, 100];
 
 export default function MarketDetailPage() {
   const params = useParams();
   const marketId = params.id as string;
   const wallet = useWallet();
 
-  const { getMarket, placeBet, loading: hookLoading } = usePredictionMarkets();
+  const { markets, placeBet, loading: hookLoading } = useJupiterPrediction();
   const [market, setMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedSide, setSelectedSide] = useState<boolean | null>(null); // true = YES, false = NO
+  const [selectedSide, setSelectedSide] = useState<boolean | null>(null);
   const [betAmount, setBetAmount] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
-  const [betSuccess, setBetSuccess] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successBetData, setSuccessBetData] = useState<{
     question: string;
@@ -39,44 +38,26 @@ export default function MarketDetailPage() {
     potentialPayout: number;
   } | null>(null);
 
-  // Fetch market data
-  const fetchMarket = useCallback(async () => {
-    if (!marketId || !getMarket) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-      const marketData = await getMarket(marketId);
-      if (marketData) {
-        setMarket(marketData);
-      } else {
-        setError("Market not found");
-      }
-    } catch (err: any) {
-      console.error("Error fetching market:", err);
-      setError(err.message || "Failed to load market");
-    } finally {
-      setLoading(false);
-    }
-  }, [marketId, getMarket]);
-
+  // Find market from loaded markets
   useEffect(() => {
-    fetchMarket();
-  }, [fetchMarket]);
+    if (hookLoading) return;
+
+    const found = markets.find(m => m.publicKey === marketId);
+    if (found) {
+      setMarket(found);
+      setError(null);
+    } else if (markets.length > 0) {
+      setError("Market not found");
+    }
+    setLoading(false);
+  }, [markets, marketId, hookLoading]);
 
   const calculatePayout = () => {
     if (!betAmount || selectedSide === null || !market) return "0";
     const amount = parseFloat(betAmount);
-    // Use multiplier for more accurate payout calculation
     const multiplierStr = selectedSide ? market.yesMultiplier : market.noMultiplier;
     const multiplier = parseFloat(multiplierStr.replace("x", ""));
     return (amount * multiplier).toFixed(2);
-  };
-
-  const getMultiplierValue = () => {
-    if (selectedSide === null || !market) return 1;
-    const multiplierStr = selectedSide ? market.yesMultiplier : market.noMultiplier;
-    return parseFloat(multiplierStr.replace("x", ""));
   };
 
   const handlePlaceBet = async () => {
@@ -93,9 +74,8 @@ export default function MarketDetailPage() {
       const multiplier = selectedSide ? market.yesMultiplier : market.noMultiplier;
       const potentialPayout = parseFloat(calculatePayout());
 
-      await placeBet(market.publicKey, amount, selectedSide);
+      await placeBet(market.publicKey, selectedSide, amount);
 
-      // Store bet data for success modal
       setSuccessBetData({
         question: market.question,
         side: selectedSide,
@@ -106,14 +86,8 @@ export default function MarketDetailPage() {
 
       setShowConfirm(false);
       setShowSuccessModal(true);
-
-      // Refresh market data
-      setTimeout(async () => {
-        const updated = await getMarket(marketId);
-        if (updated) setMarket(updated);
-        setBetAmount("");
-        setSelectedSide(null);
-      }, 1000);
+      setBetAmount("");
+      setSelectedSide(null);
     } catch (err: any) {
       console.error("Error placing bet:", err);
       alert(err.message || "Failed to place bet");
@@ -125,7 +99,7 @@ export default function MarketDetailPage() {
   // Loading state
   if (loading || hookLoading) {
     return (
-      <div className="min-h-screen pt-24 pb-32 px-4 flex items-center justify-center">
+      <div className="min-h-screen pt-24 pb-24 px-4 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-[#00f0ff] animate-spin mx-auto mb-4" />
           <p className="text-gray-400 font-game">Loading market data...</p>
@@ -137,7 +111,7 @@ export default function MarketDetailPage() {
   // Error state
   if (error || !market) {
     return (
-      <div className="min-h-screen pt-24 pb-32 px-4">
+      <div className="min-h-screen pt-24 pb-24 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-game text-white mb-2">Market Not Found</h2>
@@ -154,10 +128,9 @@ export default function MarketDetailPage() {
 
   const endsInText = market.endsIn === "Ended" ? "Ended" : market.endsIn;
   const isExpired = market.endsIn === "Ended";
-  const totalPool = market.yesPool + market.noPool;
 
   return (
-    <div className="min-h-screen pt-24 pb-32 px-4">
+    <div className="min-h-screen pt-24 pb-24 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <div className="mb-6">
@@ -201,7 +174,7 @@ export default function MarketDetailPage() {
                     }`}>
                       {market.category}
                     </span>
-                    {market.totalVolume > 100 && (
+                    {market.totalVolume > 1000 && (
                       <span className="hot-badge">
                         <Flame className="w-3 h-3" />
                         HOT
@@ -222,7 +195,6 @@ export default function MarketDetailPage() {
               {/* Big Battle Bar */}
               <div className="mb-8">
                 <div className="relative h-24 rounded-2xl overflow-hidden bg-black/50">
-                  {/* YES Side */}
                   <div
                     className="absolute left-0 top-0 bottom-0 flex items-center justify-start px-6 transition-all duration-1000"
                     style={{
@@ -242,7 +214,6 @@ export default function MarketDetailPage() {
                     </div>
                   </div>
 
-                  {/* NO Side */}
                   <div
                     className="absolute right-0 top-0 bottom-0 flex items-center justify-end px-6 transition-all duration-1000"
                     style={{
@@ -262,7 +233,6 @@ export default function MarketDetailPage() {
                     </div>
                   </div>
 
-                  {/* Center VS */}
                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
                     <div className="w-12 h-12 rounded-full bg-[#0a0a0f] border-2 border-[#ffd700] flex items-center justify-center">
                       <span className="font-pixel text-[#ffd700] text-xs">VS</span>
@@ -288,9 +258,9 @@ export default function MarketDetailPage() {
                 <div className="stat-box">
                   <Zap className="w-5 h-5 text-[#ffd700] mb-2" />
                   <div className="text-xl font-numbers font-bold text-white">
-                    ${totalPool.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    {market.yesPrice}% / {market.noPrice}%
                   </div>
-                  <div className="text-xs text-gray-500">Pool</div>
+                  <div className="text-xs text-gray-500">YES / NO</div>
                 </div>
                 <div className="stat-box">
                   <Clock className="w-5 h-5 text-[#ff8800] mb-2" />
@@ -334,7 +304,6 @@ export default function MarketDetailPage() {
                 Place Your Bet
               </h3>
 
-              {/* Wallet Connection Check */}
               {!wallet.connected ? (
                 <div className="text-center py-8">
                   <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
@@ -448,10 +417,9 @@ export default function MarketDetailPage() {
                     {selectedSide !== null && betAmount ? "Place Bet" : "Select Side & Amount"}
                   </button>
 
-                  {/* Info */}
                   <div className="mt-4 flex items-start gap-2 text-xs text-gray-500">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <span>2% fee only on winnings. Min: 1 USDC, Max: 10,000 USDC.</span>
+                    <span>Powered by Jupiter Prediction Markets. Min: $1 USDC.</span>
                   </div>
                 </>
               )}
@@ -486,7 +454,7 @@ export default function MarketDetailPage() {
                   )}
                 </div>
                 <h3 className="font-game text-xl text-white mb-2">
-                  {isPlacingBet ? "Placing Bet..." : "Confirm Your Bet"}
+                  {isPlacingBet ? "Placing Order..." : "Confirm Your Bet"}
                 </h3>
                 <p className="text-gray-400">
                   {isPlacingBet ? "Please approve the transaction in your wallet" : "You're about to place a bet"}

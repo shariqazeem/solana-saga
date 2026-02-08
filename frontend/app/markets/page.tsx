@@ -9,16 +9,18 @@ import {
   Grid, List, Zap, ChevronDown, Star, Target, Loader2,
   CheckCircle, Timer, ArrowLeft
 } from "lucide-react";
-import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { useJupiterPrediction } from "@/hooks/useJupiterPrediction";
 import { RetroGrid } from "@/components/RetroGrid";
 
 const CATEGORIES = [
   { id: "all", name: "All Markets", icon: Grid, color: "#00f0ff" },
   { id: "crypto", name: "Crypto", icon: TrendingUp, color: "#00ff88" },
-  { id: "price", name: "Price", icon: TrendingUp, color: "#00ff88" },
   { id: "sports", name: "Sports", icon: Target, color: "#ff8800" },
-  { id: "meme", name: "Meme", icon: Flame, color: "#ff00aa" },
   { id: "politics", name: "Politics", icon: Star, color: "#ffd700" },
+  { id: "esports", name: "Esports", icon: Flame, color: "#ff00aa" },
+  { id: "culture", name: "Culture", icon: Star, color: "#AA00FF" },
+  { id: "economics", name: "Economics", icon: TrendingUp, color: "#FFD700" },
+  { id: "tech", name: "Tech", icon: Zap, color: "#00F3FF" },
 ];
 
 const STATUS_FILTERS = [
@@ -34,7 +36,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function MarketsPage() {
-  const { markets, loading, error } = usePredictionMarkets();
+  const { markets, loading, error } = useJupiterPrediction();
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeStatus, setActiveStatus] = useState("active");
   const [activeSort, setActiveSort] = useState("volume");
@@ -110,7 +112,7 @@ export default function MarketsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 pt-20 pb-8 px-4 min-h-screen">
+      <div className="relative z-10 pt-20 pb-24 px-4 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -243,7 +245,7 @@ export default function MarketsPage() {
         {loading && (
           <div className="text-center py-20">
             <Loader2 className="w-12 h-12 text-[#00f0ff] animate-spin mx-auto mb-4" />
-            <p className="text-gray-400 font-game">Loading markets from blockchain...</p>
+            <p className="text-gray-400 font-game">Loading Jupiter markets...</p>
           </div>
         )}
 
@@ -289,6 +291,11 @@ export default function MarketsPage() {
             )}
           </>
         )}
+
+        {/* Jupiter Branding Footer */}
+        <div className="mt-8 text-center text-[10px] text-gray-600">
+          <span className="text-[#c7f83e]">Powered by Jupiter</span> Prediction Markets on <span className="text-[#14F195]">Solana</span>
+        </div>
       </div>
       </div>
     </div>

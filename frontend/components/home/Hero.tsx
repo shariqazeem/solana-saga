@@ -2,10 +2,10 @@
 
 import { Rocket, Zap, Trophy, Target, Flame, Star, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { useJupiterPrediction } from "@/hooks/useJupiterPrediction";
 
 export function Hero() {
-  const { markets, loading } = usePredictionMarkets();
+  const { markets, loading } = useJupiterPrediction();
 
   const totalVolume = markets.reduce((sum, m) => sum + m.totalVolume, 0);
   const totalBettors = markets.reduce((sum, m) => sum + m.bettors, 0);

@@ -1,7 +1,7 @@
 {
-  "name": "Solana Saga - Swipe to Predict",
+  "name": "Solana Saga - Jupiter Prediction Markets",
   "short_name": "Solana Saga",
-  "description": "The Tinder of Prediction Markets - Swipe YES or NO on Solana",
+  "description": "Gamified Jupiter Prediction Markets for PSG1 - Swipe to bet on Solana",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

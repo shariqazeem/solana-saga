@@ -3,10 +3,10 @@
 import { MarketCard } from "../MarketCard";
 import { ChevronRight, Flame, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
-import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { useJupiterPrediction } from "@/hooks/useJupiterPrediction";
 
 export function HotMarkets() {
-  const { markets, loading } = usePredictionMarkets();
+  const { markets, loading } = useJupiterPrediction();
 
   // Get top 4 markets by volume
   const hotMarkets = markets

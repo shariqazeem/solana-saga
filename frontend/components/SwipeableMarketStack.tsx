@@ -16,17 +16,22 @@ import { Flame, Clock, Users, TrendingUp, Zap, ChevronUp, SkipForward, Gamepad2 
 import confetti from "canvas-confetti";
 import { HypeHUD } from "./HypeHUD";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
-import { Market } from "@/lib/solana/hooks/usePredictionMarkets";
+import { Market } from "@/hooks/useJupiterPrediction";
 import { usePSG1Mode } from "@/hooks/usePSG1Mode";
+import { useHaptics } from "@/hooks/useHaptics";
 import { PSG1ControllerHints } from "./PSG1ControllerHints";
 
-// Gamepad button mappings (Standard Controller Layout)
+// Gamepad button mappings (Standard Controller Layout / PSG1)
 const GAMEPAD_BUTTONS = {
   A_X: 0,           // A (Xbox) / X (PlayStation) - Vote YES
   B_CIRCLE: 1,      // B (Xbox) / Circle (PlayStation) - Vote NO
   Y_TRIANGLE: 3,    // Y (Xbox) / Triangle (PlayStation) - Skip
+  L1: 4,            // L1 / LB - Decrease bet
+  R1: 5,            // R1 / RB - Increase bet
+  SELECT: 8,        // Select / Back - Cycle category
+  START: 9,         // Start - Connect wallet / Open settings
   DPAD_UP: 12,      // D-Pad Up - Skip
-  DPAD_DOWN: 13,    // D-Pad Down
+  DPAD_DOWN: 13,    // D-Pad Down - Decrease bet
   DPAD_LEFT: 14,    // D-Pad Left - Vote NO
   DPAD_RIGHT: 15,   // D-Pad Right - Vote YES
 };
@@ -41,6 +46,9 @@ interface SwipeableMarketStackProps {
   betAmount: number;
   soundEnabled: boolean;
   streak?: number;
+  onIncreaseBet?: () => void;
+  onDecreaseBet?: () => void;
+  onConnectWallet?: () => void;
 }
 
 export interface SwipeableMarketStackRef {
@@ -57,6 +65,9 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   betAmount,
   soundEnabled,
   streak = 0,
+  onIncreaseBet,
+  onDecreaseBet,
+  onConnectWallet,
 }, ref) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -71,6 +82,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   const { setVisible } = useWalletModalCompat();
   const { playHover, playSwipeYes, playSwipeNo, playSkip, playBet } = useSoundEffects(soundEnabled);
   const psg1Config = usePSG1Mode();
+  const { vibrateSwipeYes, vibrateSwipeNo, vibrateSkip } = useHaptics();
 
   // Swipe motion values
   const x = useMotionValue(0);
@@ -166,6 +178,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
       setIsAnimating(true);
       playSwipeYes();
+      vibrateSwipeYes();
       fireConfetti("yes");
 
       await controls.start({ x: 500, opacity: 0, rotate: 30, transition: { duration: 0.3 } });
@@ -191,6 +204,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
       setIsAnimating(true);
       playSwipeNo();
+      vibrateSwipeNo();
       fireConfetti("no");
 
       await controls.start({ x: -500, opacity: 0, rotate: -30, transition: { duration: 0.3 } });
@@ -210,6 +224,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
     else if (yOffset < -SWIPE_THRESHOLD) {
       setIsAnimating(true);
       playSkip();
+      vibrateSkip();
 
       await controls.start({ y: -500, opacity: 0, transition: { duration: 0.3 } });
 
@@ -226,67 +241,93 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
     }
   };
 
-  // Button handlers
-  const handleButtonBet = async (prediction: boolean) => {
+  // Refs for stable access in callbacks (avoids stale closures + dependency churn)
+  const currentMarketRef = useRef(currentMarket);
+  const isAnimatingRef = useRef(isAnimating);
+  const betAmountRef = useRef(betAmount);
+  const cardHistoryRef = useRef(cardHistory);
+  currentMarketRef.current = currentMarket;
+  isAnimatingRef.current = isAnimating;
+  betAmountRef.current = betAmount;
+  cardHistoryRef.current = cardHistory;
+
+  // Button handlers - wrapped in useCallback with refs for stable references
+  const handleButtonBet = useCallback(async (prediction: boolean) => {
     if (!connected) {
       setVisible(true);
       return;
     }
 
-    if (!currentMarket || isAnimating) return;
+    if (!currentMarketRef.current || isAnimatingRef.current) return;
 
     setIsAnimating(true);
 
     if (prediction) {
       playSwipeYes();
+      vibrateSwipeYes();
       fireConfetti("yes");
       await controls.start({ x: 500, opacity: 0, rotate: 30, transition: { duration: 0.3 } });
     } else {
       playSwipeNo();
+      vibrateSwipeNo();
       fireConfetti("no");
       await controls.start({ x: -500, opacity: 0, rotate: -30, transition: { duration: 0.3 } });
     }
 
     try {
-      await onBet(currentMarket.publicKey, prediction, betAmount);
+      await onBet(currentMarketRef.current.publicKey, prediction, betAmountRef.current);
       playBet();
     } catch (e) {
       console.error("Bet failed:", e);
     }
 
-    setCardHistory([...cardHistory, currentMarket.publicKey]);
+    setCardHistory([...cardHistoryRef.current, currentMarketRef.current.publicKey]);
     setCurrentIndex((i) => i + 1);
     controls.set({ x: 0, y: 0, opacity: 1, rotate: 0 });
     setIsAnimating(false);
-  };
+  }, [connected, setVisible, playSwipeYes, playSwipeNo, vibrateSwipeYes, vibrateSwipeNo, fireConfetti, controls, onBet, playBet]);
 
-  const handleSkipButton = async () => {
-    if (!currentMarket || isAnimating) return;
+  const handleSkipButton = useCallback(async () => {
+    if (!currentMarketRef.current || isAnimatingRef.current) return;
 
     setIsAnimating(true);
     playSkip();
+    vibrateSkip();
 
     await controls.start({ y: -500, opacity: 0, transition: { duration: 0.3 } });
 
-    setCardHistory([...cardHistory, currentMarket.publicKey]);
+    setCardHistory([...cardHistoryRef.current, currentMarketRef.current.publicKey]);
     setCurrentIndex((i) => i + 1);
     onSkip();
 
     controls.set({ x: 0, y: 0, opacity: 1 });
     setIsAnimating(false);
-  };
+  }, [playSkip, vibrateSkip, controls, onSkip]);
+
+  // Stable refs for gamepad polling (avoids useEffect re-runs)
+  const handleButtonBetRef = useRef(handleButtonBet);
+  const handleSkipButtonRef = useRef(handleSkipButton);
+  const onIncreaseBetRef = useRef(onIncreaseBet);
+  const onDecreaseBetRef = useRef(onDecreaseBet);
+  const onConnectWalletRef = useRef(onConnectWallet);
+  handleButtonBetRef.current = handleButtonBet;
+  handleSkipButtonRef.current = handleSkipButton;
+  onIncreaseBetRef.current = onIncreaseBet;
+  onDecreaseBetRef.current = onDecreaseBet;
+  onConnectWalletRef.current = onConnectWallet;
 
   // Expose methods for keyboard controls
   useImperativeHandle(ref, () => ({
     triggerBet: (prediction: boolean) => {
-      handleButtonBet(prediction);
+      handleButtonBetRef.current(prediction);
     },
     triggerSkip: () => {
-      handleSkipButton();
+      handleSkipButtonRef.current();
     },
   }));
 
   // Gamepad support - Poll for controller input using requestAnimationFrame
+  // Empty dependency array: uses refs for all mutable state to avoid re-creating RAF loop
   useEffect(() => {
     // Handle gamepad connection events
     const handleGamepadConnected = (e: GamepadEvent) => {
@@ -311,12 +352,12 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       }
     }
 
-    // Polling loop for gamepad input
+    // Polling loop for gamepad input - uses refs to avoid stale closures
     const pollGamepad = () => {
       const gamepads = navigator.getGamepads();
       const gamepad = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
 
-      if (gamepad && !isAnimating && currentMarket) {
+      if (gamepad && !isAnimatingRef.current && currentMarketRef.current) {
         const now = Date.now();
         const timeSinceLastAction = now - lastGamepadActionRef.current;
 
@@ -327,7 +368,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
             gamepad.buttons[GAMEPAD_BUTTONS.DPAD_RIGHT]?.pressed) {
             lastGamepadActionRef.current = now;
             setGamepadActive("yes");
-            handleButtonBet(true);
+            handleButtonBetRef.current(true);
             setTimeout(() => setGamepadActive(null), 200);
           }
           // Check for NO actions (B/Circle button or D-Pad Left)
@@ -335,7 +376,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
             gamepad.buttons[GAMEPAD_BUTTONS.DPAD_LEFT]?.pressed) {
             lastGamepadActionRef.current = now;
             setGamepadActive("no");
-            handleButtonBet(false);
+            handleButtonBetRef.current(false);
             setTimeout(() => setGamepadActive(null), 200);
           }
           // Check for SKIP actions (Y/Triangle button or D-Pad Up)
@@ -343,8 +384,24 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
             gamepad.buttons[GAMEPAD_BUTTONS.DPAD_UP]?.pressed) {
             lastGamepadActionRef.current = now;
             setGamepadActive("skip");
-            handleSkipButton();
+            handleSkipButtonRef.current();
             setTimeout(() => setGamepadActive(null), 200);
+          }
+          // R1 - Increase bet amount
+          else if (gamepad.buttons[GAMEPAD_BUTTONS.R1]?.pressed) {
+            lastGamepadActionRef.current = now;
+            onIncreaseBetRef.current?.();
+          }
+          // L1 or D-Pad Down - Decrease bet amount
+          else if (gamepad.buttons[GAMEPAD_BUTTONS.L1]?.pressed ||
+            gamepad.buttons[GAMEPAD_BUTTONS.DPAD_DOWN]?.pressed) {
+            lastGamepadActionRef.current = now;
+            onDecreaseBetRef.current?.();
+          }
+          // START - Connect wallet / open settings
+          else if (gamepad.buttons[GAMEPAD_BUTTONS.START]?.pressed) {
+            lastGamepadActionRef.current = now;
+            onConnectWalletRef.current?.();
           }
         }
       }
@@ -362,7 +419,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         cancelAnimationFrame(gamepadAnimationRef.current);
       }
     };
-  }, [isAnimating, currentMarket, handleButtonBet, handleSkipButton]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Empty state
   if (!hasMore || !currentMarket) {
@@ -405,8 +462,8 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   // PSG1-optimized card dimensions
   const cardWidth = psg1Config.isPSG1 ? "w-[95%]" : "w-[92%]";
   const cardMaxWidth = psg1Config.isPSG1 ? "max-w-[420px]" : "max-w-[380px]";
-  const cardHeight = psg1Config.isPSG1 ? "h-[70%]" : "h-[85%]";
-  const cardMaxHeight = psg1Config.isPSG1 ? "max-h-[580px]" : "max-h-[500px]";
+  const cardHeight = "h-[95%]";
+  const cardMaxHeight = "";
 
   return (
     <div className={`relative w-full h-full flex flex-col ${psg1Config.isPSG1 ? "psg1-mode" : ""}`}>
@@ -445,11 +502,20 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         >
           {/* Card content - Obsidian Glass Aesthetic */}
           <div className="relative bg-gradient-to-b from-[#0f1115] to-[#050505] rounded-[2rem] border border-white/5 overflow-hidden h-full flex flex-col shadow-2xl">
+            {/* Event image background */}
+            {currentMarket.eventImage && (
+              <div className="absolute inset-0 z-0">
+                <img
+                  src={currentMarket.eventImage}
+                  alt=""
+                  className="w-full h-full object-cover opacity-15"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0f1115]/70 via-[#0f1115]/90 to-[#050505]" />
+              </div>
+            )}
+
             {/* Ambient background glow */}
             <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/5 blur-[100px] rounded-full pointer-events-none mix-blend-screen opacity-20" />
-
-            {/* Holographic noise texture */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'url("/noise.png")' }} />
 
             {/* Content Container */}
             <div className="relative z-10 flex flex-col h-full p-4 md:p-5">
@@ -460,6 +526,12 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                   <span className={`px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase border ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} shadow-[0_0_10px_inset_rgba(255,255,255,0.05)]`}>
                     {currentMarket.category}
                   </span>
+                  {currentMarket.isLive && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] text-red-400 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                      LIVE
+                    </span>
+                  )}
                   {currentMarket.totalVolume > 1000 && (
                     <span className="flex items-center gap-1 text-[10px] text-orange-400 font-bold animate-pulse">
                       <Flame className="w-3 h-3" />
@@ -474,16 +546,23 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 </div>
               </div>
 
-              {/* Main Subject: Question - Fixed height */}
-              <h2 className="text-base md:text-lg font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-2 flex-shrink-0 mb-2 z-20 max-h-[3rem] md:max-h-[3.5rem] overflow-hidden">
+              {/* Event title (parent event) - only show if question doesn't already include it */}
+              {currentMarket.eventTitle && !currentMarket.question.includes(currentMarket.eventTitle) && (
+                <div className="text-[10px] text-gray-500 font-game uppercase tracking-wider mb-1 truncate flex-shrink-0">
+                  {currentMarket.eventTitle}
+                </div>
+              )}
+
+              {/* Main Subject: Question */}
+              <h2 className="text-sm md:text-base font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-4 flex-shrink-0 mb-2 z-20">
                 {currentMarket.question}
               </h2>
 
               {/* Embedded Hype Ticker */}
               <div className="mb-2 flex-shrink-0 z-10 relative">
                 <HypeHUD
-                  yesPool={currentMarket.yesPool}
-                  noPool={currentMarket.noPool}
+                  yesPool={currentMarket.yesPrice}
+                  noPool={currentMarket.noPrice}
                   question={currentMarket.question}
                   volume={currentMarket.totalVolume}
                   bettors={displayBettors}
@@ -492,14 +571,20 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
               {/* Stats & Volume */}
               <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-2 px-1 flex-shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-[#00F3FF]" />
-                  <span className="text-gray-300 font-mono">{displayBettors}</span>
-                  <span className="text-gray-500">players</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-[#00FF88]" />
+                    <span className="text-gray-300 font-mono text-[11px]">${currentMarket.totalVolume.toLocaleString()}</span>
+                  </div>
+                  {currentMarket.volume24h > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Zap className="w-3 h-3 text-[#FFD700]" />
+                      <span className="text-gray-400 font-mono text-[10px]">${currentMarket.volume24h.toLocaleString()} 24h</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-[#00FF88]" />
-                  <span className="text-gray-300 font-mono">${currentMarket.totalVolume.toLocaleString()}</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#c7f83e]/15 border border-[#c7f83e]/30 shadow-[0_0_8px_rgba(199,248,62,0.15)]">
+                  <span className="text-[10px] text-[#c7f83e] font-bold tracking-wide">JUP</span>
                 </div>
               </div>
 
@@ -509,12 +594,12 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 <div className="flex justify-between items-center mb-2 px-1">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[#00FF88] text-xs font-bold">YES</span>
-                    <span className="text-white text-sm font-black">{currentMarket.yesMultiplier}x</span>
+                    <span className="text-white text-sm font-black">{currentMarket.yesMultiplier}</span>
                     <span className="text-[10px] text-gray-500">({currentMarket.yesPrice}%)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] text-gray-500">({currentMarket.noPrice}%)</span>
-                    <span className="text-white text-sm font-black">{currentMarket.noMultiplier}x</span>
+                    <span className="text-white text-sm font-black">{currentMarket.noMultiplier}</span>
                     <span className="text-[#FF0044] text-xs font-bold">NO</span>
                   </div>
                 </div>

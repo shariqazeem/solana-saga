@@ -67,28 +67,34 @@ export function GameOverlay({
     localStorage.setItem("performanceMode", newValue);
   };
 
-  // Animate balance changes
+  // Animate balance changes - only depends on `balance` prop to avoid feedback loop
   useEffect(() => {
-    if (balance !== displayBalance) {
-      const diff = balance - displayBalance;
-      const steps = 20;
-      const increment = diff / steps;
-      let current = displayBalance;
-      let step = 0;
+    setDisplayBalance((prev) => {
+      if (prev === balance) return prev;
+      return prev; // Start animation from current value
+    });
 
-      const interval = setInterval(() => {
-        step++;
-        current += increment;
-        setDisplayBalance(current);
-        if (step >= steps) {
-          setDisplayBalance(balance);
-          clearInterval(interval);
-        }
-      }, 30);
+    const diff = balance - displayBalance;
+    if (Math.abs(diff) < 0.001) return;
 
-      return () => clearInterval(interval);
-    }
-  }, [balance, displayBalance]);
+    let current = displayBalance;
+    const steps = 20;
+    const increment = diff / steps;
+    let step = 0;
+
+    const interval = setInterval(() => {
+      step++;
+      current += increment;
+      setDisplayBalance(current);
+      if (step >= steps) {
+        setDisplayBalance(balance);
+        clearInterval(interval);
+      }
+    }, 30);
+
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [balance]);
 
   return (
     <>
@@ -104,9 +110,12 @@ export function GameOverlay({
               animate={{ x: 0, opacity: 1 }}
             >
               <Zap className="w-6 h-6 md:w-8 md:h-8 text-[#00F3FF]" />
-              <div className="hidden sm:block">
-                <span className="font-game text-sm md:text-lg text-[#00F3FF]">SOLANA</span>
-                <span className="font-game text-sm md:text-lg text-white ml-1">SAGA</span>
+              <div className="hidden sm:flex flex-col">
+                <div>
+                  <span className="font-game text-sm md:text-lg text-[#00F3FF]">SOLANA</span>
+                  <span className="font-game text-sm md:text-lg text-white ml-1">SAGA</span>
+                </div>
+                <span className="text-[8px] text-[#c7f83e]/70 font-game tracking-wider">POWERED BY JUPITER</span>
               </div>
             </motion.div>
 

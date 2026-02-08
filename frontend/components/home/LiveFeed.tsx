@@ -1,10 +1,10 @@
 "use client";
 
 import { Zap, TrendingUp, Users, Activity, DollarSign } from "lucide-react";
-import { usePredictionMarkets } from "@/lib/solana/hooks/usePredictionMarkets";
+import { useJupiterPrediction } from "@/hooks/useJupiterPrediction";
 
 export function LiveFeed() {
-  const { markets, loading } = usePredictionMarkets();
+  const { markets, loading } = useJupiterPrediction();
 
   const totalVolume = markets.reduce((sum, m) => sum + m.totalVolume, 0);
   const totalBettors = markets.reduce((sum, m) => sum + m.bettors, 0);

@@ -2,111 +2,75 @@
 
 <div align="center">
 
-### **The Tinder of Prediction Markets**
+### **Tinder meets Prediction Markets on Solana**
 
-![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?style=for-the-badge&logo=solana&logoColor=white)
-![Play Solana](https://img.shields.io/badge/Play%20Solana-Gamepad%20Ready-00f0ff?style=for-the-badge)
-![Moddio](https://img.shields.io/badge/Moddio-Arcade%20Integrated-ff00aa?style=for-the-badge)
-![Indie.fun](https://img.shields.io/badge/Indie.fun-Hackathon%202025-ffd700?style=for-the-badge)
+![Solana](https://img.shields.io/badge/Solana-Mainnet-9945FF?style=for-the-badge&logo=solana&logoColor=white)
+![Jupiter](https://img.shields.io/badge/Jupiter-Prediction%20Markets-c7f83e?style=for-the-badge)
+![PSG1](https://img.shields.io/badge/PSG1-Native%20Support-00f0ff?style=for-the-badge)
 
-**Swipe Right = YES | Swipe Left = NO | Win the Pool**
+**Swipe Right = YES | Swipe Left = NO | Win Real USDC**
 
-[Live Demo](https://solana-saga.vercel.app) | [Video Demo](https://youtu.be/9Q03su8p5c4?si=SUv1H5K1ngIfooiV) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet)
+[Live Demo](https://solana-saga.vercel.app) | [Video Demo](#)
 
 </div>
 
 ---
 
-## Why We'll Win
+## What is Solana Saga?
 
-### The Problem
-Prediction markets are powerful but **boring**. Complex dashboards, intimidating charts, zero fun.
-
-### Our Solution
-We threw out the dashboard and built **Tinder for Predictions** — a swipe-to-bet game that makes betting addictive, social, and hardware-ready.
+A mobile-first prediction market app that replaces complex trading dashboards with **Tinder-style swipe cards**. Users swipe right to bet YES, left to bet NO, and up to skip -- all powered by **Jupiter Prediction Markets API** on Solana mainnet. Built natively for the **PSG1 console** with hardware gamepad controls, haptic feedback, and screen-optimized UI.
 
 ---
 
-## Partner Integrations
+## Key Features
 
-### 🎮 Play Solana — Hardware-First Design
+- **Swipe-to-Bet UX** -- Frictionless prediction market interaction via drag gestures, touch, keyboard, or gamepad
+- **Jupiter Prediction Markets** -- Real USDC bets on live markets (crypto, sports, politics, esports, culture, economics, tech)
+- **PSG1 Native Support** -- Gamepad button mapping (A=Yes, B=No, Y=Skip), haptic vibration patterns, optimized card dimensions
+- **SMWA Bridge** -- Custom Solana Mobile Wallet Adapter bridge for transaction signing inside Android WebView
+- **Gamification Engine** -- XP, levels, achievements, streak counters, confetti explosions, screen shake, trust scores
+- **Social Sharing** -- One-tap tweet after every bet with @playsolanasaga and @JupiterExchange mentions
+- **Onboarding Overlay** -- Animated 3-step tutorial for first-time users and judges
 
-> *"Solana Saga is built Hardware-First. We implemented the Gamepad API to ensure native compatibility with the Play Solana Gen1 console. Users can bet using physical D-Pads and buttons for a tactile arcade experience."*
+---
 
-**Technical Implementation:**
-- Native `navigator.getGamepads()` API integration
-- Real-time polling at 60fps via `requestAnimationFrame`
-- Button mapping: **A** = YES, **B** = NO, **Y** = SKIP
-- D-Pad support for navigation
-- Visual "🎮 Gamepad Connected" indicator
-- 500ms debounce to prevent accidental double-bets
+## Architecture
 
-```typescript
-// Gamepad controls - production ready
-if (buttons[0]?.pressed) triggerBet(true);   // A = YES
-if (buttons[1]?.pressed) triggerBet(false);  // B = NO
-if (buttons[3]?.pressed) triggerSkip();       // Y = SKIP
+```
+Jupiter Prediction Markets API
+         |
+         v
+useJupiterPrediction (hook)
+  - fetchEvents → transform to Market[]
+  - createOrder → unsigned tx
+         |
+         v
+SwipeableMarketStack (UI)
+  - Framer Motion drag gestures
+  - Gamepad API polling (60fps)
+  - Haptic feedback patterns
+         |
+         v
+SMWA Bridge (Android WebView)
+  - WebView ↔ Kotlin postMessage
+  - Transaction signing via native wallet
+  - Base64 serialized VersionedTransaction
+         |
+         v
+Solana Mainnet (sendRawTransaction)
 ```
 
 ---
 
-### 🕹️ Moddio — Arcade Lounge Integration
+## SMWA Bridge: WebView-to-Native Wallet
 
-> *"To solve the 'waiting time' problem in prediction markets, we integrated a Moddio Arcade Lounge. This keeps users engaged and on the platform while waiting for market resolutions, boosting retention metrics."*
+The PSG1 runs apps inside an Android WebView, which means standard browser wallet extensions don't work. We built a custom **Solana Mobile Wallet Adapter bridge** that:
 
-**The Retention Problem:**
-- Prediction markets have inherent wait times (hours/days until resolution)
-- Users leave → forget to claim → churn
+1. **WebView side** (`smwaBridge.ts`): Intercepts `signTransaction` calls and serializes the `VersionedTransaction` to base64
+2. **Native side** (Kotlin `WebViewActivity`): Receives the base64 payload via `postMessage`, deserializes it, and invokes the SMWA SDK to sign with the device wallet
+3. **Return path**: Signed transaction bytes are posted back to the WebView, deserialized, and submitted to Solana via `sendRawTransaction`
 
-**Our Solution:**
-- Embedded Moddio game accessible from main app
-- "Arcade Lounge" button in navigation
-- Full-screen iframe with ESC to exit
-- Keeps users on-platform during wait times
-- Increases session duration and return visits
-
----
-
-### 📱 Social Proof — Viral Loop Engine
-
-> *"We gamified the experience with XP, Levels, and 'Shareable Tickets' to create a viral loop, turning every bet into a marketing impression."*
-
-**Twitter/X Share Integration:**
-- One-tap share after every bet
-- Pre-formatted tweet with bet details
-- Hashtags: #Solana #PredictionMarkets #Web3Gaming
-- Mentions @SolanaSaga for tracking impressions
-
-**Gamification Stack:**
-- 🔥 Streak counter with fire animations
-- 📊 Trust Score (win rate health bar)
-- 🎫 Shareable "Bet Tickets" with holographic design
-- 🏆 On-chain Leaderboard (real UserStats from blockchain)
-- 🎊 Confetti explosions on every bet
-
----
-
-## The Experience
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│     👉 SWIPE RIGHT (or press A) = Bet YES                  │
-│     👈 SWIPE LEFT (or press B) = Bet NO                    │
-│     👆 SWIPE UP (or press Y) = Skip                        │
-│                                                             │
-│     Works with: Touch | Mouse | Keyboard | Gamepad         │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Input Methods
-| Method | YES | NO | SKIP |
-|--------|-----|-----|------|
-| **Touch** | Swipe Right | Swipe Left | Swipe Up |
-| **Mouse** | Drag Right | Drag Left | Drag Up |
-| **Keyboard** | → Arrow | ← Arrow | ↑ Arrow |
-| **Gamepad** | A Button | B Button | Y Button |
+This enables full on-chain transaction signing from a web app running inside the PSG1 hardware.
 
 ---
 
@@ -114,60 +78,52 @@ if (buttons[3]?.pressed) triggerSkip();       // Y = SKIP
 
 | Layer | Technology |
 |-------|------------|
-| **Blockchain** | Solana (Devnet) |
-| **Smart Contracts** | Anchor Framework 0.32 (Rust) |
-| **Frontend** | Next.js 15 + React 18 |
+| **Frontend** | Next.js 16, React 18 |
 | **Styling** | Tailwind CSS |
 | **Animations** | Framer Motion |
-| **Wallet** | Solana Wallet Adapter |
+| **Blockchain** | Solana Web3.js, Mainnet |
+| **Markets API** | Jupiter Prediction Markets API |
+| **Wallet** | Solana Wallet Adapter + SMWA SDK 2.0.3 |
 | **Gamepad** | Web Gamepad API |
-| **Arcade** | Moddio Embed |
-| **Token** | SPL Token (USDC) |
+| **Audio** | Web Audio API |
+| **Haptics** | Vibration API (`navigator.vibrate`) |
+| **Native Wrapper** | Kotlin, Android WebView |
+| **Deployment** | Vercel |
 
 ---
 
-## Smart Contract
+## Input Methods
 
-```
-Program ID: G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j
-Network: Solana Devnet
-```
+| Method | YES | NO | SKIP |
+|--------|-----|-----|------|
+| **Touch** | Swipe Right | Swipe Left | Swipe Up |
+| **Mouse** | Drag Right | Drag Left | Drag Up |
+| **Keyboard** | Arrow Right | Arrow Left | Arrow Up |
+| **Gamepad** | A Button / D-Right | B Button / D-Left | Y Button / D-Up |
 
-### Instructions
-| Instruction | Description |
-|-------------|-------------|
-| `create_market` | Create prediction market with question & end time |
-| `place_bet` | Bet YES or NO (1-10,000 USDC) |
-| `resolve_market` | Creator decides winning outcome |
-| `claim_winnings` | Winners collect proportional payout |
-
-### Key Innovation: Multiple Bets Per User
-Unlike competitors, users can bet **multiple times** on the same market:
-```rust
-seeds = ["bet", market.key(), user.key(), bet_count.to_le_bytes()]
-```
+Additional gamepad controls: **R1** = Increase bet, **L1** = Decrease bet, **Start** = Connect wallet.
 
 ---
 
-## Gamification Features
+## PSG1 / Gamepad Integration
 
-### Visual Feedback
-- **Confetti Explosions** — Every bet triggers particles
-- **Screen Shake** — Visceral feedback on actions
-- **3D Holographic Cards** — Tilt effects and glare
-- **Streak-Reactive Theme** — Environment changes with streak
+- Native `navigator.getGamepads()` polling at 60fps via `requestAnimationFrame`
+- Full button mapping for Standard Controller Layout (Xbox/PlayStation/PSG1)
+- 500ms debounce to prevent accidental double-bets
+- Visual controller status badge and button hints
+- PSG1-optimized card dimensions (95% width, 420px max)
+- Haptic vibration patterns: short tap (YES), double tap (NO), rising pattern (bet confirmed), celebration (streak milestone)
 
-### Streak System
-| Streak | Theme |
-|--------|-------|
-| 0-4 | Cyan/Pink cyberpunk |
-| 5-9 | Gold/Fire + faster animations |
-| 10+ | **WARP SPEED MODE** |
+---
 
-### Leaderboard
-- Real on-chain data (UserStats accounts)
-- Top 10 players with podium for top 3
-- Net profit, win rate, best streak tracking
+## Gamification
+
+- **Streak System**: Visual escalation at 5x and 10x streaks with gold confetti
+- **Trust Score**: Win-rate health indicator
+- **XP & Levels**: Earned from bets, streaks, daily bonuses
+- **10 Achievements**: Unlockable milestones with toast notifications and XP rewards
+- **Holographic Bet Tickets**: Animated success modal with share functionality
+- **Leaderboard**: Jupiter API-powered rankings by PnL, volume, and win rate
 
 ---
 
@@ -181,41 +137,41 @@ cd solana-saga/frontend
 # Install
 npm install
 
-# Configure
-cp .env.example .env.local
-
 # Run
 npm run dev
 ```
 
-### Test Tokens
-1. **Devnet SOL**: [faucet.solana.com](https://faucet.solana.com/)
-2. **Devnet USDC**: [spl-token-faucet.com](https://spl-token-faucet.com/) (Mint: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`)
+### Environment Variables
+
+```
+NEXT_PUBLIC_SOLANA_RPC_URL=<your mainnet RPC>
+```
+
+### Android Build (PSG1)
+
+```bash
+cd android-wrapper
+./gradlew assembleDebug
+# Install APK on PSG1 or Pixel device
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
 
 ---
 
-## Competitive Edge
+## Hackathon Tracks
 
-| Feature | Solana Saga | Polymarket | Augur |
-|---------|-------------|------------|-------|
-| **Swipe UX** | ✅ | ❌ | ❌ |
-| **Gamepad Support** | ✅ | ❌ | ❌ |
-| **Arcade Mode** | ✅ | ❌ | ❌ |
-| **Social Sharing** | ✅ | Limited | ❌ |
-| **Gamification** | Full suite | None | None |
-| **Speed** | ~400ms | Minutes | 15+ mins |
-| **Multiple Bets** | ✅ | ❌ | ❌ |
+### PSG1-First (Play Solana)
+Hardware-native design with gamepad controls, haptic feedback, SMWA bridge for WebView wallet signing, and screen-optimized UI.
+
+### Gamification, DeFi & Mobile Adventures (Jupiter)
+Jupiter Prediction Markets API integration with swipe UX, achievement system, social sharing with @JupiterExchange branding, and mobile-first design.
 
 ---
 
 <div align="center">
 
-## Built for Indie.fun Hackathon 2025
+**Swipe. Bet. Win.**
 
-**Powered by Solana | Play Solana Ready | Moddio Integrated**
-
-### Swipe. Bet. Win.
-
-[Live Demo](#) | [Smart Contract](https://explorer.solana.com/address/G9tuE1qzcurDeUQcfgkpeEkLgJC3yGsF7crn53pzD79j?cluster=devnet)
+Built for the Play Solana / Jupiter Hackathon 2026
 
 </div>
