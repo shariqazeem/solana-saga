@@ -8,18 +8,16 @@ import {
   Trophy, Crown, Medal, Star, Flame, TrendingUp,
   Zap, Target, Loader2, ArrowLeft, Users
 } from "lucide-react";
-import { usePredictionMarkets, UserStats } from "@/lib/solana/hooks/usePredictionMarkets";
+import { fetchLeaderboards, microUsdToDollars, JupLeaderboardEntry } from "@/lib/jupiter/jupiterPredictionApi";
 import { RetroGrid } from "@/components/RetroGrid";
 
-// Helper to shorten wallet addresses
 const shortenAddress = (address: string) => {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 };
 
-// Generate avatar based on address
 const getAvatar = (address: string, index: number) => {
   const avatars = ["🦈", "💪", "🎲", "🐋", "🌙", "🚀", "💎", "🦍", "🐂", "🥷", "🎮", "🔥", "⚡", "🎯", "👑"];
-  const hash = address.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+  const hash = address.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
   return avatars[(hash + index) % avatars.length];
 };
 
@@ -41,27 +39,28 @@ const getRankIcon = (rank: number) => {
   }
 };
 
+const PERIODS = [
+  { id: "all_time" as const, name: "All Time" },
+  { id: "monthly" as const, name: "Monthly" },
+  { id: "weekly" as const, name: "Weekly" },
+];
+
 export default function LeaderboardPage() {
   const { publicKey } = useWallet();
-  const { fetchAllUserStats } = usePredictionMarkets();
-  const [leaderboardData, setLeaderboardData] = useState<(UserStats & { rank: number })[]>([]);
+  const [leaderboardData, setLeaderboardData] = useState<(JupLeaderboardEntry & { rank: number })[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRank, setUserRank] = useState<(UserStats & { rank: number }) | null>(null);
+  const [activePeriod, setActivePeriod] = useState<"all_time" | "monthly" | "weekly">("all_time");
+  const [summary, setSummary] = useState<{ totalVolumeUsd: string; predictionsCount: number } | null>(null);
 
   useEffect(() => {
     const loadLeaderboard = async () => {
       setLoading(true);
       try {
-        const stats = await fetchAllUserStats();
-        const rankedStats = stats.map((s, i) => ({ ...s, rank: i + 1 }));
-        setLeaderboardData(rankedStats);
-
-        // Find current user's rank
-        if (publicKey) {
-          const userStats = rankedStats.find(s => s.user === publicKey.toString());
-          if (userStats) {
-            setUserRank(userStats);
-          }
+        const res = await fetchLeaderboards(activePeriod, "pnl", 50);
+        const ranked = res.data.map((entry, i) => ({ ...entry, rank: i + 1 }));
+        setLeaderboardData(ranked);
+        if (res.summary) {
+          setSummary(res.summary[activePeriod]);
         }
       } catch (error) {
         console.error("Error loading leaderboard:", error);
@@ -71,17 +70,15 @@ export default function LeaderboardPage() {
     };
 
     loadLeaderboard();
-  }, [fetchAllUserStats, publicKey]);
+  }, [activePeriod]);
 
-  // Get top 3 for podium (or pad with empty if less than 3)
   const top3 = leaderboardData.slice(0, 3);
-  while (top3.length < 3) {
-    top3.push({ rank: top3.length + 1, user: "", publicKey: "", totalBets: 0, totalWagered: 0, totalWon: 0, totalLost: 0, winCount: 0, lossCount: 0, currentStreak: 0, bestStreak: 0, netProfit: 0 });
-  }
+  const userEntry = publicKey
+    ? leaderboardData.find(e => e.ownerPubkey === publicKey.toString())
+    : null;
 
   return (
     <div className="min-h-screen bg-[#050505] relative">
-      {/* Background */}
       <RetroGrid streak={0} />
 
       {/* Top Bar */}
@@ -107,13 +104,13 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 pt-20 pb-8 px-4 min-h-screen">
+      <div className="relative z-10 pt-20 pb-24 px-4 min-h-screen">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
+            className="text-center mb-6"
           >
             <motion.div
               animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
@@ -123,15 +120,42 @@ export default function LeaderboardPage() {
               <Trophy className="w-16 h-16 text-[#ffd700]" />
             </motion.div>
             <p className="text-gray-400">
-              The greatest predictors on Solana
+              The greatest predictors on Jupiter
             </p>
-            <div className="flex items-center justify-center gap-2 mt-2 text-sm text-gray-500">
-              <Users className="w-4 h-4" />
-              <span>{leaderboardData.length} players ranked</span>
-            </div>
+            {summary && (
+              <div className="flex items-center justify-center gap-4 mt-2 text-sm text-gray-500">
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  <span>{leaderboardData.length} traders ranked</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>${microUsdToDollars(summary.totalVolumeUsd).toLocaleString("en-US", { maximumFractionDigits: 0 })} volume</span>
+                </div>
+              </div>
+            )}
           </motion.div>
 
-          {/* Loading State */}
+          {/* Period Tabs */}
+          <div className="flex justify-center gap-2 mb-8">
+            {PERIODS.map((period) => (
+              <motion.button
+                key={period.id}
+                onClick={() => setActivePeriod(period.id)}
+                className={`px-4 py-2 rounded-xl font-game text-xs transition-all ${
+                  activePeriod === period.id
+                    ? "bg-[#ffd700]/20 border border-[#ffd700]/50 text-[#ffd700]"
+                    : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10"
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {period.name}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Loading */}
           {loading && (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 text-[#ffd700] animate-spin" />
@@ -172,7 +196,7 @@ export default function LeaderboardPage() {
                 className="flex justify-center items-end gap-3 mb-8 px-4"
               >
                 {/* 2nd Place */}
-                {top3[1] && top3[1].user && (
+                {top3[1] && (
                   <div className="flex-1 max-w-[160px]">
                     <motion.div
                       initial={{ y: 50, opacity: 0 }}
@@ -185,11 +209,11 @@ export default function LeaderboardPage() {
                       }}
                     >
                       <div className="absolute top-0 left-0 right-0 h-1 bg-[#c0c0c0]" />
-                      <div className="text-3xl mb-1">{getAvatar(top3[1].user, 1)}</div>
+                      <div className="text-3xl mb-1">{getAvatar(top3[1].ownerPubkey, 1)}</div>
                       <Medal className="w-5 h-5 text-[#c0c0c0] mx-auto mb-1" />
-                      <div className="font-game text-white text-xs truncate">{shortenAddress(top3[1].user)}</div>
-                      <div className="text-lg font-numbers font-bold text-[#00ff88]">
-                        {top3[1].netProfit >= 0 ? '+' : ''}${top3[1].netProfit.toFixed(0)}
+                      <div className="font-game text-white text-xs truncate">{shortenAddress(top3[1].ownerPubkey)}</div>
+                      <div className={`text-lg font-numbers font-bold ${microUsdToDollars(top3[1].realizedPnlUsd) >= 0 ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
+                        {microUsdToDollars(top3[1].realizedPnlUsd) >= 0 ? "+" : ""}${microUsdToDollars(top3[1].realizedPnlUsd).toFixed(0)}
                       </div>
                       <div className="text-[10px] text-gray-400">2nd Place</div>
                     </motion.div>
@@ -198,7 +222,7 @@ export default function LeaderboardPage() {
                 )}
 
                 {/* 1st Place */}
-                {top3[0] && top3[0].user && (
+                {top3[0] && (
                   <div className="flex-1 max-w-[180px]">
                     <motion.div
                       initial={{ y: 50, opacity: 0 }}
@@ -216,11 +240,11 @@ export default function LeaderboardPage() {
                         animate={{ opacity: [1, 0.5, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
                       />
-                      <div className="text-4xl mb-1">{getAvatar(top3[0].user, 0)}</div>
+                      <div className="text-4xl mb-1">{getAvatar(top3[0].ownerPubkey, 0)}</div>
                       <Crown className="w-6 h-6 text-[#ffd700] mx-auto mb-1" />
-                      <div className="font-game text-white text-sm truncate">{shortenAddress(top3[0].user)}</div>
-                      <div className="text-2xl font-numbers font-bold text-[#00ff88]">
-                        {top3[0].netProfit >= 0 ? '+' : ''}${top3[0].netProfit.toFixed(0)}
+                      <div className="font-game text-white text-sm truncate">{shortenAddress(top3[0].ownerPubkey)}</div>
+                      <div className={`text-2xl font-numbers font-bold ${microUsdToDollars(top3[0].realizedPnlUsd) >= 0 ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
+                        {microUsdToDollars(top3[0].realizedPnlUsd) >= 0 ? "+" : ""}${microUsdToDollars(top3[0].realizedPnlUsd).toFixed(0)}
                       </div>
                       <div className="text-xs text-[#ffd700]">Champion</div>
                     </motion.div>
@@ -229,7 +253,7 @@ export default function LeaderboardPage() {
                 )}
 
                 {/* 3rd Place */}
-                {top3[2] && top3[2].user && (
+                {top3[2] && (
                   <div className="flex-1 max-w-[160px]">
                     <motion.div
                       initial={{ y: 50, opacity: 0 }}
@@ -242,11 +266,11 @@ export default function LeaderboardPage() {
                       }}
                     >
                       <div className="absolute top-0 left-0 right-0 h-1 bg-[#cd7f32]" />
-                      <div className="text-3xl mb-1">{getAvatar(top3[2].user, 2)}</div>
+                      <div className="text-3xl mb-1">{getAvatar(top3[2].ownerPubkey, 2)}</div>
                       <Medal className="w-5 h-5 text-[#cd7f32] mx-auto mb-1" />
-                      <div className="font-game text-white text-xs truncate">{shortenAddress(top3[2].user)}</div>
-                      <div className="text-lg font-numbers font-bold text-[#00ff88]">
-                        {top3[2].netProfit >= 0 ? '+' : ''}${top3[2].netProfit.toFixed(0)}
+                      <div className="font-game text-white text-xs truncate">{shortenAddress(top3[2].ownerPubkey)}</div>
+                      <div className={`text-lg font-numbers font-bold ${microUsdToDollars(top3[2].realizedPnlUsd) >= 0 ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
+                        {microUsdToDollars(top3[2].realizedPnlUsd) >= 0 ? "+" : ""}${microUsdToDollars(top3[2].realizedPnlUsd).toFixed(0)}
                       </div>
                       <div className="text-[10px] text-gray-400">3rd Place</div>
                     </motion.div>
@@ -255,7 +279,7 @@ export default function LeaderboardPage() {
                 )}
               </motion.div>
 
-              {/* Full Leaderboard */}
+              {/* Full Leaderboard Table */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -265,28 +289,28 @@ export default function LeaderboardPage() {
                 {/* Table Header */}
                 <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-white/5 border-b border-white/10 text-[10px] font-game text-gray-400">
                   <div className="col-span-1">Rank</div>
-                  <div className="col-span-4">Player</div>
+                  <div className="col-span-4">Trader</div>
                   <div className="col-span-2 text-center">Win Rate</div>
-                  <div className="col-span-2 text-center hidden md:block">Streak</div>
-                  <div className="col-span-3 text-right">Profit</div>
+                  <div className="col-span-2 text-center hidden md:block">Volume</div>
+                  <div className="col-span-3 text-right">PnL</div>
                 </div>
 
                 {/* Rows */}
                 <div className="divide-y divide-white/5">
-                  {leaderboardData.slice(0, 10).map((player, index) => {
+                  {leaderboardData.slice(0, 20).map((player, index) => {
                     const style = getRankStyle(player.rank);
                     const RankIcon = getRankIcon(player.rank);
-                    const winRate = player.totalBets > 0
-                      ? Math.round((player.winCount / player.totalBets) * 100)
-                      : 0;
-                    const isCurrentUser = publicKey && player.user === publicKey.toString();
+                    const pnl = microUsdToDollars(player.realizedPnlUsd);
+                    const volume = microUsdToDollars(player.totalVolumeUsd);
+                    const winRate = player.winRatePct ? parseFloat(player.winRatePct) : 0;
+                    const isCurrentUser = publicKey && player.ownerPubkey === publicKey.toString();
 
                     return (
                       <motion.div
-                        key={player.publicKey}
+                        key={player.ownerPubkey}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + index * 0.05 }}
+                        transition={{ delay: 0.1 + index * 0.03 }}
                         className={`grid grid-cols-12 gap-2 px-4 py-4 items-center hover:bg-white/5 transition-colors group ${
                           player.rank <= 3 ? `bg-gradient-to-r ${style.bg}` : ""
                         } ${isCurrentUser ? "ring-1 ring-[#00f0ff]/50" : ""}`}
@@ -314,13 +338,13 @@ export default function LeaderboardPage() {
 
                         {/* Player */}
                         <div className="col-span-4 flex items-center gap-2">
-                          <div className="text-xl">{getAvatar(player.user, index)}</div>
+                          <div className="text-xl">{getAvatar(player.ownerPubkey, index)}</div>
                           <div>
                             <div className={`font-game text-xs group-hover:text-[#00f0ff] transition-colors ${isCurrentUser ? "text-[#00f0ff]" : "text-white"}`}>
-                              {isCurrentUser ? "You" : shortenAddress(player.user)}
+                              {isCurrentUser ? "You" : shortenAddress(player.ownerPubkey)}
                             </div>
                             <div className="text-[10px] text-gray-500">
-                              {player.totalBets} bets
+                              {player.predictionsCount} bets
                             </div>
                           </div>
                         </div>
@@ -329,26 +353,21 @@ export default function LeaderboardPage() {
                         <div className="col-span-2 text-center">
                           <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#00ff88]/10">
                             <Target className="w-3 h-3 text-[#00ff88]" />
-                            <span className="font-numbers font-bold text-[#00ff88] text-xs">{winRate}%</span>
+                            <span className="font-numbers font-bold text-[#00ff88] text-xs">{winRate.toFixed(0)}%</span>
                           </div>
                         </div>
 
-                        {/* Streak */}
+                        {/* Volume */}
                         <div className="col-span-2 text-center hidden md:block">
-                          {player.currentStreak > 0 ? (
-                            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#ff8800]/10">
-                              <Flame className="w-3 h-3 text-[#ff8800]" />
-                              <span className="font-numbers font-bold text-[#ff8800] text-xs">{player.currentStreak}</span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-500 text-xs">-</span>
-                          )}
+                          <span className="text-xs text-gray-400 font-numbers">
+                            ${volume.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                          </span>
                         </div>
 
-                        {/* Profit */}
+                        {/* PnL */}
                         <div className="col-span-3 text-right">
-                          <div className={`text-lg font-numbers font-bold ${player.netProfit >= 0 ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
-                            {player.netProfit >= 0 ? '+' : ''}${player.netProfit.toFixed(2)}
+                          <div className={`text-lg font-numbers font-bold ${pnl >= 0 ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
+                            {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
                           </div>
                         </div>
                       </motion.div>
@@ -356,43 +375,38 @@ export default function LeaderboardPage() {
                   })}
                 </div>
 
-                {/* Your Position (if not in top 10) */}
-                {userRank && userRank.rank > 10 && (
+                {/* Your Position (if not in top 20) */}
+                {userEntry && userEntry.rank > 20 && (
                   <div className="px-4 py-4 bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00aa]/10 border-t border-[#00f0ff]/30">
                     <div className="grid grid-cols-12 gap-2 items-center">
                       <div className="col-span-1">
                         <div className="w-8 h-8 rounded-lg bg-[#00f0ff]/20 border border-[#00f0ff]/50 flex items-center justify-center font-numbers font-bold text-[#00f0ff] text-sm">
-                          {userRank.rank}
+                          {userEntry.rank}
                         </div>
                       </div>
                       <div className="col-span-4 flex items-center gap-2">
                         <div className="text-xl">🎮</div>
                         <div>
                           <div className="font-game text-[#00f0ff] text-xs">You</div>
-                          <div className="text-[10px] text-gray-500">{userRank.totalBets} bets</div>
+                          <div className="text-[10px] text-gray-500">{userEntry.predictionsCount} bets</div>
                         </div>
                       </div>
                       <div className="col-span-2 text-center">
                         <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#00ff88]/10">
                           <Target className="w-3 h-3 text-[#00ff88]" />
                           <span className="font-numbers font-bold text-[#00ff88] text-xs">
-                            {userRank.totalBets > 0 ? Math.round((userRank.winCount / userRank.totalBets) * 100) : 0}%
+                            {userEntry.winRatePct ? parseFloat(userEntry.winRatePct).toFixed(0) : 0}%
                           </span>
                         </div>
                       </div>
                       <div className="col-span-2 text-center hidden md:block">
-                        {userRank.currentStreak > 0 ? (
-                          <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#ff8800]/10">
-                            <Flame className="w-3 h-3 text-[#ff8800]" />
-                            <span className="font-numbers font-bold text-[#ff8800] text-xs">{userRank.currentStreak}</span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
+                        <span className="text-xs text-gray-400 font-numbers">
+                          ${microUsdToDollars(userEntry.totalVolumeUsd).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                        </span>
                       </div>
                       <div className="col-span-3 text-right">
-                        <div className={`text-lg font-numbers font-bold ${userRank.netProfit >= 0 ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
-                          {userRank.netProfit >= 0 ? '+' : ''}${userRank.netProfit.toFixed(2)}
+                        <div className={`text-lg font-numbers font-bold ${microUsdToDollars(userEntry.realizedPnlUsd) >= 0 ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
+                          {microUsdToDollars(userEntry.realizedPnlUsd) >= 0 ? "+" : ""}${microUsdToDollars(userEntry.realizedPnlUsd).toFixed(2)}
                         </div>
                       </div>
                     </div>
@@ -400,7 +414,7 @@ export default function LeaderboardPage() {
                 )}
               </motion.div>
 
-              {/* Climb the Ranks CTA */}
+              {/* CTA */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -425,6 +439,11 @@ export default function LeaderboardPage() {
               </motion.div>
             </>
           )}
+
+          {/* Jupiter Branding Footer */}
+          <div className="mt-8 text-center text-[10px] text-gray-600">
+            <span className="text-[#c7f83e]">Powered by Jupiter</span> Prediction Markets on <span className="text-[#14F195]">Solana</span>
+          </div>
         </div>
       </div>
     </div>

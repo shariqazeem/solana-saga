@@ -259,8 +259,8 @@ function updateLevel(data: GameData): void {
   }
 }
 
-// Check and award achievements
-function checkAchievements(data: GameData): void {
+// Check and award achievements — returns newly unlocked achievement IDs
+export function checkAchievements(data: GameData): string[] {
   const newAchievements: string[] = [];
 
   // Win streaks
@@ -304,6 +304,8 @@ function checkAchievements(data: GameData): void {
     data.credits += 100; // Achievement reward
     data.xp += 200;
   }
+
+  return newAchievements;
 }
 
 // Get leaderboard (from all local data - in production this would be a server)

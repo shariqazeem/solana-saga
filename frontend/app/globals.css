@@ -1655,3 +1655,62 @@
   0% { top: -2px; }
   100% { top: 100vh; }
 }
+
+/* ========== SAFE AREA / BOTTOM NAV SPACING ========== */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Ensure body content doesn't hide behind bottom nav */
+.has-bottom-nav {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ========== JUPITER UNIFIED WALLET BUTTON ========== */
+.jupiter-wallet-btn {
+  font-family: var(--font-game) !important;
+  background: linear-gradient(135deg, #c7f83e 0%, #00F3FF 100%) !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 20px !important;
+  font-size: 13px !important;
+  box-shadow:
+    0 4px 0 #8ab82a,
+    0 8px 20px rgba(199, 248, 62, 0.3) !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.jupiter-wallet-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow:
+    0 6px 0 #8ab82a,
+    0 12px 30px rgba(199, 248, 62, 0.4) !important;
+}
+
+.jupiter-wallet-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 2px 0 #8ab82a !important;
+}
+
+/* Jupiter Unified Wallet Modal overrides */
+[class*="UnifiedWalletModal"] {
+  background: var(--bg-secondary) !important;
+  border: 1px solid rgba(199, 248, 62, 0.4) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 60px rgba(199, 248, 62, 0.15) !important;
+}
+
+[class*="UnifiedWalletModal"] button {
+  font-family: var(--font-body) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+[class*="UnifiedWalletModal"] button:hover {
+  background: rgba(199, 248, 62, 0.1) !important;
+}

@@ -1,15 +1,14 @@
-import { PublicKey, clusterApiUrl } from "@solana/web3.js";
-
-// Program ID from your deployment
-export const PROGRAM_ID = new PublicKey(
-  process.env.NEXT_PUBLIC_PROGRAM_ID || "11111111111111111111111111111111"
-);
-
 // Solana network configuration
-export const SOLANA_NETWORK = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet") as "devnet" | "mainnet-beta" | "testnet";
+export const SOLANA_NETWORK = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "mainnet-beta") as "devnet" | "mainnet-beta" | "testnet";
 
-export const RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || clusterApiUrl(SOLANA_NETWORK);
-
-export const isConfigured = () => {
-  return PROGRAM_ID.toString() !== "11111111111111111111111111111111";
+const DEFAULT_RPC_URLS: Record<string, string> = {
+  "mainnet-beta": "https://api.mainnet-beta.solana.com",
+  "devnet": "https://api.devnet.solana.com",
+  "testnet": "https://api.testnet.solana.com",
 };
+
+export const RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || DEFAULT_RPC_URLS[SOLANA_NETWORK] || "https://api.mainnet-beta.solana.com";
+
+// Jupiter Prediction Market API
+export const JUP_API_BASE_URL = "https://api.jup.ag/prediction/v1";
+export const JUP_API_KEY = process.env.NEXT_PUBLIC_JUP_PREDICTION_API_KEY || "";

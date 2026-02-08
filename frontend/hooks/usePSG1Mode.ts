@@ -116,4 +116,7 @@ export const PSG1_BUTTON_LABELS = {
   YES: { button: "A", dpad: "→", color: "#00FF88" },
   NO: { button: "B", dpad: "←", color: "#FF0044" },
   SKIP: { button: "Y", dpad: "↑", color: "#FFD700" },
+  BET_UP: { button: "R1", dpad: "", color: "#00F3FF" },
+  BET_DOWN: { button: "L1", dpad: "↓", color: "#00F3FF" },
+  CONNECT: { button: "START", dpad: "", color: "#FF00FF" },
 } as const;

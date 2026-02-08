@@ -4,6 +4,7 @@ import "./globals.css";
 import { SmartWalletProvider } from "@/providers/SmartWalletProvider";
 import { TransactionStateProvider } from "@/providers/TransactionStateProvider";
 import { TransactionOverlay } from "@/components/TransactionOverlay";
+import { BottomNav } from "@/components/BottomNav";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,9 +23,10 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://frontend-alpha-khaki.vercel.app"),
   title: "Solana Saga | Swipe to Predict",
-  description: "The Tinder of Prediction Markets - Swipe YES or NO on markets powered by Solana. Built for PSG1 gaming handheld.",
-  keywords: ["prediction market", "solana", "crypto", "defi", "web3", "blockchain", "psg1", "gaming", "play solana"],
+  description: "The Tinder of Prediction Markets - Swipe YES or NO on Jupiter Prediction Markets. Built for PSG1 gaming handheld.",
+  keywords: ["prediction market", "solana", "crypto", "defi", "web3", "blockchain", "psg1", "gaming", "play solana", "jupiter"],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -79,11 +81,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} font-sans antialiased bg-[#050505] text-white`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} font-sans antialiased bg-[#050505] text-white`}>
         <SmartWalletProvider>
           <TransactionStateProvider>
             {children}
             <TransactionOverlay />
+            <BottomNav />
           </TransactionStateProvider>
         </SmartWalletProvider>
       </body>
