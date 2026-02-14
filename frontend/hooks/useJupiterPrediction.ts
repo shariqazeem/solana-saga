@@ -198,17 +198,37 @@ export function useJupiterPrediction() {
         setEvents(result.data);
 
         // Flatten: each event has multiple markets, create Market for each
-        const allMarkets: Market[] = [];
+        // Use round-robin interleaving so you see diverse events while swiping
+        // instead of 5 markets from the same event in a row
+        const marketsByEvent: Market[][] = [];
         for (const event of result.data) {
           if (!event.markets) continue;
+          const eventMarkets: Market[] = [];
           for (const market of event.markets) {
             if (market.status === "open") {
-              allMarkets.push(transformToMarket(market, event));
+              eventMarkets.push(transformToMarket(market, event));
+            }
+          }
+          if (eventMarkets.length > 0) {
+            marketsByEvent.push(eventMarkets);
+          }
+        }
+
+        // Round-robin: pick one market from each event in turn
+        const interleaved: Market[] = [];
+        let maxLen = 0;
+        for (const arr of marketsByEvent) {
+          if (arr.length > maxLen) maxLen = arr.length;
+        }
+        for (let i = 0; i < maxLen; i++) {
+          for (const arr of marketsByEvent) {
+            if (i < arr.length) {
+              interleaved.push(arr[i]);
             }
           }
         }
 
-        setMarkets(allMarkets);
+        setMarkets(interleaved);
         initialLoadDoneRef.current = true;
       } catch (err: any) {
         console.error("Error fetching Jupiter events:", err);
