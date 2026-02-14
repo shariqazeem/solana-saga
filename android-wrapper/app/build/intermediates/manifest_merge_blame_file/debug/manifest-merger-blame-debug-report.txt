@@ -1,0 +1,299 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.solanasaga.app"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:4:5-67
+11-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:5:5-79
+12-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:5:22-76
+13
+14    <!-- Required on Android 11+ to discover wallet apps for deep linking -->
+15    <queries>
+15-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:8:5-47:15
+16
+17        <!-- Solana Mobile Wallet Adapter protocol -->
+18        <intent>
+18-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:10:9-13:18
+19            <action android:name="android.intent.action.VIEW" />
+19-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+19-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+20
+21            <data android:scheme="solana-wallet" />
+21-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+21-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+22        </intent>
+23        <!-- Phantom wallet -->
+24        <intent>
+24-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:15:9-18:18
+25            <action android:name="android.intent.action.VIEW" />
+25-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+25-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+26
+27            <data android:scheme="phantom" />
+27-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+27-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+28        </intent>
+29
+30        <package android:name="app.phantom" />
+30-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:19:9-47
+30-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:19:18-44
+31        <!-- Solflare wallet -->
+32        <intent>
+32-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:21:9-24:18
+33            <action android:name="android.intent.action.VIEW" />
+33-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+33-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+34
+35            <data android:scheme="solflare" />
+35-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+35-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+36        </intent>
+37
+38        <package android:name="com.solflare.mobile" />
+38-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:25:9-55
+38-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:25:18-52
+39        <!-- Jupiter Mobile -->
+40        <intent>
+40-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:27:9-30:18
+41            <action android:name="android.intent.action.VIEW" />
+41-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+41-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+42
+43            <data android:scheme="jupiter" />
+43-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+43-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+44        </intent>
+45
+46        <package android:name="ag.jup.jupiter.android" />
+46-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:31:9-58
+46-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:31:18-55
+47        <!-- WalletConnect -->
+48        <intent>
+48-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:33:9-36:18
+49            <action android:name="android.intent.action.VIEW" />
+49-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+49-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+50
+51            <data android:scheme="wc" />
+51-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+51-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+52        </intent>
+53        <!-- Generic intent scheme (for intent:// URIs) -->
+54        <intent>
+54-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:38:9-41:18
+55            <action android:name="android.intent.action.VIEW" />
+55-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+55-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+56
+57            <data android:scheme="intent" />
+57-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+57-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+58        </intent>
+59        <!-- HTTPS links (for fallback store links) -->
+60        <intent>
+60-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:43:9-46:18
+61            <action android:name="android.intent.action.VIEW" />
+61-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+61-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+62
+63            <data android:scheme="https" />
+63-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+63-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+64        </intent>
+65        <!-- Support querying whether an app with the wallet endpoint role is available -->
+66        <intent>
+66-->[com.solanamobile:mobile-wallet-adapter-clientlib:2.0.3] /Users/macbookair/.gradle/caches/transforms-3/3dc282c702f237b6cfdeb94fd8a1454d/transformed/mobile-wallet-adapter-clientlib-2.0.3/AndroidManifest.xml:14:9-20:18
+67            <action android:name="android.intent.action.VIEW" />
+67-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:13-65
+67-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:11:21-62
+68
+69            <category android:name="android.intent.category.BROWSABLE" />
+69-->[com.solanamobile:mobile-wallet-adapter-clientlib:2.0.3] /Users/macbookair/.gradle/caches/transforms-3/3dc282c702f237b6cfdeb94fd8a1454d/transformed/mobile-wallet-adapter-clientlib-2.0.3/AndroidManifest.xml:17:13-74
+69-->[com.solanamobile:mobile-wallet-adapter-clientlib:2.0.3] /Users/macbookair/.gradle/caches/transforms-3/3dc282c702f237b6cfdeb94fd8a1454d/transformed/mobile-wallet-adapter-clientlib-2.0.3/AndroidManifest.xml:17:23-71
+70
+71            <data android:scheme="solana-wallet" />
+71-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:13-52
+71-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:12:19-49
+72        </intent>
+73    </queries>
+74
+75    <uses-permission android:name="android.permission.REORDER_TASKS" />
+75-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:24:5-72
+75-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:24:22-69
+76
+77    <permission
+77-->[androidx.core:core:1.12.0] /Users/macbookair/.gradle/caches/transforms-3/4dde0fce54f6341b6da19770f76a2130/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+78        android:name="com.solanasaga.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+78-->[androidx.core:core:1.12.0] /Users/macbookair/.gradle/caches/transforms-3/4dde0fce54f6341b6da19770f76a2130/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+79        android:protectionLevel="signature" />
+79-->[androidx.core:core:1.12.0] /Users/macbookair/.gradle/caches/transforms-3/4dde0fce54f6341b6da19770f76a2130/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+80
+81    <uses-permission android:name="com.solanasaga.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+81-->[androidx.core:core:1.12.0] /Users/macbookair/.gradle/caches/transforms-3/4dde0fce54f6341b6da19770f76a2130/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+81-->[androidx.core:core:1.12.0] /Users/macbookair/.gradle/caches/transforms-3/4dde0fce54f6341b6da19770f76a2130/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+82
+83    <application
+83-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:49:5-68:19
+84        android:allowBackup="true"
+84-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:50:9-35
+85        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+85-->[androidx.core:core:1.12.0] /Users/macbookair/.gradle/caches/transforms-3/4dde0fce54f6341b6da19770f76a2130/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+86        android:debuggable="true"
+87        android:extractNativeLibs="false"
+88        android:icon="@drawable/ic_launcher"
+88-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:51:9-45
+89        android:label="Solana Saga"
+89-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:52:9-36
+90        android:theme="@style/AppTheme"
+90-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:53:9-40
+91        android:usesCleartextTraffic="true" >
+91-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:54:9-44
+92        <activity
+92-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:56:9-67:20
+93            android:name="com.solanasaga.app.MainActivity"
+93-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:57:13-41
+94            android:configChanges="orientation|screenSize|keyboardHidden"
+94-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:59:13-74
+95            android:exported="true"
+95-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:58:13-36
+96            android:screenOrientation="portrait"
+96-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:60:13-49
+97            android:windowSoftInputMode="adjustResize" >
+97-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:61:13-55
+98            <intent-filter>
+98-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:63:13-66:29
+99                <action android:name="android.intent.action.MAIN" />
+99-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:64:17-69
+99-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:64:25-66
+100
+101                <category android:name="android.intent.category.LAUNCHER" />
+101-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:17-77
+101-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:27-74
+102            </intent-filter>
+103        </activity>
+104
+105        <provider
+105-->[androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+106            android:name="androidx.startup.InitializationProvider"
+106-->[androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:25:13-67
+107            android:authorities="com.solanasaga.app.androidx-startup"
+107-->[androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:26:13-68
+108            android:exported="false" >
+108-->[androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:27:13-37
+109            <meta-data
+109-->[androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+110                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+110-->[androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:30:17-75
+111                android:value="androidx.startup" />
+111-->[androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:31:17-49
+112            <meta-data
+112-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/macbookair/.gradle/caches/transforms-3/f32f8a6bb35ea86a0bdc621e810ebd3e/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+113                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+113-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/macbookair/.gradle/caches/transforms-3/f32f8a6bb35ea86a0bdc621e810ebd3e/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+114                android:value="androidx.startup" />
+114-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/macbookair/.gradle/caches/transforms-3/f32f8a6bb35ea86a0bdc621e810ebd3e/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+115            <meta-data
+115-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+116                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+116-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+117                android:value="androidx.startup" />
+117-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+118        </provider>
+119
+120        <activity
+120-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:27:9-34:20
+121            android:name="androidx.test.core.app.InstrumentationActivityInvoker$BootstrapActivity"
+121-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:28:13-99
+122            android:exported="true"
+122-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:29:13-36
+123            android:theme="@style/WhiteBackgroundTheme" >
+123-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:30:13-56
+124            <intent-filter android:priority="-100" >
+124-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:31:13-33:29
+124-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:31:28-51
+125                <category android:name="android.intent.category.LAUNCHER" />
+125-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:17-77
+125-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:27-74
+126            </intent-filter>
+127        </activity>
+128        <activity
+128-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:35:9-42:20
+129            android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity"
+129-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:36:13-95
+130            android:exported="true"
+130-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:37:13-36
+131            android:theme="@style/WhiteBackgroundTheme" >
+131-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:38:13-56
+132            <intent-filter android:priority="-100" >
+132-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:31:13-33:29
+132-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:31:28-51
+133                <category android:name="android.intent.category.LAUNCHER" />
+133-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:17-77
+133-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:27-74
+134            </intent-filter>
+135        </activity>
+136        <activity
+136-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:43:9-50:20
+137            android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyFloatingActivity"
+137-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:44:13-103
+138            android:exported="true"
+138-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:45:13-36
+139            android:theme="@style/WhiteBackgroundDialogTheme" >
+139-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:46:13-62
+140            <intent-filter android:priority="-100" >
+140-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:31:13-33:29
+140-->[androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:31:28-51
+141                <category android:name="android.intent.category.LAUNCHER" />
+141-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:17-77
+141-->/Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:27-74
+142            </intent-filter>
+143        </activity>
+144
+145        <receiver
+145-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+146            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+146-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+147            android:directBootAware="false"
+147-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+148            android:enabled="true"
+148-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+149            android:exported="true"
+149-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+150            android:permission="android.permission.DUMP" >
+150-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+151            <intent-filter>
+151-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+152                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+152-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+152-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+153            </intent-filter>
+154            <intent-filter>
+154-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+155                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+155-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+155-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+156            </intent-filter>
+157            <intent-filter>
+157-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+158                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+158-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+158-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+159            </intent-filter>
+160            <intent-filter>
+160-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+161                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+161-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+161-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/macbookair/.gradle/caches/transforms-3/19e15dbf13abf551346cc809eecbb624/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+162            </intent-filter>
+163        </receiver>
+164    </application>
+165
+166</manifest>
