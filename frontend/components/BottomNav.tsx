@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Crosshair, LayoutGrid, Trophy, Gift } from "lucide-react";
+import { Crosshair, LayoutGrid, Trophy, Gift, User } from "lucide-react";
 
 const NAV_ITEMS = [
   { name: "Arena", href: "/", icon: Crosshair, color: "#00F3FF" },
   { name: "Markets", href: "/markets", icon: LayoutGrid, color: "#00FF88" },
   { name: "Bets", href: "/my-bets", icon: Gift, color: "#FF00AA" },
   { name: "Ranks", href: "/leaderboard", icon: Trophy, color: "#FFD700" },
+  { name: "Profile", href: "/profile", icon: User, color: "#FF6B00" },
 ];
 
 const GAMEPAD_SELECT = 8;

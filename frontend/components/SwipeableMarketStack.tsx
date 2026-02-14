@@ -20,6 +20,8 @@ import { Market } from "@/hooks/useJupiterPrediction";
 import { usePSG1Mode } from "@/hooks/usePSG1Mode";
 import { useHaptics } from "@/hooks/useHaptics";
 import { PSG1ControllerHints } from "./PSG1ControllerHints";
+import { useTokenPrices } from "@/hooks/useTokenPrices";
+import { detectTokenFromQuestion, formatPrice } from "@/lib/jupiter/jupiterPriceApi";
 
 // Gamepad button mappings (Standard Controller Layout / PSG1)
 const GAMEPAD_BUTTONS = {
@@ -83,6 +85,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   const { playHover, playSwipeYes, playSwipeNo, playSkip, playBet } = useSoundEffects(soundEnabled);
   const psg1Config = usePSG1Mode();
   const { vibrateSwipeYes, vibrateSwipeNo, vibrateSkip } = useHaptics();
+  const { prices: tokenPrices } = useTokenPrices();
 
   // Swipe motion values
   const x = useMotionValue(0);
@@ -537,6 +540,17 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                       <Flame className="w-3 h-3" />
                     </span>
                   )}
+                  {/* Live token price badge for crypto markets */}
+                  {(() => {
+                    const token = detectTokenFromQuestion(currentMarket.question);
+                    const price = token ? tokenPrices[token] : null;
+                    if (!token || !price) return null;
+                    return (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#00F3FF]/10 border border-[#00F3FF]/20 text-[9px] font-mono font-bold text-[#00F3FF]">
+                        {token} ${formatPrice(price.price)}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] md:text-xs font-mono font-bold ${isUrgent ? "bg-red-950/30 border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.2)]" : "bg-white/5 border-white/10 text-gray-400"

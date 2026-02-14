@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings, Shield, BarChart3, Target, Gift, Gamepad2, Crown } from "lucide-react";
+import { Flame, Wallet, Zap, Trophy, Volume2, VolumeX, X, Settings, Shield, BarChart3, Target, Gift, Gamepad2, Crown, Scroll } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
@@ -26,6 +26,8 @@ interface GameOverlayProps {
   onOpenArcade?: () => void;
   playerLevel?: number;
   xpProgress?: number;
+  missionsCount?: string;
+  onOpenMissions?: () => void;
 }
 
 interface Notification {
@@ -49,6 +51,8 @@ export function GameOverlay({
   onOpenArcade,
   playerLevel = 1,
   xpProgress = 0,
+  missionsCount,
+  onOpenMissions,
 }: GameOverlayProps) {
   const { connected } = useWallet();
   const wallet = useAnchorWallet();
@@ -229,6 +233,26 @@ export function GameOverlay({
                 />
               </div>
             </motion.div>
+
+            {/* Missions Button */}
+            {connected && onOpenMissions && (
+              <motion.button
+                onClick={onOpenMissions}
+                className="relative w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border transition-all bg-[#FFD700]/10 border-[#FFD700]/30 text-[#FFD700] hover:bg-[#FFD700]/20"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.25 }}
+              >
+                <Scroll className="w-4 h-4 md:w-5 md:h-5" />
+                {missionsCount && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FFD700] text-black text-[8px] font-bold flex items-center justify-center">
+                    {missionsCount}
+                  </span>
+                )}
+              </motion.button>
+            )}
 
             {/* Settings Button */}
             {showAdmin && (

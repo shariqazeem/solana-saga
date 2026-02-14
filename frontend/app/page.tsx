@@ -23,6 +23,8 @@ import { AchievementToast } from "@/components/AchievementToast";
 import { checkAchievements, getGameData, claimDailyBonus, getXpForNextLevel } from "@/lib/gameCredits";
 import confetti from "canvas-confetti";
 import { microUsdToDollars } from "@/lib/jupiter/jupiterPredictionApi";
+import { useMissions } from "@/hooks/useMissions";
+import { MissionsPanel } from "@/components/MissionsPanel";
 
 const CATEGORIES: { label: string; value: EventCategory }[] = [
   { label: "ALL", value: "all" },
@@ -105,6 +107,12 @@ export default function ArenaPage() {
   // Daily bonus state
   const [showDailyBonus, setShowDailyBonus] = useState(false);
   const [dailyBonusAmount, setDailyBonusAmount] = useState(0);
+
+  // Missions
+  const walletAddress = publicKey?.toBase58() || null;
+  const { missions, completedCount, allComplete, updateProgress, setProgress } = useMissions(walletAddress);
+  const [showMissions, setShowMissions] = useState(false);
+  const missionsRemaining = missions.length - completedCount;
 
   // Derive XP and Level from Jupiter profile + local game data
   const { playerLevel, playerXp, xpForNextLevel, xpProgress } = useMemo(() => {
@@ -239,6 +247,15 @@ export default function ArenaPage() {
           }
         }
 
+        // Update missions
+        updateProgress("first_blood");
+        if (market) {
+          updateProgress("diversify");
+        }
+        if (amount >= 10) {
+          updateProgress("whale_watch");
+        }
+
         if (market) {
           const multiplier = prediction
             ? market.yesMultiplier
@@ -255,7 +272,11 @@ export default function ArenaPage() {
           });
         }
 
-        setStreak((prev) => prev + 1);
+        setStreak((prev) => {
+          const newStreak = prev + 1;
+          setProgress("streak_starter", newStreak);
+          return newStreak;
+        });
 
         confetti({
           particleCount: 50,
@@ -316,12 +337,15 @@ export default function ArenaPage() {
       addNotification,
       spawnComboText,
       activeMarkets,
+      updateProgress,
+      setProgress,
     ]
   );
 
   const handleSkip = useCallback(() => {
     spawnComboText("SKIP", true);
-  }, [spawnComboText]);
+    updateProgress("market_explorer");
+  }, [spawnComboText, updateProgress]);
 
   // Loading timeout - never show spinner for more than 8 seconds
   useEffect(() => {
@@ -399,6 +423,8 @@ export default function ArenaPage() {
         onOpenArcade={() => setShowArcade(true)}
         playerLevel={playerLevel}
         xpProgress={xpProgress}
+        missionsCount={missionsRemaining > 0 ? String(missionsRemaining) : undefined}
+        onOpenMissions={() => setShowMissions(true)}
       />
 
       {/* Floating Combo Text */}
@@ -734,6 +760,15 @@ export default function ArenaPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Missions Panel */}
+      <MissionsPanel
+        isOpen={showMissions}
+        onClose={() => setShowMissions(false)}
+        missions={missions}
+        completedCount={completedCount}
+        allComplete={allComplete}
+      />
 
       {/* Screen shake CSS */}
       <style jsx global>{`

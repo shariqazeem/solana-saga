@@ -14,6 +14,7 @@ import { RetroGrid } from "@/components/RetroGrid";
 import { WalletButton } from "@/components/WalletButton";
 import { microUsdToDollars } from "@/lib/jupiter/jupiterPredictionApi";
 import confetti from "canvas-confetti";
+import { updateMissionProgress } from "@/lib/missions";
 
 const TABS = [
   { id: "open", name: "Open", icon: Timer },
@@ -23,7 +24,7 @@ const TABS = [
 
 export default function MyBetsPage() {
   const [activeTab, setActiveTab] = useState("open");
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { positions, orders, loading, sellPosition, claimPosition, refetch } = useJupiterPrediction();
   const [selling, setSelling] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
@@ -138,6 +139,10 @@ export default function MyBetsPage() {
     try {
       await claimPosition(positionPubkey);
       setActionSuccess("Payout claimed successfully!");
+      // Update claim_victory mission
+      if (publicKey) {
+        updateMissionProgress(publicKey.toBase58(), "claim_victory");
+      }
       confetti({
         particleCount: 150,
         spread: 100,
