@@ -19,6 +19,9 @@ import { getGameData, ACHIEVEMENTS, getXpForNextLevel } from "@/lib/gameCredits"
 import { getMissions, type Mission } from "@/lib/missions";
 import { microUsdToDollars } from "@/lib/jupiter/jupiterPredictionApi";
 import { RetroGrid } from "@/components/RetroGrid";
+import { useTokenPortfolio } from "@/hooks/useTokenPortfolio";
+import { useSolBalance } from "@/hooks/useUsdcBalance";
+import Link from "next/link";
 
 const shortenAddress = (address: string) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -30,6 +33,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { profile, positions, userStats, refetch } =
     useJupiterPrediction();
+  const { tokens: portfolioTokens, totalValueUsd, loading: portfolioLoading } = useTokenPortfolio();
 
   const [missions, setMissions] = useState<Mission[]>([]);
   const [gameData, setGameData] = useState<ReturnType<typeof getGameData> | null>(null);
@@ -196,6 +200,87 @@ export default function ProfilePage() {
               <p className="text-gray-500 text-[10px] mt-0.5">{stat.label}</p>
             </div>
           ))}
+        </motion.div>
+
+        {/* Portfolio */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-4"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-white font-game text-sm tracking-wider">
+              PORTFOLIO{" "}
+              {totalValueUsd > 0 && (
+                <span className="text-[#00FF88]">
+                  ${totalValueUsd.toFixed(2)}
+                </span>
+              )}
+            </h3>
+            <Link
+              href="/swap"
+              className="px-3 py-1 rounded-lg bg-[#00F3FF]/10 border border-[#00F3FF]/30 text-[#00F3FF] text-[10px] font-game hover:bg-[#00F3FF]/20 transition-colors"
+            >
+              SWAP
+            </Link>
+          </div>
+
+          {portfolioLoading ? (
+            <div className="p-4 rounded-xl bg-[#0a0a1a] border border-[#1a1a3e]/60 text-center">
+              <p className="text-gray-500 text-xs animate-pulse">Loading portfolio...</p>
+            </div>
+          ) : portfolioTokens.length > 0 ? (
+            <div className="space-y-1.5">
+              {portfolioTokens.slice(0, 8).map((token) => (
+                <div
+                  key={token.mint}
+                  className="flex items-center gap-2.5 p-2 rounded-xl bg-[#0a0a1a] border border-[#1a1a3e]/40"
+                >
+                  {token.icon ? (
+                    <img
+                      src={token.icon}
+                      alt={token.symbol}
+                      className="w-7 h-7 rounded-full flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500/50 to-blue-500/50 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white font-semibold truncate">
+                      {token.symbol}
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      {token.balance < 0.001
+                        ? token.balance.toExponential(2)
+                        : token.balance < 1
+                        ? token.balance.toFixed(6)
+                        : token.balance.toFixed(4)}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs text-white font-numbers">
+                      ${token.usdValue.toFixed(2)}
+                    </p>
+                    {token.usdPrice > 0 && (
+                      <p className="text-[9px] text-gray-500 font-numbers">
+                        ${token.usdPrice < 0.01
+                          ? token.usdPrice.toFixed(6)
+                          : token.usdPrice.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-[#0a0a1a] border border-[#1a1a3e]/60 text-center">
+              <p className="text-gray-500 text-xs">No tokens found</p>
+            </div>
+          )}
         </motion.div>
 
         {/* Achievements */}

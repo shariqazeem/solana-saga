@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Minus, Plus, AlertTriangle, Wallet, X } from "lucide-react";
+import { Zap, Minus, Plus, AlertTriangle, Wallet, X, ArrowDownUp } from "lucide-react";
 import { RetroGrid } from "@/components/RetroGrid";
 import { SwipeableMarketStack } from "@/components/SwipeableMarketStack";
 import { GameOverlay } from "@/components/GameOverlay";
@@ -45,6 +46,7 @@ interface Notification {
 }
 
 export default function ArenaPage() {
+  const router = useRouter();
   const { connected, publicKey } = useWallet();
   const {
     markets,
@@ -528,6 +530,27 @@ export default function ArenaPage() {
                   <div className="flex-shrink-0 scale-90">
                     <WalletButton />
                   </div>
+                </motion.div>
+              )}
+
+              {/* Low USDC Banner - Quick Swap */}
+              {connected && usdcBalance < 1 && solBalance > 0.05 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-3 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFD700]/10 to-[#FF8800]/10 border border-[#FFD700]/30 flex-shrink-0"
+                >
+                  <AlertTriangle className="w-4 h-4 text-[#FFD700] flex-shrink-0" />
+                  <span className="text-xs text-gray-300 flex-1">
+                    Low USDC! Swap SOL to bet.
+                  </span>
+                  <button
+                    onClick={() => router.push("/swap")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00F3FF]/20 border border-[#00F3FF]/40 text-[#00F3FF] text-[10px] font-game hover:bg-[#00F3FF]/30 transition-colors flex-shrink-0"
+                  >
+                    <ArrowDownUp className="w-3 h-3" />
+                    SWAP
+                  </button>
                 </motion.div>
               )}
 

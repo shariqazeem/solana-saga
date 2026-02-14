@@ -28,7 +28,7 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String APP_URL = "https://frontend-alpha-khaki.vercel.app?psg1=true";
+    private static final String APP_URL = "https://www.solanasaga.fun?psg1=true";
 
     private WebView webView;
     private ProgressBar progressBar;
