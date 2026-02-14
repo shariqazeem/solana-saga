@@ -499,6 +499,16 @@ export async function closePosition(
   });
 }
 
+export async function claimPayout(
+  positionPubkey: string,
+  ownerPubkey: string
+): Promise<{ transaction: string; txMeta: { blockhash: string; lastValidBlockHeight: number } }> {
+  return jupFetch(`/positions/${encodeURIComponent(positionPubkey)}/claim`, {
+    method: "POST",
+    body: JSON.stringify({ ownerPubkey }),
+  });
+}
+
 export async function closeAllPositions(
   ownerPubkey: string,
   minSellPriceSlippageBps: number

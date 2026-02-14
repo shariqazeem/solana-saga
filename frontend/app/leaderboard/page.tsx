@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Trophy, Crown, Medal, Star, Flame, TrendingUp,
@@ -47,10 +48,60 @@ const PERIODS = [
 
 export default function LeaderboardPage() {
   const { publicKey } = useWallet();
+  const router = useRouter();
   const [leaderboardData, setLeaderboardData] = useState<(JupLeaderboardEntry & { rank: number })[]>([]);
   const [loading, setLoading] = useState(true);
   const [activePeriod, setActivePeriod] = useState<"all_time" | "monthly" | "weekly">("all_time");
   const [summary, setSummary] = useState<{ totalVolumeUsd: string; predictionsCount: number } | null>(null);
+  const lastGamepadRef = useRef(0);
+  const activePeriodRef = useRef(activePeriod);
+  activePeriodRef.current = activePeriod;
+
+  // Gamepad support for Leaderboard page
+  useEffect(() => {
+    const DEBOUNCE = 300;
+    let raf: number;
+
+    const poll = () => {
+      const gamepads = navigator.getGamepads();
+      const gp = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
+
+      if (gp) {
+        const now = Date.now();
+        if (now - lastGamepadRef.current >= DEBOUNCE) {
+          const periods: ("all_time" | "monthly" | "weekly")[] = ["all_time", "monthly", "weekly"];
+          // L1/R1: switch period
+          if (gp.buttons[4]?.pressed) { // L1
+            lastGamepadRef.current = now;
+            const idx = periods.indexOf(activePeriodRef.current);
+            if (idx > 0) setActivePeriod(periods[idx - 1]);
+          } else if (gp.buttons[5]?.pressed) { // R1
+            lastGamepadRef.current = now;
+            const idx = periods.indexOf(activePeriodRef.current);
+            if (idx < periods.length - 1) setActivePeriod(periods[idx + 1]);
+          }
+          // D-pad up/down: scroll page
+          else if (gp.buttons[12]?.pressed) { // DPAD_UP
+            lastGamepadRef.current = now;
+            window.scrollBy(0, -200);
+          } else if (gp.buttons[13]?.pressed) { // DPAD_DOWN
+            lastGamepadRef.current = now;
+            window.scrollBy(0, 200);
+          }
+          // B button: go back
+          else if (gp.buttons[1]?.pressed) { // B_CIRCLE
+            lastGamepadRef.current = now;
+            router.push("/");
+          }
+        }
+      }
+
+      raf = requestAnimationFrame(poll);
+    };
+
+    raf = requestAnimationFrame(poll);
+    return () => cancelAnimationFrame(raf);
+  }, [router]);
 
   useEffect(() => {
     const loadLeaderboard = async () => {

@@ -14,14 +14,15 @@ import {
   type Market,
   type EventCategory,
 } from "@/hooks/useJupiterPrediction";
-import { useSolBalance } from "@/hooks/useUsdcBalance";
+import { useSolBalance, useUsdcBalance } from "@/hooks/useUsdcBalance";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useHaptics } from "@/hooks/useHaptics";
 import { WalletButton } from "@/components/WalletButton";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { AchievementToast } from "@/components/AchievementToast";
-import { checkAchievements, getGameData } from "@/lib/gameCredits";
+import { checkAchievements, getGameData, claimDailyBonus, getXpForNextLevel } from "@/lib/gameCredits";
 import confetti from "canvas-confetti";
+import { microUsdToDollars } from "@/lib/jupiter/jupiterPredictionApi";
 
 const CATEGORIES: { label: string; value: EventCategory }[] = [
   { label: "ALL", value: "all" },
@@ -57,6 +58,7 @@ export default function ArenaPage() {
   } = useJupiterPrediction();
 
   const { balance: solBalance } = useSolBalance();
+  const { balance: usdcBalance } = useUsdcBalance();
 
   // Game state
   const [betAmount, setBetAmount] = useState(1);
@@ -100,11 +102,66 @@ export default function ArenaPage() {
   // Achievement toast state
   const [achievementToast, setAchievementToast] = useState<string | null>(null);
 
+  // Daily bonus state
+  const [showDailyBonus, setShowDailyBonus] = useState(false);
+  const [dailyBonusAmount, setDailyBonusAmount] = useState(0);
+
+  // Derive XP and Level from Jupiter profile + local game data
+  const { playerLevel, playerXp, xpForNextLevel, xpProgress } = useMemo(() => {
+    let xp = 0;
+    if (profile) {
+      const predictions = parseInt(profile.predictionsCount) || 0;
+      const correct = parseInt(profile.correctPredictions) || 0;
+      const volume = microUsdToDollars(profile.totalVolumeUsd);
+      xp = predictions * 50 + correct * 100 + Math.floor(volume);
+    }
+    // Also merge local XP if wallet connected
+    if (publicKey) {
+      const gameData = getGameData(publicKey.toBase58());
+      xp += gameData.xp;
+    }
+    const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+    const nextLevelXp = getXpForNextLevel(level);
+    const prevLevelXp = level > 1 ? getXpForNextLevel(level - 1) : 0;
+    const progress = nextLevelXp > prevLevelXp
+      ? Math.min(100, ((xp - prevLevelXp) / (nextLevelXp - prevLevelXp)) * 100)
+      : 100;
+    return { playerLevel: level, playerXp: xp, xpForNextLevel: nextLevelXp, xpProgress: progress };
+  }, [profile, publicKey]);
+
+  // Daily login bonus on wallet connect
+  useEffect(() => {
+    if (connected && publicKey) {
+      const result = claimDailyBonus(publicKey.toBase58());
+      if (result.success && result.amount) {
+        setDailyBonusAmount(result.amount);
+        setShowDailyBonus(true);
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.3 },
+          colors: ["#FFD700", "#00F3FF", "#00FF88"],
+        });
+        setTimeout(() => setShowDailyBonus(false), 3000);
+      }
+    }
+  }, [connected, publicKey]);
+
   // Filter to active tradable markets
   const activeMarkets = useMemo(
     () => markets.filter((m) => m.status === "Active" && m.endsIn !== "Ended"),
     [markets]
   );
+
+  // Count markets per category
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: activeMarkets.length };
+    activeMarkets.forEach((m) => {
+      const cat = m.category.toLowerCase();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [activeMarkets]);
 
   // Trust score based on win rate
   const trustScore = useMemo(() => {
@@ -330,7 +387,7 @@ export default function ArenaPage() {
 
       <GameOverlay
         streak={streak}
-        balance={0}
+        balance={usdcBalance}
         trustScore={trustScore}
         notifications={notifications}
         onDismissNotification={dismissNotification}
@@ -340,6 +397,8 @@ export default function ArenaPage() {
         totalBets={userStats.totalBets}
         showAdmin={false}
         onOpenArcade={() => setShowArcade(true)}
+        playerLevel={playerLevel}
+        xpProgress={xpProgress}
       />
 
       {/* Floating Combo Text */}
@@ -448,19 +507,22 @@ export default function ArenaPage() {
 
               {/* Category Filter - Horizontal Scroll */}
               <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar flex-shrink-0">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.value}
-                    onClick={() => changeCategory(cat.value)}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-game whitespace-nowrap transition-all ${
-                      category === cat.value
-                        ? "bg-[#00F3FF] text-black"
-                        : "bg-white/5 text-gray-400 hover:bg-white/10"
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+                {CATEGORIES.map((cat) => {
+                  const count = categoryCounts[cat.value] || 0;
+                  return (
+                    <button
+                      key={cat.value}
+                      onClick={() => changeCategory(cat.value)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-game whitespace-nowrap transition-all ${
+                        category === cat.value
+                          ? "bg-[#00F3FF] text-black"
+                          : "bg-white/5 text-gray-400 hover:bg-white/10"
+                      }`}
+                    >
+                      {cat.label}{count > 0 ? ` (${count})` : ""}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Bet Amount Selector */}
@@ -653,6 +715,25 @@ export default function ArenaPage() {
         achievementId={achievementToast}
         onDismiss={() => setAchievementToast(null)}
       />
+
+      {/* Daily Bonus Popup */}
+      <AnimatePresence>
+        {showDailyBonus && (
+          <motion.div
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[80] pointer-events-none"
+            initial={{ opacity: 0, y: -30, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -30, scale: 0.8 }}
+          >
+            <div className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#FFD700]/20 to-[#FF8800]/20 border border-[#FFD700]/50 backdrop-blur-md">
+              <div className="text-center">
+                <div className="text-[#FFD700] font-game text-lg">+{dailyBonusAmount} XP</div>
+                <div className="text-xs text-[#FFD700]/70 font-game">DAILY BONUS</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Screen shake CSS */}
       <style jsx global>{`

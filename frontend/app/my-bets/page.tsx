@@ -1,17 +1,19 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Clock, DollarSign, Trophy, Target, ChevronRight,
   Check, X, Timer, Loader2, Wallet, Gift, Zap, Home, ArrowLeft, TrendingUp, TrendingDown
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useJupiterPrediction } from "@/hooks/useJupiterPrediction";
 import { RetroGrid } from "@/components/RetroGrid";
 import { WalletButton } from "@/components/WalletButton";
 import { microUsdToDollars } from "@/lib/jupiter/jupiterPredictionApi";
+import confetti from "canvas-confetti";
 
 const TABS = [
   { id: "open", name: "Open", icon: Timer },
@@ -22,10 +24,65 @@ const TABS = [
 export default function MyBetsPage() {
   const [activeTab, setActiveTab] = useState("open");
   const { connected } = useWallet();
-  const { positions, orders, loading, sellPosition, refetch } = useJupiterPrediction();
+  const { positions, orders, loading, sellPosition, claimPosition, refetch } = useJupiterPrediction();
   const [selling, setSelling] = useState<string | null>(null);
+  const [claiming, setClaiming] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const router = useRouter();
+  const lastGamepadRef = useRef(0);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  // Gamepad support for My Bets page
+  useEffect(() => {
+    const DEBOUNCE = 300;
+    let raf: number;
+
+    const poll = () => {
+      const gamepads = navigator.getGamepads();
+      const gp = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
+
+      if (gp) {
+        const now = Date.now();
+        if (now - lastGamepadRef.current >= DEBOUNCE) {
+          // D-pad up/down: scroll through positions
+          if (gp.buttons[12]?.pressed) { // DPAD_UP
+            lastGamepadRef.current = now;
+            setSelectedIndex((prev) => Math.max(0, prev - 1));
+          } else if (gp.buttons[13]?.pressed) { // DPAD_DOWN
+            lastGamepadRef.current = now;
+            setSelectedIndex((prev) => prev + 1);
+          }
+          // L1/R1: switch tabs
+          else if (gp.buttons[4]?.pressed) { // L1
+            lastGamepadRef.current = now;
+            const tabs = ["open", "claimable", "closed"];
+            const idx = tabs.indexOf(activeTabRef.current);
+            setActiveTab(tabs[Math.max(0, idx - 1)]);
+            setSelectedIndex(0);
+          } else if (gp.buttons[5]?.pressed) { // R1
+            lastGamepadRef.current = now;
+            const tabs = ["open", "claimable", "closed"];
+            const idx = tabs.indexOf(activeTabRef.current);
+            setActiveTab(tabs[Math.min(tabs.length - 1, idx + 1)]);
+            setSelectedIndex(0);
+          }
+          // B button: go back
+          else if (gp.buttons[1]?.pressed) { // B_CIRCLE
+            lastGamepadRef.current = now;
+            router.push("/");
+          }
+        }
+      }
+
+      raf = requestAnimationFrame(poll);
+    };
+
+    raf = requestAnimationFrame(poll);
+    return () => cancelAnimationFrame(raf);
+  }, [router]);
 
   // Categorize positions
   const categorized = useMemo(() => {
@@ -70,6 +127,28 @@ export default function MyBetsPage() {
       setActionError(error.message || "Failed to sell position");
     } finally {
       setSelling(null);
+    }
+  };
+
+  const handleClaim = async (positionPubkey: string) => {
+    setClaiming(positionPubkey);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      await claimPosition(positionPubkey);
+      setActionSuccess("Payout claimed successfully!");
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ["#00FF88", "#00F3FF", "#FFD700", "#FF00FF"],
+      });
+      await refetch();
+    } catch (error: any) {
+      setActionError(error.message || "Failed to claim payout");
+    } finally {
+      setClaiming(null);
     }
   };
 
@@ -389,6 +468,20 @@ export default function MyBetsPage() {
                                   </div>
                                 </div>
                               </div>
+                              {/* Claim Payout Button */}
+                              <motion.button
+                                onClick={() => handleClaim(pos.pubkey)}
+                                disabled={claiming === pos.pubkey}
+                                className="mt-3 w-full py-2.5 rounded-xl bg-gradient-to-r from-[#00ff88]/20 to-[#00f0ff]/20 border border-[#00ff88]/50 text-[#00ff88] text-xs font-bold hover:from-[#00ff88]/30 hover:to-[#00f0ff]/30 transition-all disabled:opacity-50"
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                              >
+                                {claiming === pos.pubkey ? (
+                                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                ) : (
+                                  "CLAIM PAYOUT"
+                                )}
+                              </motion.button>
                             </motion.div>
                           );
                         })}

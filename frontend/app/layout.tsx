@@ -5,6 +5,7 @@ import { SmartWalletProvider } from "@/providers/SmartWalletProvider";
 import { TransactionStateProvider } from "@/providers/TransactionStateProvider";
 import { TransactionOverlay } from "@/components/TransactionOverlay";
 import { BottomNav } from "@/components/BottomNav";
+import { LiveTradeFeed } from "@/components/LiveTradeFeed";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,10 +24,10 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://frontend-alpha-khaki.vercel.app"),
-  title: "Solana Saga | Swipe to Predict",
-  description: "The Tinder of Prediction Markets - Swipe YES or NO on Jupiter Prediction Markets. Built for PSG1 gaming handheld.",
-  keywords: ["prediction market", "solana", "crypto", "defi", "web3", "blockchain", "psg1", "gaming", "play solana", "jupiter"],
+  metadataBase: new URL("https://solana-saga.vercel.app"),
+  title: "Solana Saga | Swipe to Predict on PSG1",
+  description: "The Tinder of Prediction Markets — Swipe YES or NO on Jupiter Prediction Markets. Built for PSG1 gaming handheld with gamepad controls, haptics, and gamified DeFi.",
+  keywords: ["prediction market", "solana", "crypto", "defi", "web3", "blockchain", "psg1", "gaming", "play solana", "jupiter", "gamification", "playsolana matrix"],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -34,8 +35,8 @@ export const metadata: Metadata = {
     title: "Solana Saga",
   },
   openGraph: {
-    title: "Solana Saga | Swipe to Predict",
-    description: "The Tinder of Prediction Markets. Swipe-to-bet on Solana, optimized for PSG1 handheld gaming.",
+    title: "Solana Saga | Swipe to Predict on PSG1",
+    description: "The Tinder of Prediction Markets. Swipe-to-bet on Jupiter Prediction Markets, optimized for PSG1 handheld with gamepad controls.",
     type: "website",
     images: ["/icons/icon-512x512.png"],
   },
@@ -86,6 +87,7 @@ export default function RootLayout({
           <TransactionStateProvider>
             {children}
             <TransactionOverlay />
+            <LiveTradeFeed />
             <BottomNav />
           </TransactionStateProvider>
         </SmartWalletProvider>

@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Share2, X, Sparkles, Trophy, Ticket, Twitter } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface BetSuccessModalProps {
     isOpen: boolean;
@@ -18,6 +18,33 @@ interface BetSuccessModalProps {
 
 export function BetSuccessModal({ isOpen, onClose, betData }: BetSuccessModalProps) {
     const [copied, setCopied] = useState(false);
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
+
+    // Gamepad dismiss: A or B button closes modal
+    useEffect(() => {
+        if (!isOpen) return;
+        let raf: number;
+        let lastAction = 0;
+
+        const poll = () => {
+            const gamepads = navigator.getGamepads();
+            const gp = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
+            if (gp) {
+                const now = Date.now();
+                if (now - lastAction >= 500) {
+                    if (gp.buttons[0]?.pressed || gp.buttons[1]?.pressed) {
+                        lastAction = now;
+                        onCloseRef.current();
+                    }
+                }
+            }
+            raf = requestAnimationFrame(poll);
+        };
+
+        raf = requestAnimationFrame(poll);
+        return () => cancelAnimationFrame(raf);
+    }, [isOpen]);
 
     const handleCopy = () => {
         const text = `I just bet $${betData.amount} on "${betData.question}" - Potential ${betData.multiplier} payout! Join me on Solana Saga`;

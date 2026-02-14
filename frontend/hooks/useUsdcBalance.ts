@@ -5,8 +5,8 @@ import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
 import { useState, useEffect, useCallback } from "react";
 
-// USDC Devnet mint address
-export const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
+// USDC Mainnet mint address
+export const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 const USDC_DECIMALS = 6;
 
 export function useUsdcBalance() {

@@ -459,9 +459,9 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   // Display bettors - use totalBetsCount as fallback if uniqueBettors is 0
   const displayBettors = currentMarket.bettors > 0 ? currentMarket.bettors : currentMarket.totalBetsCount;
 
-  // PSG1-optimized card dimensions
-  const cardWidth = psg1Config.isPSG1 ? "w-[95%]" : "w-[92%]";
-  const cardMaxWidth = psg1Config.isPSG1 ? "max-w-[420px]" : "max-w-[380px]";
+  // PSG1-optimized card dimensions - wider for near-square 1240x1080 aspect ratio
+  const cardWidth = psg1Config.isPSG1 ? "w-[98%]" : "w-[92%]";
+  const cardMaxWidth = psg1Config.isPSG1 ? "" : "max-w-[380px]";
   const cardHeight = "h-[95%]";
   const cardMaxHeight = "";
 
@@ -554,7 +554,9 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
               )}
 
               {/* Main Subject: Question */}
-              <h2 className="text-sm md:text-base font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-4 flex-shrink-0 mb-2 z-20">
+              <h2 className={`font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-4 flex-shrink-0 mb-2 z-20 ${
+                psg1Config.isPSG1 ? "text-base" : "text-sm md:text-base"
+              }`}>
                 {currentMarket.question}
               </h2>
 

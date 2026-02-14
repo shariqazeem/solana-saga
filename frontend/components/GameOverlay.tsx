@@ -24,6 +24,8 @@ interface GameOverlayProps {
   totalBets: number;
   showAdmin?: boolean;
   onOpenArcade?: () => void;
+  playerLevel?: number;
+  xpProgress?: number;
 }
 
 interface Notification {
@@ -45,6 +47,8 @@ export function GameOverlay({
   totalBets,
   showAdmin = false,
   onOpenArcade,
+  playerLevel = 1,
+  xpProgress = 0,
 }: GameOverlayProps) {
   const { connected } = useWallet();
   const wallet = useAnchorWallet();
@@ -161,7 +165,7 @@ export function GameOverlay({
               </motion.div>
             )}
 
-            {/* Balance */}
+            {/* Level + Balance */}
             {connected && (
               <motion.div
                 className="flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/30"
@@ -169,9 +173,23 @@ export function GameOverlay({
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
               >
-                <Wallet className="w-4 h-4 md:w-5 md:h-5 text-[#00FF88]" />
+                {/* Level Badge */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-gradient-to-br from-[#FFD700] to-[#FF8800] flex items-center justify-center">
+                    <span className="text-black font-game text-xs md:text-sm font-bold">{playerLevel}</span>
+                  </div>
+                  {/* XP ring */}
+                  <svg className="absolute -inset-0.5 w-9 h-9 md:w-10 md:h-10 -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,215,0,0.2)" strokeWidth="2" />
+                    <circle
+                      cx="18" cy="18" r="16" fill="none" stroke="#FFD700" strokeWidth="2"
+                      strokeDasharray={`${xpProgress} ${100 - xpProgress}`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
                 <div>
-                  <div className="text-[8px] md:text-[10px] text-[#00FF88]/70 font-game">BALANCE</div>
+                  <div className="text-[8px] md:text-[10px] text-[#00FF88]/70 font-game">USDC</div>
                   <motion.div
                     className="text-sm md:text-lg font-numbers font-bold text-white"
                     key={balance}
@@ -469,32 +487,6 @@ export function GameOverlay({
         </AnimatePresence>
       </div>
 
-      {/* Bottom instruction bar */}
-      <motion.div
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 1 }}
-      >
-        <div className="flex items-center gap-3 md:gap-6 px-4 md:px-6 py-2 md:py-3 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
-          <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
-            <span className="px-1.5 md:px-2 py-0.5 md:py-1 rounded bg-[#00FF88]/20 text-[#00FF88] font-game text-[10px] md:text-xs">RIGHT</span>
-            <span className="text-gray-500 hidden sm:inline">or</span>
-            <span className="px-1.5 md:px-2 py-0.5 md:py-1 rounded bg-[#00FF88]/20 text-[#00FF88] font-game text-[10px] md:text-xs">YES</span>
-          </div>
-          <div className="w-px h-4 md:h-6 bg-white/20" />
-          <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
-            <span className="px-1.5 md:px-2 py-0.5 md:py-1 rounded bg-[#FF0044]/20 text-[#FF0044] font-game text-[10px] md:text-xs">LEFT</span>
-            <span className="text-gray-500 hidden sm:inline">or</span>
-            <span className="px-1.5 md:px-2 py-0.5 md:py-1 rounded bg-[#FF0044]/20 text-[#FF0044] font-game text-[10px] md:text-xs">NO</span>
-          </div>
-          <div className="w-px h-4 md:h-6 bg-white/20" />
-          <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
-            <span className="px-1.5 md:px-2 py-0.5 md:py-1 rounded bg-white/10 text-gray-300 font-game text-[10px] md:text-xs">UP</span>
-            <span className="text-gray-500 hidden sm:inline">Skip</span>
-          </div>
-        </div>
-      </motion.div>
     </>
   );
 }

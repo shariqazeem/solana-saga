@@ -9,6 +9,7 @@ import {
   fetchLeaderboards,
   createOrder,
   closePosition as apiClosePosition,
+  claimPayout as apiClaimPayout,
   fetchOrderStatus,
   type JupEvent,
   type JupMarket,
@@ -439,6 +440,59 @@ export function useJupiterPrediction() {
   );
 
   // --------------------------------------------------------
+  // Claim payout for a resolved position
+  // --------------------------------------------------------
+  const claimPosition = useCallback(
+    async (positionPubkey: string): Promise<string> => {
+      if (!wallet.publicKey || !wallet.signTransaction) {
+        throw new Error("Wallet not connected");
+      }
+
+      try {
+        const response = await apiClaimPayout(
+          positionPubkey,
+          wallet.publicKey.toBase58()
+        );
+
+        if (!response.transaction) {
+          throw new Error("No transaction returned");
+        }
+
+        const txBuffer = Buffer.from(response.transaction, "base64");
+        const transaction = VersionedTransaction.deserialize(txBuffer);
+        const signedTx = await wallet.signTransaction(transaction);
+
+        const signature = await connection.sendRawTransaction(
+          signedTx.serialize(),
+          { skipPreflight: false, preflightCommitment: "confirmed" }
+        );
+
+        if (response.txMeta) {
+          await connection.confirmTransaction(
+            {
+              signature,
+              blockhash: response.txMeta.blockhash,
+              lastValidBlockHeight: response.txMeta.lastValidBlockHeight,
+            },
+            "confirmed"
+          );
+        }
+
+        // Refresh
+        Promise.all([fetchUserPositions(), fetchUserOrders(), fetchUserProfile()]).catch(console.error);
+
+        return signature;
+      } catch (err: any) {
+        if (err.message?.includes("User rejected")) {
+          throw new Error("Transaction cancelled");
+        }
+        throw new Error(err.message || "Failed to claim payout");
+      }
+    },
+    [wallet, connection, fetchUserPositions, fetchUserOrders, fetchUserProfile]
+  );
+
+  // --------------------------------------------------------
   // Poll order status
   // --------------------------------------------------------
   const pollOrderStatus = useCallback(
@@ -562,6 +616,7 @@ export function useJupiterPrediction() {
     // Actions
     placeBet,
     sellPosition,
+    claimPosition,
     refetch,
     fetchMarkets,
     changeCategory,
