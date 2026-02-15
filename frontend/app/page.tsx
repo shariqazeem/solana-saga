@@ -27,8 +27,10 @@ import { microUsdToDollars } from "@/lib/jupiter/jupiterPredictionApi";
 import { useMissions } from "@/hooks/useMissions";
 import { MissionsPanel } from "@/components/MissionsPanel";
 
-const CATEGORIES: { label: string; value: EventCategory }[] = [
+const CATEGORIES: { label: string; value: EventCategory; icon?: string }[] = [
   { label: "ALL", value: "all" },
+  { label: "LIVE", value: "live", icon: "live" },
+  { label: "TRENDING", value: "trending", icon: "flame" },
   { label: "CRYPTO", value: "crypto" },
   { label: "SPORTS", value: "sports" },
   { label: "POLITICS", value: "politics" },
@@ -597,17 +599,22 @@ export default function ArenaPage() {
               <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar flex-shrink-0">
                 {CATEGORIES.map((cat) => {
                   const count = categoryCounts[cat.value] || 0;
+                  const isActive = category === cat.value;
+                  const isLive = cat.icon === "live";
+                  const isFlame = cat.icon === "flame";
                   return (
                     <button
                       key={cat.value}
                       onClick={() => changeCategory(cat.value)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-game whitespace-nowrap transition-all ${
-                        category === cat.value
-                          ? "bg-[#00F3FF] text-black"
-                          : "bg-white/5 text-gray-400 hover:bg-white/10"
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-game whitespace-nowrap transition-all ${
+                        isActive
+                          ? isLive ? "bg-red-500 text-white" : "bg-[#00F3FF] text-black"
+                          : isLive ? "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20" : "bg-white/5 text-gray-400 hover:bg-white/10"
                       }`}
                     >
-                      {cat.label}{count > 0 ? ` (${count})` : ""}
+                      {isLive && <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white" : "bg-red-400"} animate-pulse`} />}
+                      {isFlame && <Flame className="w-3 h-3" />}
+                      {cat.label}{!isLive && !isFlame && count > 0 ? ` (${count})` : ""}
                     </button>
                   );
                 })}

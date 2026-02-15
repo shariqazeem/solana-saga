@@ -139,10 +139,22 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         return { bg: "bg-[#00F3FF]/10", border: "border-[#00F3FF]/30", text: "text-[#00F3FF]" };
       case "sports":
         return { bg: "bg-[#00FF88]/10", border: "border-[#00FF88]/30", text: "text-[#00FF88]" };
+      case "esports":
+        return { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400" };
       case "meme":
         return { bg: "bg-orange-500/10", border: "border-orange-500/30", text: "text-orange-400" };
       case "politics":
         return { bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400" };
+      case "economics":
+      case "finance":
+        return { bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-400" };
+      case "tech":
+        return { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-400" };
+      case "culture":
+        return { bg: "bg-pink-500/10", border: "border-pink-500/30", text: "text-pink-400" };
+      case "climate":
+      case "science":
+        return { bg: "bg-teal-500/10", border: "border-teal-500/30", text: "text-teal-400" };
       default:
         return { bg: "bg-white/10", border: "border-white/30", text: "text-white" };
     }
