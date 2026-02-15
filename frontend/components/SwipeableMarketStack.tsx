@@ -560,16 +560,18 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 </div>
               </div>
 
-              {/* Event title (parent event) - only show if question doesn't already include it */}
-              {currentMarket.eventTitle && !currentMarket.question.includes(currentMarket.eventTitle) && (
-                <div className="text-[10px] text-gray-500 font-game uppercase tracking-wider mb-1 truncate flex-shrink-0">
+              {/* Event context — always show so users know the topic */}
+              {currentMarket.eventTitle && (
+                <div className={`text-gray-400 font-bold uppercase tracking-wider mb-1 truncate flex-shrink-0 ${
+                  psg1Config.isPSG1 ? "text-[11px]" : "text-[10px] md:text-[11px]"
+                }`}>
                   {currentMarket.eventTitle}
                 </div>
               )}
 
-              {/* Main Subject: Question */}
-              <h2 className={`font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-4 flex-shrink-0 mb-2 z-20 ${
-                psg1Config.isPSG1 ? "text-base" : "text-sm md:text-base"
+              {/* Main Question — clear YES/NO phrasing */}
+              <h2 className={`font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-3 flex-shrink-0 mb-2 z-20 ${
+                psg1Config.isPSG1 ? "text-lg" : "text-base md:text-lg"
               }`}>
                 {currentMarket.question}
               </h2>

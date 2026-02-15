@@ -93,16 +93,18 @@ function transformToMarket(market: JupMarket, event: JupEvent): Market {
   // Volume is also in micro USD
   const volumeDollars = microUsdToDollars(market.pricing?.volume || 0);
 
-  // Build a readable question: combine event title + market title
-  // e.g. Event: "Who will Trump nominate as Fed Chair?" + Market: "Kevin Warsh"
-  // → "Who will Trump nominate as Fed Chair? — Kevin Warsh"
+  // Build a clear YES/NO question from event + market titles
   const eventTitle = event.metadata?.title || "";
   const marketTitle = market.metadata?.title || "";
   let question: string;
+
   if (eventTitle && marketTitle && eventTitle !== marketTitle) {
-    question = `${eventTitle} — ${marketTitle}`;
+    // Keep market title as the main question — event title shown as context above
+    // Add "?" if it doesn't end with one, to make YES/NO obvious
+    question = marketTitle.endsWith("?") ? marketTitle : `${marketTitle}?`;
   } else {
-    question = marketTitle || eventTitle || "Untitled Market";
+    const title = marketTitle || eventTitle || "Untitled Market";
+    question = title.endsWith("?") ? title : `${title}?`;
   }
 
   return {
