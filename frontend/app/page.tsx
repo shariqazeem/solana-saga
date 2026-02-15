@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Minus, Plus, AlertTriangle, Wallet, X, ArrowDownUp } from "lucide-react";
+import { Zap, Minus, Plus, AlertTriangle, Wallet, X, ArrowDownUp, TrendingUp, Clock, Flame } from "lucide-react";
 import { RetroGrid } from "@/components/RetroGrid";
 import { SwipeableMarketStack } from "@/components/SwipeableMarketStack";
 import { GameOverlay } from "@/components/GameOverlay";
@@ -67,6 +67,7 @@ export default function ArenaPage() {
   // Game state
   const [betAmount, setBetAmount] = useState(1);
   const [streak, setStreak] = useState(0);
+  const [arenaSort, setArenaSort] = useState<"default" | "volume" | "ending">("default");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -112,7 +113,7 @@ export default function ArenaPage() {
 
   // Missions
   const walletAddress = publicKey?.toBase58() || null;
-  const { missions, completedCount, allComplete, updateProgress, setProgress } = useMissions(walletAddress);
+  const { missions, completedCount, allComplete, updateProgress, setProgress, trackDiversify } = useMissions(walletAddress);
   const [showMissions, setShowMissions] = useState(false);
   const missionsRemaining = missions.length - completedCount;
 
@@ -157,11 +158,16 @@ export default function ArenaPage() {
     }
   }, [connected, publicKey]);
 
-  // Filter to active tradable markets
-  const activeMarkets = useMemo(
-    () => markets.filter((m) => m.status === "Active" && m.endsIn !== "Ended"),
-    [markets]
-  );
+  // Filter to active tradable markets + sort
+  const activeMarkets = useMemo(() => {
+    const filtered = markets.filter((m) => m.status === "Active" && m.endsIn !== "Ended");
+    if (arenaSort === "volume") {
+      filtered.sort((a, b) => b.totalVolume - a.totalVolume);
+    } else if (arenaSort === "ending") {
+      filtered.sort((a, b) => a.endTime - b.endTime);
+    }
+    return filtered;
+  }, [markets, arenaSort]);
 
   // Count markets per category
   const categoryCounts = useMemo(() => {
@@ -251,8 +257,8 @@ export default function ArenaPage() {
 
         // Update missions
         updateProgress("first_blood");
-        if (market) {
-          updateProgress("diversify");
+        if (market?.category) {
+          trackDiversify(market.category);
         }
         if (amount >= 10) {
           updateProgress("whale_watch");
@@ -341,13 +347,13 @@ export default function ArenaPage() {
       activeMarkets,
       updateProgress,
       setProgress,
+      trackDiversify,
     ]
   );
 
   const handleSkip = useCallback(() => {
     spawnComboText("SKIP", true);
-    updateProgress("market_explorer");
-  }, [spawnComboText, updateProgress]);
+  }, [spawnComboText]);
 
   // Loading timeout - never show spinner for more than 8 seconds
   useEffect(() => {
@@ -462,27 +468,58 @@ export default function ArenaPage() {
           {loading && isFirstLoad ? (
             <motion.div
               key="loading"
-              className="flex-1 flex flex-col items-center justify-center gap-6 px-4"
+              className="flex-1 flex flex-col items-center justify-center gap-4 px-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
             >
-              <div className="relative">
+              {/* Logo with glow */}
+              <motion.div
+                className="relative"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <div className="absolute inset-0 rounded-full bg-[#00F3FF]/20 blur-3xl" />
+                <img
+                  src="/logo-200.png"
+                  alt="Solana Saga"
+                  className="w-36 h-36 rounded-2xl relative z-10"
+                />
+                {/* Spinning ring around logo */}
                 <motion.div
-                  className="w-24 h-24 rounded-full border-4 border-[#00F3FF]/30"
+                  className="absolute -inset-3 rounded-2xl border-2 border-[#00F3FF]/30"
                   animate={{ rotate: 360 }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "linear",
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                  style={{
+                    borderImage: "linear-gradient(45deg, #00F3FF, #00FF88, #FF00AA, #00F3FF) 1",
                   }}
-                >
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#00F3FF]" />
-                </motion.div>
-                <Zap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-[#00F3FF]" />
+                />
+              </motion.div>
+
+              {/* Loading text */}
+              <motion.p
+                className="text-[#00F3FF] font-game text-sm tracking-widest"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                LOADING MARKETS
+              </motion.p>
+
+              {/* Animated dots */}
+              <div className="flex gap-1.5">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-[#00F3FF]"
+                    animate={{ opacity: [0.2, 1, 0.2], scale: [0.8, 1.2, 0.8] }}
+                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
+                  />
+                ))}
               </div>
-              <p className="text-gray-400 font-game animate-pulse">
-                LOADING JUPITER MARKETS...
+
+              {/* Powered by */}
+              <p className="text-gray-600 text-[10px] mt-2">
+                Powered by <span className="text-[#c7f83e]">Jupiter</span> on <span className="text-[#14F195]">Solana</span>
               </p>
             </motion.div>
           ) : activeMarkets.length === 0 ? (
@@ -572,6 +609,29 @@ export default function ArenaPage() {
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Sort Toggle */}
+              <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
+                <span className="text-[9px] text-gray-600 font-game mr-1">SORT</span>
+                {([
+                  { id: "default" as const, label: "MIX", Icon: Flame },
+                  { id: "volume" as const, label: "HOT", Icon: TrendingUp },
+                  { id: "ending" as const, label: "SOON", Icon: Clock },
+                ]).map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => setArenaSort(id)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-game transition-all ${
+                      arenaSort === id
+                        ? "bg-[#00F3FF]/20 text-[#00F3FF] border border-[#00F3FF]/30"
+                        : "bg-white/5 text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {label}
+                  </button>
+                ))}
               </div>
 
               {/* Bet Amount Selector */}

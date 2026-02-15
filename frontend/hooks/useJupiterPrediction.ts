@@ -294,7 +294,7 @@ export function useJupiterPrediction() {
       prediction: boolean,
       amountUsd: number
     ): Promise<string> => {
-      if (!wallet.publicKey || !wallet.signTransaction) {
+      if (!wallet.publicKey || !wallet.sendTransaction) {
         throw new Error("Wallet not connected");
       }
 
@@ -344,24 +344,38 @@ export function useJupiterPrediction() {
 
         // 2. Deserialize the base64 transaction
         const txBuffer = Buffer.from(orderResponse.transaction, "base64");
-        const transaction = VersionedTransaction.deserialize(txBuffer);
+        const transaction = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
 
-        // 3. Sign with wallet
-        const signedTx = await wallet.signTransaction(transaction);
-
-        // 4. Send to Solana
-        const signature = await connection.sendRawTransaction(
-          signedTx.serialize(),
-          {
+        // 3. Send via wallet adapter, with fallback for mobile wallets
+        let signature: string;
+        try {
+          signature = await wallet.sendTransaction(transaction, connection, {
             skipPreflight: false,
             preflightCommitment: "confirmed",
             maxRetries: 3,
+          });
+        } catch (sendErr: any) {
+          if (
+            wallet.signTransaction &&
+            (sendErr.message?.includes("versioned") ||
+             sendErr.message?.includes("VersionedMessage") ||
+             sendErr.message?.includes("deserialize"))
+          ) {
+            console.warn("[Jupiter Order] sendTransaction failed, trying signTransaction fallback");
+            const signedTx = await wallet.signTransaction(transaction);
+            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+              skipPreflight: false,
+              preflightCommitment: "confirmed",
+              maxRetries: 3,
+            });
+          } else {
+            throw sendErr;
           }
-        );
+        }
 
         console.log("[Jupiter Order] Transaction sent:", signature);
 
-        // 5. Confirm
+        // 4. Confirm
         if (orderResponse.txMeta) {
           await connection.confirmTransaction(
             {
@@ -395,6 +409,12 @@ export function useJupiterPrediction() {
         if (err.message?.includes("insufficient")) {
           throw new Error("Insufficient balance");
         }
+        if (err.message?.includes("no record of a prior credit") || err.message?.includes("Attempt to debit")) {
+          throw new Error("Insufficient USDC balance. Swap SOL to USDC first.");
+        }
+        if (err.message?.includes("Simulation failed") || err.message?.includes("simulation failed")) {
+          throw new Error("Transaction failed. Check your USDC balance and try again.");
+        }
 
         throw new Error(err.message || "Failed to place order");
       } finally {
@@ -409,7 +429,7 @@ export function useJupiterPrediction() {
   // --------------------------------------------------------
   const sellPosition = useCallback(
     async (positionPubkey: string): Promise<string> => {
-      if (!wallet.publicKey || !wallet.signTransaction) {
+      if (!wallet.publicKey || !wallet.sendTransaction) {
         throw new Error("Wallet not connected");
       }
 
@@ -426,13 +446,30 @@ export function useJupiterPrediction() {
         }
 
         const txBuffer = Buffer.from(response.transaction, "base64");
-        const transaction = VersionedTransaction.deserialize(txBuffer);
-        const signedTx = await wallet.signTransaction(transaction);
+        const transaction = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
 
-        const signature = await connection.sendRawTransaction(
-          signedTx.serialize(),
-          { skipPreflight: false, preflightCommitment: "confirmed" }
-        );
+        let signature: string;
+        try {
+          signature = await wallet.sendTransaction(transaction, connection, {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+          });
+        } catch (sendErr: any) {
+          if (
+            wallet.signTransaction &&
+            (sendErr.message?.includes("versioned") ||
+             sendErr.message?.includes("VersionedMessage") ||
+             sendErr.message?.includes("deserialize"))
+          ) {
+            const signedTx = await wallet.signTransaction(transaction);
+            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+              skipPreflight: false,
+              preflightCommitment: "confirmed",
+            });
+          } else {
+            throw sendErr;
+          }
+        }
 
         if (response.txMeta) {
           await connection.confirmTransaction(
@@ -464,7 +501,7 @@ export function useJupiterPrediction() {
   // --------------------------------------------------------
   const claimPosition = useCallback(
     async (positionPubkey: string): Promise<string> => {
-      if (!wallet.publicKey || !wallet.signTransaction) {
+      if (!wallet.publicKey || !wallet.sendTransaction) {
         throw new Error("Wallet not connected");
       }
 
@@ -479,13 +516,30 @@ export function useJupiterPrediction() {
         }
 
         const txBuffer = Buffer.from(response.transaction, "base64");
-        const transaction = VersionedTransaction.deserialize(txBuffer);
-        const signedTx = await wallet.signTransaction(transaction);
+        const transaction = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
 
-        const signature = await connection.sendRawTransaction(
-          signedTx.serialize(),
-          { skipPreflight: false, preflightCommitment: "confirmed" }
-        );
+        let signature: string;
+        try {
+          signature = await wallet.sendTransaction(transaction, connection, {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+          });
+        } catch (sendErr: any) {
+          if (
+            wallet.signTransaction &&
+            (sendErr.message?.includes("versioned") ||
+             sendErr.message?.includes("VersionedMessage") ||
+             sendErr.message?.includes("deserialize"))
+          ) {
+            const signedTx = await wallet.signTransaction(transaction);
+            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+              skipPreflight: false,
+              preflightCommitment: "confirmed",
+            });
+          } else {
+            throw sendErr;
+          }
+        }
 
         if (response.txMeta) {
           await connection.confirmTransaction(

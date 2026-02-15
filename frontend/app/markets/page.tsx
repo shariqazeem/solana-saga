@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MarketCard } from "@/components/MarketCard";
 import {
   Search, Filter, TrendingUp, Flame, Clock,
@@ -36,12 +37,14 @@ const SORT_OPTIONS = [
 ];
 
 export default function MarketsPage() {
+  const router = useRouter();
   const { markets, loading, error } = useJupiterPrediction();
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeStatus, setActiveStatus] = useState("active");
   const [activeSort, setActiveSort] = useState("volume");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Filter and sort markets
   const filteredMarkets = useMemo(() => {
@@ -58,7 +61,6 @@ export default function MarketsPage() {
       } else if (activeStatus === "resolved") {
         matchesStatus = market.status === "Resolved";
       }
-      // "all" shows everything
 
       return matchesCategory && matchesSearch && matchesStatus;
     });
@@ -84,6 +86,79 @@ export default function MarketsPage() {
     return filteredMarkets.reduce((sum, m) => sum + m.totalVolume, 0);
   }, [filteredMarkets]);
 
+  // Gamepad / keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in search
+      if (document.activeElement === searchRef.current) {
+        if (e.key === "Escape") {
+          searchRef.current?.blur();
+          setSearchQuery("");
+        }
+        return;
+      }
+
+      switch (e.key) {
+        case "Escape":
+        case "b":
+        case "B":
+          e.preventDefault();
+          router.push("/");
+          break;
+        case "ArrowLeft": {
+          // Cycle category left
+          e.preventDefault();
+          const catIdx = CATEGORIES.findIndex((c) => c.id === activeCategory);
+          const prev = catIdx <= 0 ? CATEGORIES.length - 1 : catIdx - 1;
+          setActiveCategory(CATEGORIES[prev].id);
+          break;
+        }
+        case "ArrowRight": {
+          // Cycle category right
+          e.preventDefault();
+          const catIdx = CATEGORIES.findIndex((c) => c.id === activeCategory);
+          const next = (catIdx + 1) % CATEGORIES.length;
+          setActiveCategory(CATEGORIES[next].id);
+          break;
+        }
+        case "ArrowUp": {
+          // Cycle sort option
+          e.preventDefault();
+          const sortIdx = SORT_OPTIONS.findIndex((s) => s.id === activeSort);
+          const prev = sortIdx <= 0 ? SORT_OPTIONS.length - 1 : sortIdx - 1;
+          setActiveSort(SORT_OPTIONS[prev].id);
+          break;
+        }
+        case "ArrowDown": {
+          // Cycle sort option
+          e.preventDefault();
+          const sortIdx = SORT_OPTIONS.findIndex((s) => s.id === activeSort);
+          const next = (sortIdx + 1) % SORT_OPTIONS.length;
+          setActiveSort(SORT_OPTIONS[next].id);
+          break;
+        }
+        case "x":
+        case "X": {
+          // Cycle status filter (L1/R1 mapped)
+          e.preventDefault();
+          const statusIdx = STATUS_FILTERS.findIndex((s) => s.id === activeStatus);
+          const next = (statusIdx + 1) % STATUS_FILTERS.length;
+          setActiveStatus(STATUS_FILTERS[next].id);
+          break;
+        }
+        case "y":
+        case "Y":
+          // Focus search
+          e.preventDefault();
+          searchRef.current?.focus();
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeCategory, activeStatus, activeSort, router]);
+
   return (
     <div className="min-h-screen bg-[#050505] relative">
       {/* Background */}
@@ -108,6 +183,17 @@ export default function MarketsPage() {
               <span className="text-[#00f0ff]">MARKETS</span>
             </span>
           </div>
+          {/* Gamepad hints */}
+          <div className="ml-auto hidden sm:flex items-center gap-2 text-[10px] text-gray-600">
+            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10">D-PAD</span>
+            <span>Navigate</span>
+            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10">X</span>
+            <span>Status</span>
+            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10">Y</span>
+            <span>Search</span>
+            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10">B</span>
+            <span>Back</span>
+          </div>
         </div>
       </div>
 
@@ -128,8 +214,9 @@ export default function MarketsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
+                ref={searchRef}
                 type="text"
-                placeholder="Search markets..."
+                placeholder="Search markets... (Y to focus)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="game-input pl-12 w-full"

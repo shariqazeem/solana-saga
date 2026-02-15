@@ -6,6 +6,7 @@ import {
   UnifiedWalletProvider,
 } from "@jup-ag/wallet-adapter";
 import { useWrappedReownAdapter } from "@jup-ag/jup-mobile-adapter";
+import { ConnectionProvider } from "@solana/wallet-adapter-react";
 import {
   BaseSignerWalletAdapter,
   WalletReadyState,
@@ -13,6 +14,7 @@ import {
 } from "@solana/wallet-adapter-base";
 import { SMWAWalletAdapter } from "@/lib/solana/SMWAWalletAdapter";
 import { isSMWABridgeAvailable } from "@/lib/solana/smwaBridge";
+import { RPC_ENDPOINT } from "@/lib/solana/config";
 
 const APP_URL =
   typeof window !== "undefined"
@@ -207,12 +209,15 @@ export default function JupiterWalletProviderClient({ children }: Props) {
   }, []);
 
   return (
-    <>
+    <ConnectionProvider
+      endpoint={RPC_ENDPOINT}
+      config={{ commitment: "confirmed", confirmTransactionInitialTimeout: 60000 }}
+    >
       {!smwaBridge && <ReownAdapterInitializer onReady={handleAdapterReady} />}
       <StableWalletProvider wallets={wallets}>
         {children}
       </StableWalletProvider>
-    </>
+    </ConnectionProvider>
   );
 }
 

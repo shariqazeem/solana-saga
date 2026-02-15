@@ -5,6 +5,7 @@ import {
   getMissions,
   updateMissionProgress,
   setMissionProgress,
+  trackDiversifyCategory,
   type Mission,
 } from "@/lib/missions";
 
@@ -19,6 +20,9 @@ interface UseMissionsReturn {
   setProgress: (
     missionId: string,
     value: number
+  ) => { justCompleted: boolean; xpEarned: number; allJustCompleted: boolean };
+  trackDiversify: (
+    category: string
   ) => { justCompleted: boolean; xpEarned: number; allJustCompleted: boolean };
   refresh: () => void;
 }
@@ -61,6 +65,17 @@ export function useMissions(walletAddress: string | null): UseMissionsReturn {
     [walletAddress, refresh]
   );
 
+  const trackDiversify = useCallback(
+    (category: string) => {
+      if (!walletAddress)
+        return { justCompleted: false, xpEarned: 0, allJustCompleted: false };
+      const result = trackDiversifyCategory(walletAddress, category);
+      refresh();
+      return result;
+    },
+    [walletAddress, refresh]
+  );
+
   const completedCount = missions.filter((m) => m.completed).length;
   const allComplete = missions.length > 0 && completedCount === missions.length;
 
@@ -70,6 +85,7 @@ export function useMissions(walletAddress: string | null): UseMissionsReturn {
     allComplete,
     updateProgress,
     setProgress,
+    trackDiversify,
     refresh,
   };
 }

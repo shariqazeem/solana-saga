@@ -4,7 +4,13 @@
  * Daily Missions System for Solana Saga
  *
  * Provides recurring daily challenges that reset each day.
- * Missions track progress via localStorage keyed by date + wallet.
+ * Each mission ties into a REAL Jupiter API interaction:
+ * - first_blood: Place a bet (Jupiter Prediction API)
+ * - diversify: Bet on 3 different market categories (Jupiter Prediction API)
+ * - whale_watch: Place a $10+ bet (Jupiter Prediction API)
+ * - streak_starter: Place 3 consecutive bets (Jupiter Prediction API)
+ * - jupiter_swapper: Complete a token swap (Jupiter Swap API)
+ * - claim_victory: Claim a winning payout (Jupiter Prediction API)
  */
 
 const MISSIONS_STORAGE_KEY = "solana_saga_missions";
@@ -18,6 +24,8 @@ export interface Mission {
   target: number;
   progress: number;
   completed: boolean;
+  /** Extra tracking data (e.g. list of unique categories) */
+  meta?: Record<string, any>;
 }
 
 export interface DailyMissions {
@@ -31,7 +39,7 @@ const MISSION_TEMPLATES: Omit<Mission, "progress" | "completed">[] = [
   {
     id: "first_blood",
     title: "First Blood",
-    description: "Place your first bet today",
+    description: "Place your first prediction today",
     icon: "🎯",
     xpReward: 50,
     target: 1,
@@ -39,34 +47,35 @@ const MISSION_TEMPLATES: Omit<Mission, "progress" | "completed">[] = [
   {
     id: "diversify",
     title: "Diversify",
-    description: "Bet on 3 different categories",
+    description: "Predict on 3 different categories",
     icon: "🌈",
     xpReward: 100,
     target: 3,
+    meta: { categories: [] },
   },
   {
     id: "whale_watch",
     title: "Whale Watch",
-    description: "Place a bet of $10 or more",
+    description: "Place a prediction of $10 or more",
     icon: "🐋",
     xpReward: 75,
     target: 1,
   },
   {
     id: "streak_starter",
-    title: "Streak Starter",
-    description: "Reach a 3-bet streak",
+    title: "Hot Streak",
+    description: "Place 3 predictions in a row",
     icon: "🔥",
     xpReward: 150,
     target: 3,
   },
   {
-    id: "market_explorer",
-    title: "Market Explorer",
-    description: "View 10 markets",
-    icon: "🔭",
-    xpReward: 50,
-    target: 10,
+    id: "jupiter_swapper",
+    title: "Jupiter Swap",
+    description: "Swap tokens using Jupiter",
+    icon: "⚡",
+    xpReward: 100,
+    target: 1,
   },
   {
     id: "claim_victory",
@@ -98,7 +107,18 @@ export function getMissions(wallet: string): DailyMissions {
   const stored = localStorage.getItem(key);
 
   if (stored) {
-    return JSON.parse(stored);
+    const parsed: DailyMissions = JSON.parse(stored);
+    // Ensure new missions exist (migration from old format)
+    const existingIds = new Set(parsed.missions.map((m) => m.id));
+    for (const template of MISSION_TEMPLATES) {
+      if (!existingIds.has(template.id)) {
+        parsed.missions.push({ ...template, progress: 0, completed: false });
+      }
+    }
+    // Remove old missions that no longer exist
+    const templateIds = new Set(MISSION_TEMPLATES.map((t) => t.id));
+    parsed.missions = parsed.missions.filter((m) => templateIds.has(m.id));
+    return parsed;
   }
 
   const fresh = createFreshMissions(wallet);
@@ -114,6 +134,7 @@ function createFreshMissions(wallet: string): DailyMissions {
       ...t,
       progress: 0,
       completed: false,
+      meta: t.meta ? { ...t.meta } : undefined,
     })),
     allCompleteBonus: false,
   };
@@ -126,7 +147,7 @@ function saveMissions(data: DailyMissions): void {
 }
 
 /**
- * Update mission progress. Returns true if the mission was just completed (for triggering celebrations).
+ * Update mission progress. Returns true if the mission was just completed.
  */
 export function updateMissionProgress(
   wallet: string,
@@ -151,7 +172,6 @@ export function updateMissionProgress(
     justCompleted = true;
     xpEarned = mission.xpReward;
 
-    // Check if all missions are now complete
     const allComplete = data.missions.every((m) => m.completed);
     if (allComplete && !data.allCompleteBonus) {
       data.allCompleteBonus = true;
@@ -166,7 +186,58 @@ export function updateMissionProgress(
 }
 
 /**
- * Set mission progress to an absolute value (for streak_starter where we set the current streak).
+ * Track a unique category for the "diversify" mission.
+ * Only increments progress when a NEW category is bet on.
+ */
+export function trackDiversifyCategory(
+  wallet: string,
+  category: string
+): { justCompleted: boolean; xpEarned: number; allJustCompleted: boolean } {
+  const data = getMissions(wallet);
+  const mission = data.missions.find((m) => m.id === "diversify");
+
+  if (!mission || mission.completed) {
+    return { justCompleted: false, xpEarned: 0, allJustCompleted: false };
+  }
+
+  // Initialize meta if missing
+  if (!mission.meta) mission.meta = { categories: [] };
+  if (!mission.meta.categories) mission.meta.categories = [];
+
+  const cat = category.toLowerCase();
+  if (mission.meta.categories.includes(cat)) {
+    // Already bet on this category today
+    return { justCompleted: false, xpEarned: 0, allJustCompleted: false };
+  }
+
+  // New category!
+  mission.meta.categories.push(cat);
+  mission.progress = mission.meta.categories.length;
+
+  let justCompleted = false;
+  let xpEarned = 0;
+  let allJustCompleted = false;
+
+  if (mission.progress >= mission.target && !mission.completed) {
+    mission.completed = true;
+    justCompleted = true;
+    xpEarned = mission.xpReward;
+
+    const allComplete = data.missions.every((m) => m.completed);
+    if (allComplete && !data.allCompleteBonus) {
+      data.allCompleteBonus = true;
+      allJustCompleted = true;
+      xpEarned += ALL_COMPLETE_BONUS_XP;
+    }
+  }
+
+  saveMissions(data);
+
+  return { justCompleted, xpEarned, allJustCompleted };
+}
+
+/**
+ * Set mission progress to an absolute value (for streak_starter).
  */
 export function setMissionProgress(
   wallet: string,

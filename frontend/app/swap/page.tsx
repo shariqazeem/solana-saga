@@ -18,6 +18,7 @@ import { RetroGrid } from "@/components/RetroGrid";
 import { WalletButton } from "@/components/WalletButton";
 import { useJupiterSwap } from "@/hooks/useJupiterSwap";
 import { useSolBalance, useUsdcBalance } from "@/hooks/useUsdcBalance";
+import { updateMissionProgress } from "@/lib/missions";
 import {
   SOL_MINT,
   USDC_MINT,
@@ -132,6 +133,11 @@ export default function SwapPage() {
       const sig = await executeSwap(quote);
       setTxSignature(sig);
       setSwapStatus("success");
+
+      // Update Jupiter Swap mission
+      if (publicKey) {
+        updateMissionProgress(publicKey.toBase58(), "jupiter_swapper");
+      }
 
       confetti({
         particleCount: 100,

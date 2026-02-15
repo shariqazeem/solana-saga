@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { VersionedTransaction } from "@solana/web3.js";
+import { useState, useCallback, useMemo } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
+import { RPC_ENDPOINT } from "@/lib/solana/config";
 import {
   getSwapQuote,
   getSwapTransaction,
@@ -22,8 +23,25 @@ export interface SwapState {
   error: string | null;
 }
 
+/**
+ * Deserialize a base64-encoded transaction, auto-detecting legacy vs versioned.
+ * Legacy transactions don't have a version prefix (first byte < 0x80).
+ * Versioned (v0) transactions have first byte >= 0x80.
+ */
+function deserializeTransaction(base64: string): Transaction | VersionedTransaction {
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  // Versioned transactions have a version prefix with high bit set
+  if ((bytes[0] & 0x80) !== 0) {
+    return VersionedTransaction.deserialize(bytes);
+  }
+  return Transaction.from(bytes);
+}
+
 export function useJupiterSwap() {
-  const { connection } = useConnection();
+  const connection = useMemo(
+    () => new Connection(RPC_ENDPOINT, { commitment: "confirmed" }),
+    []
+  );
   const wallet = useWallet();
 
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
@@ -61,20 +79,35 @@ export function useJupiterSwap() {
   );
 
   /**
-   * Execute a swap given a quote. Follows EXACT same signing pattern as
-   * useJupiterPrediction.ts placeBet().
+   * Execute a swap given a quote.
+   * Uses asLegacyTransaction for maximum wallet compatibility (Jupiter Mobile, Phantom, etc.)
    */
   const executeSwap = useCallback(
     async (quoteResponse: QuoteResponse): Promise<string> => {
-      if (!wallet.publicKey || !wallet.signTransaction) {
+      if (!wallet.publicKey) {
         throw new Error("Wallet not connected");
+      }
+      if (!wallet.sendTransaction) {
+        throw new Error("Wallet does not support transaction sending. Try a different wallet.");
       }
 
       setSwapping(true);
       setError(null);
 
       try {
-        // 1. Get swap transaction from Jupiter
+        // 0. Pre-check: verify wallet has enough SOL for the swap input
+        const inputMint = quoteResponse.inputMint;
+        if (inputMint === SOL_MINT) {
+          const solBalance = await connection.getBalance(wallet.publicKey);
+          const needed = parseInt(quoteResponse.inAmount) + 10_000_000; // + 0.01 SOL for fees
+          if (solBalance < needed) {
+            throw new Error(
+              `Insufficient SOL. You have ${(solBalance / 1e9).toFixed(4)} SOL but need ~${(needed / 1e9).toFixed(4)} SOL.`
+            );
+          }
+        }
+
+        // 1. Get swap transaction from Jupiter (asLegacyTransaction for wallet compat)
         const swapResult = await getSwapTransaction(
           quoteResponse,
           wallet.publicKey.toBase58()
@@ -84,32 +117,53 @@ export function useJupiterSwap() {
           throw new Error("No transaction returned from Jupiter Swap API");
         }
 
-        // 2. Deserialize the base64 transaction
-        const txBuffer = Buffer.from(swapResult.swapTransaction, "base64");
-        const transaction = VersionedTransaction.deserialize(txBuffer);
+        // 2. Deserialize - auto-detects legacy vs versioned
+        const transaction = deserializeTransaction(swapResult.swapTransaction);
+        const isLegacy = transaction instanceof Transaction;
+        console.log("[Jupiter Swap] Transaction type:", isLegacy ? "legacy" : "versioned");
 
-        // 3. Sign with wallet
-        const signedTx = await wallet.signTransaction(transaction);
-
-        // 4. Send to Solana
-        const signature = await connection.sendRawTransaction(
-          signedTx.serialize(),
-          {
+        // 3. Send via wallet adapter
+        //    For versioned transactions that fail on some mobile wallets,
+        //    fall back to manual signTransaction + sendRawTransaction
+        let signature: string;
+        try {
+          signature = await wallet.sendTransaction(transaction, connection, {
             skipPreflight: false,
             preflightCommitment: "confirmed",
             maxRetries: 3,
+          });
+        } catch (sendErr: any) {
+          // If wallet.sendTransaction fails due to versioned tx compat, try manual sign+send
+          if (
+            !isLegacy &&
+            wallet.signTransaction &&
+            (sendErr.message?.includes("versioned") ||
+             sendErr.message?.includes("VersionedMessage") ||
+             sendErr.message?.includes("deserialize"))
+          ) {
+            console.warn("[Jupiter Swap] sendTransaction failed for versioned tx, trying signTransaction fallback");
+            const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
+            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+              skipPreflight: false,
+              preflightCommitment: "confirmed",
+              maxRetries: 3,
+            });
+          } else {
+            throw sendErr;
           }
-        );
+        }
 
         console.log("[Jupiter Swap] Transaction sent:", signature);
 
-        // 5. Confirm transaction
+        // 4. Confirm transaction
         const latestBlockhash = await connection.getLatestBlockhash("confirmed");
         await connection.confirmTransaction(
           {
             signature,
             blockhash: latestBlockhash.blockhash,
-            lastValidBlockHeight: swapResult.lastValidBlockHeight || latestBlockhash.lastValidBlockHeight,
+            lastValidBlockHeight:
+              swapResult.lastValidBlockHeight ||
+              latestBlockhash.lastValidBlockHeight,
           },
           "confirmed"
         );
@@ -119,11 +173,32 @@ export function useJupiterSwap() {
       } catch (err: any) {
         console.error("[Jupiter Swap] Error:", err);
 
-        if (err.message?.includes("User rejected")) {
+        if (err.message?.includes("User rejected") || err.message?.includes("user rejected")) {
           throw new Error("Transaction cancelled");
         }
-        if (err.message?.includes("insufficient")) {
-          throw new Error("Insufficient balance");
+        if (err.message?.includes("Insufficient SOL") || err.message?.includes("Insufficient balance")) {
+          throw err; // Already a clear message
+        }
+        if (err.message?.includes("insufficient") || err.message?.includes("Insufficient")) {
+          throw new Error("Insufficient balance for this swap");
+        }
+        if (err.message?.includes("no record of a prior credit") || err.message?.includes("Attempt to debit")) {
+          throw new Error("Insufficient SOL balance. Deposit SOL to your wallet first.");
+        }
+        if (err.message?.includes("Simulation failed") || err.message?.includes("simulation failed")) {
+          throw new Error("Transaction simulation failed. Check your balance and try again.");
+        }
+        if (err.message?.includes("AccountNotFound") || err.message?.includes("Account not found") || err.message?.includes("could not find account")) {
+          throw new Error("Token account not found. You may need SOL or the input token in your wallet first.");
+        }
+        if (err.message?.includes("versioned") || err.message?.includes("VersionedMessage")) {
+          throw new Error("Wallet compatibility issue. Please try using Phantom wallet.");
+        }
+        if (err.message?.includes("blockhash")) {
+          throw new Error("Transaction expired. Please try again.");
+        }
+        if (err.message?.includes("too large") || err.message?.includes("Transaction too large")) {
+          throw new Error("Transaction too large for legacy mode. Try a smaller amount.");
         }
 
         throw new Error(err.message || "Swap failed");
@@ -136,8 +211,6 @@ export function useJupiterSwap() {
 
   /**
    * Convenience: swap SOL to USDC in one call.
-   * @param solAmount - amount of SOL to swap
-   * @returns transaction signature
    */
   const swapSolToUsdc = useCallback(
     async (solAmount: number): Promise<string> => {

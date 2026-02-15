@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { RPC_ENDPOINT } from "@/lib/solana/config";
 import { getTokensByMints, type TokenInfo } from "@/lib/jupiter/jupiterTokenApi";
 import { fetchTokenPrices } from "@/lib/jupiter/jupiterPriceApi";
 
@@ -24,7 +25,10 @@ const KNOWN_ICONS: Record<string, string> = {
 };
 
 export function useTokenPortfolio() {
-  const { connection } = useConnection();
+  const connection = useMemo(
+    () => new Connection(RPC_ENDPOINT, { commitment: "confirmed" }),
+    []
+  );
   const { publicKey, connected } = useWallet();
 
   const [tokens, setTokens] = useState<TokenHolding[]>([]);

@@ -131,6 +131,7 @@ export async function getSwapTransaction(
         userPublicKey,
         dynamicComputeUnitLimit: true,
         dynamicSlippage: true,
+        asLegacyTransaction: true,
         prioritizationFeeLamports: {
           priorityLevelWithMaxLamports: {
             maxLamports: 1000000,
