@@ -15,6 +15,7 @@ import {
   fetchProfile,
   fetchLeaderboards,
   createOrder,
+  closeAllOrders,
   closePosition as apiClosePosition,
   claimPayout as apiClaimPayout,
   fetchOrderStatus,
@@ -407,13 +408,20 @@ export function useJupiterPrediction() {
         if (market.endTime > 0 && market.endTime < now) {
           throw new Error("Market has expired. Try a different market.");
         }
-        // Reject if market closes within 5 minutes (Jupiter may reject these)
         if (market.endTime > 0 && market.endTime - now < 300) {
           throw new Error("Market closes in < 5 min. Try a different market.");
         }
 
         const buyPrice = prediction ? market.buyYesPrice : market.buyNoPrice;
         if (!buyPrice || buyPrice <= 0) throw new Error("Market price unavailable");
+
+        // 0. Clean up any stuck pending orders that lock USDC balance
+        try {
+          await closeAllOrders(wallet.publicKey.toBase58(), ["pending"]);
+          console.log("[Jupiter Order] Cleaned up pending orders");
+        } catch {
+          // Ignore — no pending orders to clean
+        }
 
         // Jupiter requires minimum $1 deposit; add small buffer for fees
         const depositUsd = Math.max(amountUsd * 1.02, 1.02);
@@ -437,20 +445,30 @@ export function useJupiterPrediction() {
           depositAmount: String(depositMicro),
           depositMint: USDC_MINT_ADDRESS,
           maxBuyPriceUsd: "1000000",
-        });
+        } as any);
 
         if (!orderResponse.transaction) {
           throw new Error("No transaction returned from Jupiter API");
         }
 
-        // 2. Convert to legacy transaction for Jupiter Mobile wallet compat
-        const transaction = await toLegacyTransaction(
-          orderResponse.transaction,
-          connection,
-          orderResponse.txMeta?.blockhash
-        );
-        const isLegacy = transaction instanceof Transaction;
-        console.log("[Jupiter Order] Transaction type:", isLegacy ? "legacy" : "versioned");
+        // 2. Convert versioned tx to legacy for Jupiter Mobile wallet compat
+        let transaction: Transaction | VersionedTransaction;
+        let isLegacy: boolean;
+        try {
+          transaction = await toLegacyTransaction(
+            orderResponse.transaction,
+            connection,
+            orderResponse.txMeta?.blockhash
+          );
+          isLegacy = transaction instanceof Transaction;
+        } catch (convErr) {
+          console.error("[Jupiter Order] Legacy conversion failed:", convErr);
+          // Fall back to versioned
+          const bytes = Uint8Array.from(atob(orderResponse.transaction), (c) => c.charCodeAt(0));
+          transaction = VersionedTransaction.deserialize(bytes);
+          isLegacy = false;
+        }
+        console.log("[Jupiter Order] Transaction type:", isLegacy ? "LEGACY" : "VERSIONED (fallback)");
 
         // 3. Send via wallet adapter
         let signature: string;
