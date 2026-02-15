@@ -114,11 +114,11 @@ export interface JupCreateOrderRequest {
   marketId: string;
   isYes: boolean;
   isBuy: boolean;
-  contracts: number | string;
+  depositAmount: number | string;
+  depositMint: string;
+  contracts?: number | string;
   maxBuyPriceUsd?: number | string;
   minSellPriceUsd?: number | string;
-  depositAmount?: number | string;
-  depositMint?: string;
 }
 
 export interface JupCreateOrderResponse {
@@ -315,13 +315,22 @@ async function jupFetch<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    let errorData: JupApiError;
+    let errorText: string;
     try {
-      errorData = await res.json();
-    } catch {
-      throw new Error(`Jupiter API error: ${res.status} ${res.statusText}`);
+      const errorData = await res.json();
+      errorText = errorData.message || errorData.error || JSON.stringify(errorData);
+      if (errorData.message) {
+        throw new JupiterApiError(errorData as JupApiError);
+      }
+    } catch (parseErr) {
+      if (parseErr instanceof JupiterApiError) throw parseErr;
+      try {
+        errorText = await res.text();
+      } catch {
+        errorText = res.statusText;
+      }
     }
-    throw new JupiterApiError(errorData);
+    throw new Error(`Jupiter API ${res.status}: ${errorText}`);
   }
 
   return res.json();

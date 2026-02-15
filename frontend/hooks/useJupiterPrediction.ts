@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { VersionedTransaction } from "@solana/web3.js";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { Connection, VersionedTransaction } from "@solana/web3.js";
+import { RPC_ENDPOINT } from "@/lib/solana/config";
 import {
   fetchEvents,
   fetchPositions,
@@ -24,6 +25,9 @@ import {
   dollarsToMicroUsd,
   priceToMicroUsd,
 } from "@/lib/jupiter/jupiterPredictionApi";
+
+// USDC mint address on Solana mainnet
+const USDC_MINT_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 // ============================================================
 // Market interface compatible with existing UI components
@@ -155,7 +159,12 @@ function transformToMarket(market: JupMarket, event: JupEvent): Market {
 export type EventCategory = "all" | "crypto" | "sports" | "politics" | "esports" | "culture" | "economics" | "tech";
 
 export function useJupiterPrediction() {
-  const { connection } = useConnection();
+  // Create our own reliable connection instead of useConnection()
+  // which may use a different RPC or be undefined
+  const connection = useMemo(
+    () => new Connection(RPC_ENDPOINT, { commitment: "confirmed" }),
+    []
+  );
   const wallet = useWallet();
 
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -309,33 +318,44 @@ export function useJupiterPrediction() {
         const market = markets.find((m) => m.publicKey === marketId);
         if (!market) throw new Error("Market not found");
 
+        // Check if market is still open for trading
+        const now = Math.floor(Date.now() / 1000);
+        if (market.endTime > 0 && market.endTime < now) {
+          throw new Error("Market has expired. Try a different market.");
+        }
+        // Reject if market closes within 5 minutes (Jupiter may reject these)
+        if (market.endTime > 0 && market.endTime - now < 300) {
+          throw new Error("Market closes in < 5 min. Try a different market.");
+        }
+
         const buyPrice = prediction ? market.buyYesPrice : market.buyNoPrice;
         if (!buyPrice || buyPrice <= 0) throw new Error("Market price unavailable");
 
-        // Calculate contracts: how many $1 contracts can we buy at this price
+        // depositAmount in micro USD (1,000,000 = $1.00) — this is the REQUIRED field
+        const depositMicro = dollarsToMicroUsd(amountUsd);
+
+        // Optionally calculate contracts for logging
         const contracts = Math.floor(amountUsd / buyPrice);
         if (contracts < 1) throw new Error("Amount too small for even 1 contract");
-
-        // maxBuyPriceUsd in micro USD - add 5% slippage for volatile markets
-        const maxBuyPriceMicro = priceToMicroUsd(Math.min(buyPrice * 1.05, 0.99));
 
         console.log("[Jupiter Order]", {
           marketId,
           isYes: prediction,
           contracts,
           buyPrice,
-          maxBuyPriceMicro,
+          depositMicro,
           amountUsd,
         });
 
         // 1. Request unsigned transaction from Jupiter API
+        // depositAmount + depositMint are REQUIRED per Jupiter docs
         const orderResponse = await createOrder({
           ownerPubkey: wallet.publicKey.toBase58(),
           marketId,
           isYes: prediction,
           isBuy: true,
-          contracts,
-          maxBuyPriceUsd: maxBuyPriceMicro,
+          depositAmount: String(depositMicro),
+          depositMint: USDC_MINT_ADDRESS,
         });
 
         if (!orderResponse.transaction) {
@@ -403,20 +423,27 @@ export function useJupiterPrediction() {
       } catch (err: any) {
         console.error("[Jupiter Order] Error:", err);
 
-        if (err.message?.includes("User rejected")) {
+        // Extract the most useful error message
+        const rawMsg = err?.message || err?.toString() || "Unknown error";
+
+        if (rawMsg.includes("User rejected") || rawMsg.includes("user rejected")) {
           throw new Error("Transaction cancelled");
         }
-        if (err.message?.includes("insufficient")) {
-          throw new Error("Insufficient balance");
+        if (rawMsg.includes("insufficient") || rawMsg.includes("Insufficient")) {
+          throw new Error("Insufficient USDC balance");
         }
-        if (err.message?.includes("no record of a prior credit") || err.message?.includes("Attempt to debit")) {
-          throw new Error("Insufficient USDC balance. Swap SOL to USDC first.");
+        if (rawMsg.includes("no record of a prior credit") || rawMsg.includes("Attempt to debit")) {
+          throw new Error("Insufficient USDC. Swap SOL to USDC first.");
         }
-        if (err.message?.includes("Simulation failed") || err.message?.includes("simulation failed")) {
-          throw new Error("Transaction failed. Check your USDC balance and try again.");
+        if (rawMsg.includes("Simulation failed") || rawMsg.includes("simulation failed")) {
+          throw new Error("Transaction simulation failed. Check balance.");
+        }
+        if (rawMsg.includes("closed") || rawMsg.includes("expired") || rawMsg.includes("settled")) {
+          throw new Error("Market is closed or expired. Try another market.");
         }
 
-        throw new Error(err.message || "Failed to place order");
+        // Pass the FULL error so user can see it in the UI
+        throw new Error(`Order failed: ${rawMsg.slice(0, 200)}`);
       } finally {
         pendingOrderRef.current.delete(orderId);
       }
