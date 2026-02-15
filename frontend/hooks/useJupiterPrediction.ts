@@ -331,8 +331,10 @@ export function useJupiterPrediction() {
         const buyPrice = prediction ? market.buyYesPrice : market.buyNoPrice;
         if (!buyPrice || buyPrice <= 0) throw new Error("Market price unavailable");
 
-        // depositAmount in micro USD (1,000,000 = $1.00) — this is the REQUIRED field
-        const depositMicro = dollarsToMicroUsd(amountUsd);
+        // Jupiter requires minimum $1 deposit AND fees come out of it,
+        // so we add a 5% buffer to ensure the net deposit clears the minimum
+        const depositUsd = Math.max(amountUsd * 1.05, 1.05);
+        const depositMicro = dollarsToMicroUsd(depositUsd);
 
         // Optionally calculate contracts for logging
         const contracts = Math.floor(amountUsd / buyPrice);
