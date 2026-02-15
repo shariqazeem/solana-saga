@@ -433,21 +433,9 @@ export function useJupiterPrediction() {
         if (rawMsg.includes("User rejected") || rawMsg.includes("user rejected")) {
           throw new Error("Transaction cancelled");
         }
-        if (rawMsg.includes("insufficient") || rawMsg.includes("Insufficient")) {
-          throw new Error("Insufficient USDC balance");
-        }
-        if (rawMsg.includes("no record of a prior credit") || rawMsg.includes("Attempt to debit")) {
-          throw new Error("Insufficient USDC. Swap SOL to USDC first.");
-        }
-        if (rawMsg.includes("Simulation failed") || rawMsg.includes("simulation failed")) {
-          throw new Error("Transaction simulation failed. Check balance.");
-        }
-        if (rawMsg.includes("closed") || rawMsg.includes("expired") || rawMsg.includes("settled")) {
-          throw new Error("Market is closed or expired. Try another market.");
-        }
 
-        // Pass the FULL error so user can see it in the UI
-        throw new Error(`Order failed: ${rawMsg.slice(0, 200)}`);
+        // Show the FULL raw error for debugging — helps diagnose on mobile
+        throw new Error(`Order failed: ${rawMsg.slice(0, 300)}`);
       } finally {
         pendingOrderRef.current.delete(orderId);
       }
