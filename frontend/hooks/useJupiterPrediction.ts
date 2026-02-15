@@ -475,7 +475,10 @@ export function useJupiterPrediction() {
 
         // Flatten: each event has multiple markets, create Market for each
         // Quality filters: show tradeable markets with reasonable prices
-        const MAX_MARKETS_PER_EVENT = 3;
+        // Live/trending modes use relaxed filters (extreme prices & short close times are normal)
+        const isLiveMode = isFilterMode && activeCategory === "live";
+        const isRelaxedMode = isFilterMode; // live or trending
+        const MAX_MARKETS_PER_EVENT = isLiveMode ? 5 : 3;
         const seenMarketIds = new Set<string>();
         const marketsByEvent: Market[][] = [];
         for (const event of result.data) {
@@ -487,14 +490,17 @@ export function useJupiterPrediction() {
               if (!m.pricing) return false;
               // Deduplicate: skip markets we've already seen from other events
               if (seenMarketIds.has(m.marketId)) return false;
-              // Prices must be in tradeable range (3%-97%) — avoid extremes that cause API errors
               const yesPrice = (m.pricing.buyYesPriceUsd ?? 0) / 1_000_000;
               const noPrice = (m.pricing.buyNoPriceUsd ?? 0) / 1_000_000;
-              if (yesPrice <= 0.03 || yesPrice >= 0.97) return false;
-              if (noPrice <= 0.03 || noPrice >= 0.97) return false;
-              // Must not be expired or closing within 30 minutes
+              // Price range: relaxed for live/trending (1%-99%), strict otherwise (3%-97%)
+              const minPrice = isRelaxedMode ? 0.01 : 0.03;
+              const maxPrice = isRelaxedMode ? 0.99 : 0.97;
+              if (yesPrice <= minPrice || yesPrice >= maxPrice) return false;
+              if (noPrice <= minPrice || noPrice >= maxPrice) return false;
+              // Close time: live events can close soon, normal markets need 30min buffer
               const now = Math.floor(Date.now() / 1000);
-              if (m.closeTime > 0 && m.closeTime < now + 1800) return false;
+              const minTimeLeft = isRelaxedMode ? 60 : 1800; // 1 min vs 30 min
+              if (m.closeTime > 0 && m.closeTime < now + minTimeLeft) return false;
               return true;
             })
             .sort((a, b) => (b.pricing?.volume || 0) - (a.pricing?.volume || 0))

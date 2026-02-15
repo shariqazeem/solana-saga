@@ -468,6 +468,33 @@ export default function ArenaPage() {
 
       {/* Main Arena Content */}
       <main className="relative z-10 flex-1 flex flex-col min-h-0 pt-20 pb-16">
+        {/* Category Filter - Always visible (except during initial load) */}
+        {!(loading && isFirstLoad) && (
+          <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar flex-shrink-0 px-4 max-w-lg mx-auto w-full">
+            {CATEGORIES.map((cat) => {
+              const count = categoryCounts[cat.value] || 0;
+              const isActive = category === cat.value;
+              const isLive = cat.icon === "live";
+              const isFlame = cat.icon === "flame";
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => changeCategory(cat.value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-game whitespace-nowrap transition-all ${
+                    isActive
+                      ? isLive ? "bg-red-500 text-white" : "bg-[#00F3FF] text-black"
+                      : isLive ? "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20" : "bg-white/5 text-gray-400 hover:bg-white/10"
+                  }`}
+                >
+                  {isLive && <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white" : "bg-red-400"} animate-pulse`} />}
+                  {isFlame && <Flame className="w-3 h-3" />}
+                  {cat.label}{!isLive && !isFlame && count > 0 ? ` (${count})` : ""}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           {loading && isFirstLoad ? (
             <motion.div
@@ -594,31 +621,6 @@ export default function ArenaPage() {
                   </button>
                 </motion.div>
               )}
-
-              {/* Category Filter - Horizontal Scroll */}
-              <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar flex-shrink-0">
-                {CATEGORIES.map((cat) => {
-                  const count = categoryCounts[cat.value] || 0;
-                  const isActive = category === cat.value;
-                  const isLive = cat.icon === "live";
-                  const isFlame = cat.icon === "flame";
-                  return (
-                    <button
-                      key={cat.value}
-                      onClick={() => changeCategory(cat.value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-game whitespace-nowrap transition-all ${
-                        isActive
-                          ? isLive ? "bg-red-500 text-white" : "bg-[#00F3FF] text-black"
-                          : isLive ? "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20" : "bg-white/5 text-gray-400 hover:bg-white/10"
-                      }`}
-                    >
-                      {isLive && <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white" : "bg-red-400"} animate-pulse`} />}
-                      {isFlame && <Flame className="w-3 h-3" />}
-                      {cat.label}{!isLive && !isFlame && count > 0 ? ` (${count})` : ""}
-                    </button>
-                  );
-                })}
-              </div>
 
               {/* Sort Toggle */}
               <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
