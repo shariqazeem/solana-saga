@@ -16,6 +16,16 @@ import {
   type SwapError,
 } from "@/lib/jupiter/jupiterSwapApi";
 
+// Known token decimals — used for display conversion
+const KNOWN_DECIMALS: Record<string, number> = {
+  [SOL_MINT]: 9,
+  "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263": 5, // BONK
+};
+
+function getDecimalsForMint(mint: string): number {
+  return KNOWN_DECIMALS[mint] ?? 6; // Most SPL tokens (USDC, JUP, etc.) use 6
+}
+
 export interface SwapState {
   quote: QuoteResponse | null;
   quoteLoading: boolean;
@@ -153,18 +163,29 @@ export function useJupiterSwap() {
 
         console.log("[Jupiter Swap] Transaction sent:", signature);
 
-        // 4. Confirm transaction
+        // 4. Confirm using polling (more reliable than WebSocket on free RPCs)
         const latestBlockhash = await connection.getLatestBlockhash("confirmed");
-        await connection.confirmTransaction(
-          {
-            signature,
-            blockhash: latestBlockhash.blockhash,
-            lastValidBlockHeight:
-              swapResult.lastValidBlockHeight ||
-              latestBlockhash.lastValidBlockHeight,
-          },
-          "confirmed"
-        );
+        const maxBlockHeight = swapResult.lastValidBlockHeight || latestBlockhash.lastValidBlockHeight;
+        const pollStart = Date.now();
+        const pollTimeout = 60_000;
+
+        while (Date.now() - pollStart < pollTimeout) {
+          const { value } = await connection.getSignatureStatuses([signature]);
+          const status = value?.[0];
+          if (status) {
+            if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
+              if (status.err) {
+                throw new Error("Swap transaction failed on-chain. Please try again.");
+              }
+              break;
+            }
+          }
+          const blockHeight = await connection.getBlockHeight("confirmed");
+          if (blockHeight > maxBlockHeight) {
+            throw new Error("Transaction expired. Please try again.");
+          }
+          await new Promise((r) => setTimeout(r, 2000));
+        }
 
         console.log("[Jupiter Swap] Confirmed:", signature);
         return signature;
@@ -227,17 +248,23 @@ export function useJupiterSwap() {
   );
 
   // Derived display values from current quote
+  // Use actual token decimals based on mint (not hardcoded SOL/USDC)
   const quoteDisplay = quote
-    ? {
-        inputAmount: lamportsToSol(parseInt(quote.inAmount)),
-        outputAmount: rawToUsdc(parseInt(quote.outAmount)),
-        minimumReceived: rawToUsdc(parseInt(quote.otherAmountThreshold)),
-        priceImpact: parseFloat(quote.priceImpactPct),
-        exchangeRate:
-          rawToUsdc(parseInt(quote.outAmount)) /
-          lamportsToSol(parseInt(quote.inAmount)),
-        routeSteps: quote.routePlan.length,
-      }
+    ? (() => {
+        const inputDecimals = getDecimalsForMint(quote.inputMint);
+        const outputDecimals = getDecimalsForMint(quote.outputMint);
+        const inputAmount = parseInt(quote.inAmount) / Math.pow(10, inputDecimals);
+        const outputAmount = parseInt(quote.outAmount) / Math.pow(10, outputDecimals);
+        const minimumReceived = parseInt(quote.otherAmountThreshold) / Math.pow(10, outputDecimals);
+        return {
+          inputAmount,
+          outputAmount,
+          minimumReceived,
+          priceImpact: parseFloat(quote.priceImpactPct),
+          exchangeRate: inputAmount > 0 ? outputAmount / inputAmount : 0,
+          routeSteps: quote.routePlan.length,
+        };
+      })()
     : null;
 
   return {
