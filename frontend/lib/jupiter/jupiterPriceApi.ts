@@ -5,6 +5,8 @@
  * Used to show live prices on crypto-category prediction market cards.
  */
 
+import { JUP_API_KEY } from "@/lib/solana/config";
+
 // Token mint addresses on Solana mainnet
 const TOKEN_MINTS: Record<string, string> = {
   SOL: "So11111111111111111111111111111111111111112",
@@ -62,7 +64,9 @@ export async function fetchTokenPrices(): Promise<Record<string, TokenPrice>> {
   const url = `https://api.jup.ag/price/v2?ids=${mintIds}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: JUP_API_KEY ? { "x-api-key": JUP_API_KEY } : {},
+    });
     if (!res.ok) return priceCache?.data ?? {};
 
     const json: JupPriceResponse = await res.json();

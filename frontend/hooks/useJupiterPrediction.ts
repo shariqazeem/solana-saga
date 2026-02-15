@@ -15,7 +15,7 @@ import {
   fetchProfile,
   fetchLeaderboards,
   createOrder,
-  closeAllOrders,
+  closeOrder as apiCloseOrder,
   closePosition as apiClosePosition,
   claimPayout as apiClaimPayout,
   fetchOrderStatus,
@@ -51,14 +51,17 @@ async function toLegacyTransaction(
 ): Promise<Transaction | VersionedTransaction> {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
-  // Already legacy — return directly
-  if ((bytes[0] & 0x80) === 0) {
+  // Try versioned first, fall back to legacy
+  let versioned: VersionedTransaction;
+  try {
+    versioned = VersionedTransaction.deserialize(bytes);
+  } catch {
+    // Already legacy — return directly
     console.log("[Jupiter] Transaction is already legacy");
     return Transaction.from(bytes);
   }
 
-  // Versioned transaction — convert to legacy
-  const versioned = VersionedTransaction.deserialize(bytes);
+  // Versioned transaction — try to convert to legacy
   try {
     const msg = versioned.message;
 
@@ -89,6 +92,49 @@ async function toLegacyTransaction(
   } catch (e) {
     console.warn("[Jupiter] Could not convert to legacy, using versioned:", e);
     return versioned;
+  }
+}
+
+/**
+ * Sign and send a Jupiter transaction with maximum wallet compatibility.
+ * Strategy: try legacy first (best mobile compat), then versioned, then sendTransaction fallback.
+ */
+async function signAndSendTransaction(
+  base64Tx: string,
+  connection: Connection,
+  wallet: any,
+  blockhash?: string
+): Promise<string> {
+  const txBuffer = Buffer.from(base64Tx, "base64");
+
+  // Try legacy first for Jupiter Mobile compatibility
+  try {
+    const legacyTx = await toLegacyTransaction(base64Tx, connection, blockhash);
+    const signedTx = await wallet.signTransaction(legacyTx);
+    const sig = await connection.sendRawTransaction(signedTx.serialize(), {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      maxRetries: 3,
+    });
+    console.log("[Jupiter] Sent via legacy sign+send:", sig);
+    return sig;
+  } catch (err: any) {
+    if (err.message?.includes("reject")) throw err;
+    console.warn("[Jupiter] Legacy sign+send failed:", err.message);
+  }
+
+  // Fallback: versioned via sendTransaction (Phantom desktop)
+  try {
+    const versionedTx = VersionedTransaction.deserialize(txBuffer);
+    const sig = await wallet.sendTransaction(versionedTx, connection, {
+      skipPreflight: true,
+      maxRetries: 3,
+    });
+    console.log("[Jupiter] Sent via versioned sendTransaction:", sig);
+    return sig;
+  } catch (err: any) {
+    if (err.message?.includes("reject")) throw err;
+    throw new Error(err.message || "Failed to send transaction");
   }
 }
 
@@ -288,16 +334,26 @@ export function useJupiterPrediction() {
         setEvents(result.data);
 
         // Flatten: each event has multiple markets, create Market for each
-        // Limit to top 3 markets per event (by volume) to avoid flooding
-        // e.g. politics events with 20+ candidate markets
+        // Quality filters: show tradeable markets with reasonable prices
         const MAX_MARKETS_PER_EVENT = 3;
         const marketsByEvent: Market[][] = [];
         for (const event of result.data) {
           if (!event.markets) continue;
           const eventMarkets: Market[] = [];
-          // Sort by volume within event, take top N
           const openMarkets = event.markets
-            .filter((m) => m.status === "open")
+            .filter((m) => {
+              if (m.status !== "open") return false;
+              if (!m.pricing) return false;
+              // Prices must be in tradeable range (3%-97%) — avoid extremes that cause API errors
+              const yesPrice = (m.pricing.buyYesPriceUsd ?? 0) / 1_000_000;
+              const noPrice = (m.pricing.buyNoPriceUsd ?? 0) / 1_000_000;
+              if (yesPrice <= 0.03 || yesPrice >= 0.97) return false;
+              if (noPrice <= 0.03 || noPrice >= 0.97) return false;
+              // Must not be expired or closing within 30 minutes
+              const now = Math.floor(Date.now() / 1000);
+              if (m.closeTime > 0 && m.closeTime < now + 1800) return false;
+              return true;
+            })
             .sort((a, b) => (b.pricing?.volume || 0) - (a.pricing?.volume || 0))
             .slice(0, MAX_MARKETS_PER_EVENT);
           for (const market of openMarkets) {
@@ -415,100 +471,55 @@ export function useJupiterPrediction() {
         const buyPrice = prediction ? market.buyYesPrice : market.buyNoPrice;
         if (!buyPrice || buyPrice <= 0) throw new Error("Market price unavailable");
 
-        // 0. Clean up any stuck pending orders that lock USDC balance
-        try {
-          await closeAllOrders(wallet.publicKey.toBase58(), ["pending"]);
-          console.log("[Jupiter Order] Cleaned up pending orders");
-        } catch {
-          // Ignore — no pending orders to clean
+        // 0. Pre-check balances
+        const ownerPub = wallet.publicKey.toBase58();
+        const solBal = await connection.getBalance(wallet.publicKey);
+        console.log(`[Jupiter Order] SOL: ${(solBal / 1e9).toFixed(4)}, betting $${amountUsd}`);
+        if (solBal < 10_000_000) {
+          throw new Error(
+            `Need more SOL for fees. You have ${(solBal / 1e9).toFixed(4)} SOL, need ~0.01+ SOL.`
+          );
         }
 
         // Jupiter requires minimum $1 deposit; add small buffer for fees
-        const depositUsd = Math.max(amountUsd * 1.02, 1.02);
+        const depositUsd = Math.max(amountUsd * 1.05, 1.05);
         const depositMicro = dollarsToMicroUsd(depositUsd);
 
         console.log("[Jupiter Order]", {
           marketId,
           isYes: prediction,
           buyPrice,
+          depositUsd,
           depositMicro,
-          amountUsd,
         });
 
         // 1. Request unsigned transaction from Jupiter API
-        // maxBuyPriceUsd: API defaults to $0.99 which rejects high-prob markets — set to $1
         const orderResponse = await createOrder({
-          ownerPubkey: wallet.publicKey.toBase58(),
+          ownerPubkey: ownerPub,
           marketId,
           isYes: prediction,
           isBuy: true,
           depositAmount: String(depositMicro),
           depositMint: USDC_MINT_ADDRESS,
-          maxBuyPriceUsd: "1000000",
-        } as any);
+        });
 
         if (!orderResponse.transaction) {
           throw new Error("No transaction returned from Jupiter API");
         }
 
-        // 2. Deserialize transaction (auto-detect versioned vs legacy)
-        const txBytes = Uint8Array.from(atob(orderResponse.transaction), (c) => c.charCodeAt(0));
-        const isVersioned = (txBytes[0] & 0x80) !== 0;
-        let transaction: Transaction | VersionedTransaction = isVersioned
-          ? VersionedTransaction.deserialize(txBytes)
-          : Transaction.from(txBytes);
-        console.log("[Jupiter Order] Transaction type:", isVersioned ? "versioned" : "legacy");
-
-        // 3. Send via wallet adapter — try native format first
-        let signature: string;
-        try {
-          signature = await wallet.sendTransaction(transaction, connection, {
-            skipPreflight: true,
-            maxRetries: 3,
-          });
-        } catch (sendErr: any) {
-          const errMsg = sendErr?.message || "";
-          const isVersionedError =
-            errMsg.includes("versioned") ||
-            errMsg.includes("VersionedMessage") ||
-            errMsg.includes("deserialize");
-
-          // If wallet can't handle versioned tx, convert to legacy and retry
-          if (isVersioned && isVersionedError) {
-            console.warn("[Jupiter Order] Wallet can't handle versioned tx, converting to legacy...");
-            try {
-              transaction = await toLegacyTransaction(
-                orderResponse.transaction,
-                connection,
-                orderResponse.txMeta?.blockhash
-              );
-              signature = await wallet.sendTransaction(transaction, connection, {
-                skipPreflight: true,
-                maxRetries: 3,
-              });
-            } catch (legacyErr: any) {
-              // If legacy conversion also fails, try signTransaction as last resort
-              if (wallet.signTransaction) {
-                const vTx = VersionedTransaction.deserialize(txBytes);
-                const signedTx = await wallet.signTransaction(vTx);
-                signature = await connection.sendRawTransaction(signedTx.serialize(), {
-                  skipPreflight: true,
-                  maxRetries: 3,
-                });
-              } else {
-                throw legacyErr;
-              }
-            }
-          } else {
-            throw sendErr;
-          }
-        }
+        // 2. Sign and send with wallet-compatible approach
+        const signature = await signAndSendTransaction(
+          orderResponse.transaction,
+          connection,
+          wallet,
+          orderResponse.txMeta?.blockhash
+        );
 
         console.log("[Jupiter Order] Transaction sent:", signature);
 
-        // 4. Confirm
+        // 4. Confirm and CHECK for on-chain errors (critical — tx can confirm but fail)
         if (orderResponse.txMeta) {
-          await connection.confirmTransaction(
+          const confirmation = await connection.confirmTransaction(
             {
               signature,
               blockhash: orderResponse.txMeta.blockhash,
@@ -516,13 +527,19 @@ export function useJupiterPrediction() {
             },
             "confirmed"
           );
+          if (confirmation.value.err) {
+            console.error("[Jupiter Order] Transaction failed on-chain:", confirmation.value.err);
+            throw new Error(
+              `Transaction failed on-chain. You may need more SOL for fees. Check your balance and try again.`
+            );
+          }
         }
 
         console.log("[Jupiter Order] Confirmed:", signature);
 
-        // 6. Poll order status until filled (non-blocking)
+        // 5. Poll order status (with delay — Jupiter docs say wait a few slots)
         if (orderResponse.order.orderPubkey) {
-          pollOrderStatus(orderResponse.order.orderPubkey);
+          setTimeout(() => pollOrderStatus(orderResponse.order.orderPubkey!), 5000);
         }
 
         // Refresh data in background
@@ -555,7 +572,7 @@ export function useJupiterPrediction() {
   // --------------------------------------------------------
   const sellPosition = useCallback(
     async (positionPubkey: string): Promise<string> => {
-      if (!wallet.publicKey || !wallet.sendTransaction) {
+      if (!wallet.publicKey || !wallet.signTransaction) {
         throw new Error("Wallet not connected");
       }
 
@@ -571,38 +588,15 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        // Deserialize (auto-detect format)
-        const txBytes = Uint8Array.from(atob(response.transaction), (c) => c.charCodeAt(0));
-        const isVersioned = (txBytes[0] & 0x80) !== 0;
-        let transaction: Transaction | VersionedTransaction = isVersioned
-          ? VersionedTransaction.deserialize(txBytes)
-          : Transaction.from(txBytes);
-
-        let signature: string;
-        try {
-          signature = await wallet.sendTransaction(transaction, connection, {
-            skipPreflight: true,
-            maxRetries: 3,
-          });
-        } catch (sendErr: any) {
-          const errMsg = sendErr?.message || "";
-          if (
-            isVersioned &&
-            (errMsg.includes("versioned") || errMsg.includes("deserialize"))
-          ) {
-            // Convert to legacy for mobile wallet compat
-            transaction = await toLegacyTransaction(response.transaction, connection, response.txMeta?.blockhash);
-            signature = await wallet.sendTransaction(transaction, connection, {
-              skipPreflight: true,
-              maxRetries: 3,
-            });
-          } else {
-            throw sendErr;
-          }
-        }
+        const signature = await signAndSendTransaction(
+          response.transaction,
+          connection,
+          wallet,
+          response.txMeta?.blockhash
+        );
 
         if (response.txMeta) {
-          await connection.confirmTransaction(
+          const confirmation = await connection.confirmTransaction(
             {
               signature,
               blockhash: response.txMeta.blockhash,
@@ -610,6 +604,9 @@ export function useJupiterPrediction() {
             },
             "confirmed"
           );
+          if (confirmation.value.err) {
+            throw new Error("Transaction failed on-chain. Check balance and try again.");
+          }
         }
 
         // Refresh
@@ -617,7 +614,7 @@ export function useJupiterPrediction() {
 
         return signature;
       } catch (err: any) {
-        if (err.message?.includes("User rejected")) {
+        if (err.message?.includes("reject")) {
           throw new Error("Transaction cancelled");
         }
         throw new Error(err.message || "Failed to sell position");
@@ -645,38 +642,15 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        // Deserialize (auto-detect format)
-        const txBytes = Uint8Array.from(atob(response.transaction), (c) => c.charCodeAt(0));
-        const isVersioned = (txBytes[0] & 0x80) !== 0;
-        let transaction: Transaction | VersionedTransaction = isVersioned
-          ? VersionedTransaction.deserialize(txBytes)
-          : Transaction.from(txBytes);
-
-        let signature: string;
-        try {
-          signature = await wallet.sendTransaction(transaction, connection, {
-            skipPreflight: true,
-            maxRetries: 3,
-          });
-        } catch (sendErr: any) {
-          const errMsg = sendErr?.message || "";
-          if (
-            isVersioned &&
-            (errMsg.includes("versioned") || errMsg.includes("deserialize"))
-          ) {
-            // Convert to legacy for mobile wallet compat
-            transaction = await toLegacyTransaction(response.transaction, connection, response.txMeta?.blockhash);
-            signature = await wallet.sendTransaction(transaction, connection, {
-              skipPreflight: true,
-              maxRetries: 3,
-            });
-          } else {
-            throw sendErr;
-          }
-        }
+        const signature = await signAndSendTransaction(
+          response.transaction,
+          connection,
+          wallet,
+          response.txMeta?.blockhash
+        );
 
         if (response.txMeta) {
-          await connection.confirmTransaction(
+          const confirmation = await connection.confirmTransaction(
             {
               signature,
               blockhash: response.txMeta.blockhash,
@@ -684,6 +658,9 @@ export function useJupiterPrediction() {
             },
             "confirmed"
           );
+          if (confirmation.value.err) {
+            throw new Error("Transaction failed on-chain. Check balance and try again.");
+          }
         }
 
         // Refresh
@@ -691,7 +668,7 @@ export function useJupiterPrediction() {
 
         return signature;
       } catch (err: any) {
-        if (err.message?.includes("User rejected")) {
+        if (err.message?.includes("reject")) {
           throw new Error("Transaction cancelled");
         }
         throw new Error(err.message || "Failed to claim payout");
@@ -705,14 +682,15 @@ export function useJupiterPrediction() {
   // --------------------------------------------------------
   const pollOrderStatus = useCallback(
     async (orderPubkey: string) => {
-      const maxAttempts = 30;
-      const delayMs = 2000;
+      // Jupiter docs: "Wait for a few slots before polling"
+      const maxAttempts = 10;
+      const delayMs = 5000; // 5 seconds between polls
 
       for (let i = 0; i < maxAttempts; i++) {
         await new Promise((r) => setTimeout(r, delayMs));
         try {
           const status = await fetchOrderStatus(orderPubkey);
-          console.log(`[Order Poll ${i + 1}] Status:`, status.status);
+          console.log(`[Order Poll ${i + 1}/${maxAttempts}] Status:`, status.status);
 
           if (status.status === "filled" || status.status === "failed") {
             // Refresh positions after order fills
@@ -720,9 +698,12 @@ export function useJupiterPrediction() {
             return;
           }
         } catch {
-          // Continue polling
+          // 404 expected for first few polls — continue
+          if (i > 3) console.log(`[Order Poll ${i + 1}/${maxAttempts}] Not found yet...`);
         }
       }
+      // Final refresh even if polling didn't find the order
+      await Promise.all([fetchUserPositions(), fetchUserOrders()]).catch(() => {});
     },
     [fetchUserPositions, fetchUserOrders]
   );

@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-69:12
-INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-69:12
-INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-69:12
-INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-69:12
+ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-70:12
+INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-70:12
+INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-70:12
+INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:2:1-70:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /Users/macbookair/.gradle/caches/transforms-3/82b31cb9f6aab621092c2b9d69fc8c15/transformed/appcompat-resources-1.6.1/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.appcompat:appcompat:1.6.1] /Users/macbookair/.gradle/caches/transforms-3/42349fcab7a5a6a21b6eefeb34a9888a/transformed/appcompat-1.6.1/AndroidManifest.xml:17:1-22:12
 MERGED from [com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.0.3] /Users/macbookair/.gradle/caches/transforms-3/1799b53573a484ec422a863936ed37f2/transformed/mobile-wallet-adapter-clientlib-ktx-2.0.3/AndroidManifest.xml:2:1-7:12
@@ -107,8 +107,8 @@ ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/A
 intent#action:name:android.intent.action.VIEW+data:scheme:https
 ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:43:9-46:18
 application
-ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:49:5-68:19
-INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:49:5-68:19
+ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:49:5-69:19
+INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:49:5-69:19
 MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/macbookair/.gradle/caches/transforms-3/ebd7e8b0739ea5852a86f1ec4bdee03d/transformed/emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.test:core:1.5.0] /Users/macbookair/.gradle/caches/transforms-3/f3459a58503d1fddb5db3040482f0664/transformed/core-1.5.0/AndroidManifest.xml:26:5-51:19
@@ -128,37 +128,39 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/macbookair/.gradle/c
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.12.0] /Users/macbookair/.gradle/caches/transforms-3/4dde0fce54f6341b6da19770f76a2130/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
 	android:label
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:52:9-36
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:53:9-36
+	android:roundIcon
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:52:9-54
 	android:icon
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:51:9-45
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:51:9-43
 	android:allowBackup
 		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:50:9-35
 	android:theme
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:53:9-40
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:54:9-40
 	android:usesCleartextTraffic
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:54:9-44
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:55:9-44
 activity#com.solanasaga.app.MainActivity
-ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:56:9-67:20
+ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:57:9-68:20
 	android:screenOrientation
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:60:13-49
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:61:13-49
 	android:windowSoftInputMode
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:61:13-55
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:62:13-55
 	android:exported
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:58:13-36
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:59:13-36
 	android:configChanges
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:59:13-74
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:60:13-74
 	android:name
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:57:13-41
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:58:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:63:13-66:29
+ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:64:13-67:29
 action#android.intent.action.MAIN
-ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:64:17-69
+ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:17-69
 	android:name
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:64:25-66
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:17-77
+ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:66:17-77
 	android:name
-		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:65:27-74
+		ADDED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml:66:27-74
 uses-sdk
 INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/macbookair/projects/solana-saga/android-wrapper/app/src/main/AndroidManifest.xml

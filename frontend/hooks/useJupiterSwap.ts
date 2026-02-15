@@ -30,11 +30,12 @@ export interface SwapState {
  */
 function deserializeTransaction(base64: string): Transaction | VersionedTransaction {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  // Versioned transactions have a version prefix with high bit set
-  if ((bytes[0] & 0x80) !== 0) {
+  // Try versioned first (Jupiter returns versioned by default), fall back to legacy
+  try {
     return VersionedTransaction.deserialize(bytes);
+  } catch {
+    return Transaction.from(bytes);
   }
-  return Transaction.from(bytes);
 }
 
 export function useJupiterSwap() {
@@ -80,7 +81,7 @@ export function useJupiterSwap() {
 
   /**
    * Execute a swap given a quote.
-   * Uses asLegacyTransaction for maximum wallet compatibility (Jupiter Mobile, Phantom, etc.)
+   * Sends versioned transactions by default. Falls back to legacy conversion for wallets that can't handle versioned.
    */
   const executeSwap = useCallback(
     async (quoteResponse: QuoteResponse): Promise<string> => {
@@ -133,15 +134,12 @@ export function useJupiterSwap() {
             maxRetries: 3,
           });
         } catch (sendErr: any) {
-          // If wallet.sendTransaction fails due to versioned tx compat, try manual sign+send
-          if (
-            !isLegacy &&
-            wallet.signTransaction &&
-            (sendErr.message?.includes("versioned") ||
-             sendErr.message?.includes("VersionedMessage") ||
-             sendErr.message?.includes("deserialize"))
-          ) {
-            console.warn("[Jupiter Swap] sendTransaction failed for versioned tx, trying signTransaction fallback");
+          console.warn("[Jupiter Swap] sendTransaction failed:", sendErr.message);
+          // If user rejected, don't try fallback
+          if (sendErr.message?.includes("reject")) throw sendErr;
+          // For versioned tx, try manual sign+send as fallback
+          if (!isLegacy && wallet.signTransaction) {
+            console.warn("[Jupiter Swap] Trying signTransaction + sendRawTransaction fallback");
             const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
             signature = await connection.sendRawTransaction(signedTx.serialize(), {
               skipPreflight: false,
@@ -191,16 +189,11 @@ export function useJupiterSwap() {
         if (err.message?.includes("AccountNotFound") || err.message?.includes("Account not found") || err.message?.includes("could not find account")) {
           throw new Error("Token account not found. You may need SOL or the input token in your wallet first.");
         }
-        if (err.message?.includes("versioned") || err.message?.includes("VersionedMessage")) {
-          throw new Error("Wallet compatibility issue. Please try using Phantom wallet.");
-        }
         if (err.message?.includes("blockhash")) {
           throw new Error("Transaction expired. Please try again.");
         }
-        if (err.message?.includes("too large") || err.message?.includes("Transaction too large")) {
-          throw new Error("Transaction too large for legacy mode. Try a smaller amount.");
-        }
 
+        // Pass through the raw error for debugging
         throw new Error(err.message || "Swap failed");
       } finally {
         setSwapping(false);

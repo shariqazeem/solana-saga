@@ -23,8 +23,16 @@ import android.webkit.WebViewClient;
 import android.webkit.SslErrorHandler;
 import android.net.http.SslError;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ClipDrawable;
+import android.graphics.drawable.LayerDrawable;
+import android.view.Gravity;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -72,33 +80,95 @@ public class MainActivity extends AppCompatActivity {
             FrameLayout.LayoutParams.MATCH_PARENT
         ));
 
-        // Splash / Loading overlay
+        // Splash / Loading overlay — premium version with logo
         splashScreen = new FrameLayout(this);
         splashScreen.setBackgroundColor(Color.parseColor("#050505"));
 
-        TextView loadingText = new TextView(this);
-        loadingText.setText("SOLANA SAGA");
-        loadingText.setTextColor(Color.parseColor("#00F3FF"));
-        loadingText.setTextSize(32);
-        loadingText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        loadingText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        FrameLayout.LayoutParams textParams = new FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT
-        );
-        textParams.gravity = android.view.Gravity.CENTER;
-        splashScreen.addView(loadingText, textParams);
+        // Center container (logo + text + progress)
+        LinearLayout centerLayout = new LinearLayout(this);
+        centerLayout.setOrientation(LinearLayout.VERTICAL);
+        centerLayout.setGravity(Gravity.CENTER_HORIZONTAL);
 
+        // Logo image
+        ImageView logoImage = new ImageView(this);
+        logoImage.setImageResource(R.drawable.splash_logo);
+        logoImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(480, 480);
+        logoParams.gravity = Gravity.CENTER_HORIZONTAL;
+        centerLayout.addView(logoImage, logoParams);
+
+        // Pulse animation on logo
+        AlphaAnimation pulse = new AlphaAnimation(0.7f, 1.0f);
+        pulse.setDuration(1200);
+        pulse.setRepeatMode(Animation.REVERSE);
+        pulse.setRepeatCount(Animation.INFINITE);
+        logoImage.startAnimation(pulse);
+
+        // Subtitle
+        TextView subtitle = new TextView(this);
+        subtitle.setText("SWIPE TO PREDICT");
+        subtitle.setTextColor(Color.parseColor("#6b7280"));
+        subtitle.setTextSize(12);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        subtitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        subtitle.setLetterSpacing(0.3f);
+        LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        subParams.topMargin = 16;
+        subParams.gravity = Gravity.CENTER_HORIZONTAL;
+        centerLayout.addView(subtitle, subParams);
+
+        // Styled progress bar
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setIndeterminate(false);
         progressBar.setMax(100);
         progressBar.setProgress(0);
-        FrameLayout.LayoutParams progressParams = new FrameLayout.LayoutParams(
-            600, 8
+
+        // Custom progress bar styling - cyan/green gradient track
+        GradientDrawable progressBg = new GradientDrawable();
+        progressBg.setShape(GradientDrawable.RECTANGLE);
+        progressBg.setCornerRadius(8);
+        progressBg.setColor(Color.parseColor("#1a1a3e"));
+
+        GradientDrawable progressFill = new GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[]{Color.parseColor("#00F3FF"), Color.parseColor("#00FF88")}
         );
-        progressParams.gravity = android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.BOTTOM;
-        progressParams.bottomMargin = 200;
-        splashScreen.addView(progressBar, progressParams);
+        progressFill.setCornerRadius(8);
+        ClipDrawable progressClip = new ClipDrawable(progressFill, Gravity.LEFT, ClipDrawable.HORIZONTAL);
+
+        LayerDrawable progressDrawable = new LayerDrawable(new android.graphics.drawable.Drawable[]{progressBg, progressClip});
+        progressDrawable.setId(0, android.R.id.background);
+        progressDrawable.setId(1, android.R.id.progress);
+        progressBar.setProgressDrawable(progressDrawable);
+
+        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(500, 8);
+        progressParams.topMargin = 40;
+        progressParams.gravity = Gravity.CENTER_HORIZONTAL;
+        centerLayout.addView(progressBar, progressParams);
+
+        // "Powered by Jupiter" text at bottom
+        TextView poweredBy = new TextView(this);
+        poweredBy.setText("Powered by Jupiter");
+        poweredBy.setTextColor(Color.parseColor("#4a4a6a"));
+        poweredBy.setTextSize(10);
+        poweredBy.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        LinearLayout.LayoutParams poweredParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        poweredParams.topMargin = 24;
+        poweredParams.gravity = Gravity.CENTER_HORIZONTAL;
+        centerLayout.addView(poweredBy, poweredParams);
+
+        FrameLayout.LayoutParams centerParams = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        );
+        centerParams.gravity = Gravity.CENTER;
+        splashScreen.addView(centerLayout, centerParams);
 
         root.addView(splashScreen, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,

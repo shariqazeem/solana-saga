@@ -6,6 +6,7 @@ import { TransactionStateProvider } from "@/providers/TransactionStateProvider";
 import { TransactionOverlay } from "@/components/TransactionOverlay";
 import { BottomNav } from "@/components/BottomNav";
 import { LiveTradeFeed } from "@/components/LiveTradeFeed";
+import { GamepadHelp } from "@/components/GamepadHelp";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +25,7 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://solana-saga.vercel.app"),
+  metadataBase: new URL("https://www.solanasaga.fun"),
   title: "Solana Saga | Swipe to Predict on PSG1",
   description: "The Tinder of Prediction Markets — Swipe YES or NO on Jupiter Prediction Markets. Built for PSG1 gaming handheld with gamepad controls, haptics, and gamified DeFi.",
   keywords: ["prediction market", "solana", "crypto", "defi", "web3", "blockchain", "psg1", "gaming", "play solana", "jupiter", "gamification", "playsolana matrix"],
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
     title: "Solana Saga | Swipe to Predict on PSG1",
     description: "The Tinder of Prediction Markets. Swipe-to-bet on Jupiter Prediction Markets, optimized for PSG1 handheld with gamepad controls.",
     type: "website",
-    images: ["/icons/icon-512x512.png"],
+    images: ["/og-image.jpg"],
   },
   twitter: {
     card: "summary_large_image",
@@ -89,6 +90,7 @@ export default function RootLayout({
             <TransactionOverlay />
             <LiveTradeFeed />
             <BottomNav />
+            <GamepadHelp />
           </TransactionStateProvider>
         </SmartWalletProvider>
       </body>

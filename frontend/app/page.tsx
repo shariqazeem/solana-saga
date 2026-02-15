@@ -315,14 +315,16 @@ export default function ArenaPage() {
         vibrateError();
 
         let errorMessage = "Order failed. Please try again.";
-        if (error.message?.includes("insufficient")) {
+        if (error.message?.includes("insufficient") || error.message?.includes("Insufficient")) {
           errorMessage = "Insufficient balance!";
         } else if (error.message?.includes("cancelled")) {
           errorMessage = "Transaction cancelled";
         } else if (error.message?.includes("too small")) {
           errorMessage = "Amount too small";
+        } else if (error.message?.includes("closed") || error.message?.includes("expired")) {
+          errorMessage = "Market expired! Try another one.";
         } else if (error.message) {
-          errorMessage = error.message.slice(0, 100);
+          errorMessage = error.message.slice(0, 200);
         }
 
         addNotification({ type: "error", message: errorMessage });
