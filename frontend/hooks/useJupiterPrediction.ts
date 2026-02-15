@@ -40,6 +40,12 @@ const USDC_MINT_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const JUPUSD_MINT = "JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD";
 
 /**
+ * Session cache: once we confirm JupUSD buffer exists, skip re-checking.
+ * Resets on page reload. Prevents unnecessary RPC calls and wallet popups.
+ */
+let jupUsdBufferConfirmed = false;
+
+/**
  * Ensure the user has a JupUSD buffer to cover swap slippage in prediction transactions.
  *
  * Jupiter prediction txs include a USDC→JupUSD swap via DEX pools that loses ~0.03% to fees.
@@ -47,12 +53,14 @@ const JUPUSD_MINT = "JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD";
  * Pre-swapping a small USDC→JupUSD amount creates a buffer in the user's JupUSD ATA
  * that covers this slippage.
  *
- * Returns true if buffer exists or was created successfully.
+ * Only checks once per session. Never shows a wallet popup if buffer already exists.
  */
 async function ensureJupUsdBuffer(
   connection: Connection,
   wallet: any
 ): Promise<boolean> {
+  // Session cache: skip if we already confirmed buffer exists
+  if (jupUsdBufferConfirmed) return true;
   if (!wallet.publicKey) return false;
 
   try {
@@ -68,12 +76,13 @@ async function ensureJupUsdBuffer(
 
     if (jupUsdBalance >= 5000) {
       console.log(`[Jupiter] JupUSD buffer OK: ${jupUsdBalance} raw`);
+      jupUsdBufferConfirmed = true;
       return true;
     }
 
     console.log("[Jupiter] Creating JupUSD buffer via pre-swap...");
 
-    // Swap $0.05 USDC → JupUSD
+    // Swap $0.05 USDC → JupUSD — this will show ONE wallet popup
     const quote = await getSwapQuote(USDC_MINT_ADDRESS, JUPUSD_MINT, 50000, 100);
     const swapResult = await getSwapTransaction(quote, wallet.publicKey.toBase58());
 
@@ -103,10 +112,12 @@ async function ensureJupUsdBuffer(
     }
 
     console.log("[Jupiter] JupUSD buffer created:", sig);
+    jupUsdBufferConfirmed = true;
     return true;
   } catch (err: any) {
     console.warn("[Jupiter] JupUSD buffer creation failed:", err.message);
-    return false; // Non-fatal — the bet might still work
+    // Non-fatal — the bet might still work if user has existing JupUSD
+    return false;
   }
 }
 
@@ -214,16 +225,16 @@ async function pollConfirmation(
 }
 
 /**
- * Sign and send a Jupiter transaction with maximum wallet compatibility.
+ * Sign and send a Jupiter transaction.
  *
  * Jupiter prediction transactions use address lookup tables (ALTs) and are
  * always VersionedTransaction. Legacy conversion fails (1610 > 1232 bytes).
  *
- * Strategy per Jupiter docs:
- * 1. Deserialize as VersionedTransaction (always)
- * 2. Sign with wallet.signTransaction (one prompt, works via WalletConnect)
- * 3. Send raw via connection.sendRawTransaction (we control submission)
- * 4. Fallback: wallet.sendTransaction for wallets without signTransaction
+ * IMPORTANT: Only ONE wallet popup per call. Never fall through to a second
+ * signing method — that causes popup spam on mobile wallets (Jupiter Mobile).
+ *
+ * Strategy: Try signTransaction first (1 popup, we control submission).
+ * Only try sendTransaction if wallet lacks signTransaction entirely.
  */
 async function signAndSendTransaction(
   base64Tx: string,
@@ -237,37 +248,26 @@ async function signAndSendTransaction(
   console.log("[Jupiter] Deserialized VersionedTransaction");
 
   // Approach 1: signTransaction + sendRawTransaction (Jupiter docs pattern)
-  // This works via WalletConnect (Jupiter Mobile) and direct adapters (Phantom)
+  // One popup. If user approves but send fails, throw — do NOT show another popup.
   if (wallet.signTransaction) {
-    try {
-      const signedTx = await wallet.signTransaction(transaction);
-      const sig = await connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: true,
-        preflightCommitment: "confirmed",
-        maxRetries: 3,
-      });
-      console.log("[Jupiter] Sent via signTransaction + sendRaw:", sig);
-      return sig;
-    } catch (err: any) {
-      if (err.message?.includes("reject")) throw err;
-      console.warn("[Jupiter] signTransaction failed:", err.message);
-      // Fall through to sendTransaction approach
-    }
+    const signedTx = await wallet.signTransaction(transaction);
+    const sig = await connection.sendRawTransaction(signedTx.serialize(), {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      maxRetries: 3,
+    });
+    console.log("[Jupiter] Sent via signTransaction + sendRaw:", sig);
+    return sig;
   }
 
-  // Approach 2: sendTransaction (lets wallet handle everything)
+  // Approach 2: sendTransaction — only if wallet has no signTransaction
   if (wallet.sendTransaction) {
-    try {
-      const sig = await wallet.sendTransaction(transaction, connection, {
-        skipPreflight: true,
-        maxRetries: 3,
-      });
-      console.log("[Jupiter] Sent via sendTransaction:", sig);
-      return sig;
-    } catch (err: any) {
-      if (err.message?.includes("reject")) throw err;
-      throw new Error(err.message || "Failed to send transaction");
-    }
+    const sig = await wallet.sendTransaction(transaction, connection, {
+      skipPreflight: true,
+      maxRetries: 3,
+    });
+    console.log("[Jupiter] Sent via sendTransaction:", sig);
+    return sig;
   }
 
   throw new Error("Wallet does not support transaction signing");
@@ -324,9 +324,10 @@ export interface Market {
 function transformToMarket(market: JupMarket, event: JupEvent): Market {
   // API returns prices in micro USD (e.g. 290000 = $0.29)
   const rawBuyYes = market.pricing?.buyYesPriceUsd ?? 500000;
-  const rawBuyNo = market.pricing?.buyNoPriceUsd ?? 500000;
+  const rawBuyNo = market.pricing?.buyNoPriceUsd ?? 0;
   const buyYes = rawBuyYes / 1_000_000; // Convert micro USD to dollars
-  const buyNo = rawBuyNo / 1_000_000;
+  // Live esports markets may have NO price = 0 → derive from YES price
+  const buyNo = rawBuyNo > 0 ? rawBuyNo / 1_000_000 : Math.max(0, 1 - buyYes);
   const yesPercent = Math.round(buyYes * 100);
   const noPercent = Math.round(buyNo * 100);
 
@@ -496,7 +497,9 @@ export function useJupiterPrediction() {
               const minPrice = isRelaxedMode ? 0.01 : 0.03;
               const maxPrice = isRelaxedMode ? 0.99 : 0.97;
               if (yesPrice <= minPrice || yesPrice >= maxPrice) return false;
-              if (noPrice <= minPrice || noPrice >= maxPrice) return false;
+              // Live esports markets often have NO price = 0 (team markets, buy YES only)
+              // Only check NO price if it's non-zero
+              if (noPrice > 0 && (noPrice <= minPrice || noPrice >= maxPrice)) return false;
               // Close time: live events can close soon, normal markets need 30min buffer
               const now = Math.floor(Date.now() / 1000);
               const minTimeLeft = isRelaxedMode ? 60 : 1800; // 1 min vs 30 min
@@ -648,114 +651,74 @@ export function useJupiterPrediction() {
           depositMicro,
         });
 
-        // Retry loop: Jupiter prediction txs include a USDC→JupUSD swap via DEX pools.
-        // On-chain pool prices can shift between API call and execution, causing
-        // "insufficient funds" (Custom error 0x1) in the CreateOrder instruction.
-        // Retrying with a fresh order gets updated pool prices.
-        const MAX_RETRIES = 2;
-        let lastError: Error | null = null;
+        // Single attempt — no automatic retries that would spam wallet popups.
+        // Each retry requires a new wallet signature popup, which is terrible UX
+        // on mobile wallets (Jupiter Mobile via WalletConnect).
+        // If it fails, user can tap "bet" again manually.
 
-        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-          try {
-            if (attempt > 0) {
-              console.log(`[Jupiter Order] Retry ${attempt}/${MAX_RETRIES} — requesting fresh order...`);
-              // Brief delay before retry to let pool state settle
-              await new Promise((r) => setTimeout(r, 2000));
-            }
+        // 1. Request unsigned transaction from Jupiter API
+        // maxBuyPriceUsd: API defaults to $0.99 which rejects high-probability markets
+        const orderResponse = await createOrder({
+          ownerPubkey: ownerPub,
+          marketId,
+          isYes: prediction,
+          isBuy: true,
+          depositAmount: String(depositMicro),
+          depositMint: USDC_MINT_ADDRESS,
+          maxBuyPriceUsd: "1000000",
+        });
 
-            // 1. Request unsigned transaction from Jupiter API
-            // maxBuyPriceUsd: API defaults to $0.99 which rejects high-probability markets
-            const orderResponse = await createOrder({
-              ownerPubkey: ownerPub,
-              marketId,
-              isYes: prediction,
-              isBuy: true,
-              depositAmount: String(depositMicro),
-              depositMint: USDC_MINT_ADDRESS,
-              maxBuyPriceUsd: "1000000",
-            });
+        if (!orderResponse.transaction) {
+          throw new Error("No transaction returned from Jupiter API");
+        }
 
-            if (!orderResponse.transaction) {
-              throw new Error("No transaction returned from Jupiter API");
-            }
+        // 2. Sign and send — ONE wallet popup only
+        const signature = await signAndSendTransaction(
+          orderResponse.transaction,
+          connection,
+          wallet,
+          orderResponse.txMeta?.blockhash
+        );
 
-            // 2. Sign and send with wallet-compatible approach
-            const signature = await signAndSendTransaction(
-              orderResponse.transaction,
-              connection,
-              wallet,
-              orderResponse.txMeta?.blockhash
+        console.log("[Jupiter Order] Transaction sent:", signature);
+
+        // 3. Confirm using polling (more reliable than WebSocket on free RPCs)
+        if (orderResponse.txMeta) {
+          const result = await pollConfirmation(
+            connection,
+            signature,
+            orderResponse.txMeta.lastValidBlockHeight,
+            60_000
+          );
+
+          if (result.err) {
+            const errDetail = JSON.stringify(result.err);
+            console.error("[Jupiter Order] On-chain error:", errDetail);
+
+            const isSlippageError =
+              errDetail.includes('"Custom":1') || errDetail.includes('"Custom": 1');
+
+            throw new Error(
+              isSlippageError
+                ? "Transaction failed due to price movement. Please try again."
+                : `Transaction failed on-chain: ${errDetail}`
             );
-
-            console.log("[Jupiter Order] Transaction sent:", signature);
-
-            // 3. Confirm using polling (more reliable than WebSocket on free RPCs)
-            if (orderResponse.txMeta) {
-              const result = await pollConfirmation(
-                connection,
-                signature,
-                orderResponse.txMeta.lastValidBlockHeight,
-                60_000
-              );
-
-              if (result.err) {
-                const errDetail = JSON.stringify(result.err);
-                console.error(`[Jupiter Order] On-chain error (attempt ${attempt}):`, errDetail);
-
-                // Check if this is the swap slippage error (Custom 1 = InsufficientFunds in SPL Token)
-                const isSlippageError =
-                  errDetail.includes('"Custom":1') || errDetail.includes('"Custom": 1');
-
-                if (isSlippageError && attempt < MAX_RETRIES) {
-                  console.log("[Jupiter Order] Swap slippage detected — will retry with fresh order");
-                  lastError = new Error(`Swap slippage on attempt ${attempt + 1}`);
-                  continue; // Retry with fresh order
-                }
-
-                // Non-retryable or out of retries
-                throw new Error(
-                  isSlippageError
-                    ? "Transaction failed due to price movement. Please try again."
-                    : `Transaction failed on-chain: ${errDetail}`
-                );
-              }
-            }
-
-            console.log("[Jupiter Order] Confirmed:", signature);
-
-            // 4. Poll order status (with delay — Jupiter docs say wait a few slots)
-            if (orderResponse.order.orderPubkey) {
-              setTimeout(() => pollOrderStatus(orderResponse.order.orderPubkey!), 5000);
-            }
-
-            // Refresh data in background
-            Promise.all([fetchUserPositions(), fetchUserOrders(), fetchUserProfile()]).catch(
-              console.error
-            );
-
-            return signature;
-          } catch (innerErr: any) {
-            // User rejection is never retryable
-            if (innerErr.message?.includes("reject") || innerErr.message?.includes("cancelled")) {
-              throw new Error("Transaction cancelled");
-            }
-            // Blockhash expiry — retry with fresh order
-            if (innerErr.message?.includes("expired") && attempt < MAX_RETRIES) {
-              console.log("[Jupiter Order] Blockhash expired — retrying...");
-              lastError = innerErr;
-              continue;
-            }
-            // Last attempt or non-retryable
-            if (attempt >= MAX_RETRIES) {
-              lastError = innerErr;
-              break;
-            }
-            lastError = innerErr;
           }
         }
 
-        // All retries exhausted
-        throw lastError || new Error("Order failed after retries");
+        console.log("[Jupiter Order] Confirmed:", signature);
+
+        // 4. Poll order status (with delay — Jupiter docs say wait a few slots)
+        if (orderResponse.order.orderPubkey) {
+          setTimeout(() => pollOrderStatus(orderResponse.order.orderPubkey!), 5000);
+        }
+
+        // Refresh data in background
+        Promise.all([fetchUserPositions(), fetchUserOrders(), fetchUserProfile()]).catch(
+          console.error
+        );
+
+        return signature;
       } catch (err: any) {
         console.error("[Jupiter Order] Error:", err);
 
