@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
+import {
+  Connection,
+  Transaction,
+  VersionedTransaction,
+  TransactionMessage,
+} from "@solana/web3.js";
 import { RPC_ENDPOINT } from "@/lib/solana/config";
 import {
   fetchEvents,
@@ -30,15 +35,43 @@ import {
 const USDC_MINT_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 /**
- * Auto-detect legacy vs versioned transaction from base64.
- * Same approach as useJupiterSwap — works with all wallets including Jupiter Mobile.
+ * Deserialize a base64 transaction. If it's versioned (v0) and has no address
+ * lookup tables, convert it to a legacy Transaction so Jupiter Mobile wallet
+ * can handle it. Versioned transactions with lookup tables stay as-is.
  */
-function deserializeTransaction(base64: string): Transaction | VersionedTransaction {
+function deserializeToLegacyIfPossible(
+  base64: string,
+  blockhash?: string
+): Transaction | VersionedTransaction {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  if ((bytes[0] & 0x80) !== 0) {
-    return VersionedTransaction.deserialize(bytes);
+
+  // Already legacy — return directly
+  if ((bytes[0] & 0x80) === 0) {
+    return Transaction.from(bytes);
   }
-  return Transaction.from(bytes);
+
+  // Versioned transaction — try to decompile to legacy
+  const versioned = VersionedTransaction.deserialize(bytes);
+  try {
+    const msg = versioned.message;
+    // If no address lookup tables, we can safely convert to legacy
+    if (
+      !("addressTableLookups" in msg) ||
+      (msg as any).addressTableLookups?.length === 0
+    ) {
+      const decompiled = TransactionMessage.decompile(msg);
+      const legacyTx = new Transaction();
+      legacyTx.recentBlockhash = blockhash || decompiled.recentBlockhash;
+      legacyTx.feePayer = decompiled.payerKey;
+      legacyTx.add(...decompiled.instructions);
+      console.log("[Jupiter] Converted versioned tx to legacy for wallet compat");
+      return legacyTx;
+    }
+  } catch (e) {
+    console.warn("[Jupiter] Could not convert to legacy, using versioned:", e);
+  }
+
+  return versioned;
 }
 
 // ============================================================
@@ -372,8 +405,11 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned from Jupiter API");
         }
 
-        // 2. Auto-detect legacy vs versioned (same as swap hook — works with Jupiter Mobile)
-        const transaction = deserializeTransaction(orderResponse.transaction);
+        // 2. Deserialize — convert to legacy if possible for Jupiter Mobile compat
+        const transaction = deserializeToLegacyIfPossible(
+          orderResponse.transaction,
+          orderResponse.txMeta?.blockhash
+        );
         const isLegacy = transaction instanceof Transaction;
         console.log("[Jupiter Order] Transaction type:", isLegacy ? "legacy" : "versioned");
 
@@ -473,7 +509,10 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const transaction = deserializeTransaction(response.transaction);
+        const transaction = deserializeToLegacyIfPossible(
+          response.transaction,
+          response.txMeta?.blockhash
+        );
         const isLegacy = transaction instanceof Transaction;
 
         let signature: string;
@@ -544,7 +583,10 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const transaction = deserializeTransaction(response.transaction);
+        const transaction = deserializeToLegacyIfPossible(
+          response.transaction,
+          response.txMeta?.blockhash
+        );
         const isLegacy = transaction instanceof Transaction;
 
         let signature: string;
