@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, VersionedTransaction } from "@solana/web3.js";
+import { Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
 import { RPC_ENDPOINT } from "@/lib/solana/config";
 import {
   fetchEvents,
@@ -28,6 +28,18 @@ import {
 
 // USDC mint address on Solana mainnet
 const USDC_MINT_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
+/**
+ * Auto-detect legacy vs versioned transaction from base64.
+ * Same approach as useJupiterSwap — works with all wallets including Jupiter Mobile.
+ */
+function deserializeTransaction(base64: string): Transaction | VersionedTransaction {
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  if ((bytes[0] & 0x80) !== 0) {
+    return VersionedTransaction.deserialize(bytes);
+  }
+  return Transaction.from(bytes);
+}
 
 // ============================================================
 // Market interface compatible with existing UI components
@@ -333,27 +345,20 @@ export function useJupiterPrediction() {
         const buyPrice = prediction ? market.buyYesPrice : market.buyNoPrice;
         if (!buyPrice || buyPrice <= 0) throw new Error("Market price unavailable");
 
-        // Jupiter requires minimum $1 deposit AND fees come out of it,
-        // so we add a 5% buffer to ensure the net deposit clears the minimum
-        const depositUsd = Math.max(amountUsd * 1.05, 1.05);
+        // Jupiter requires minimum $1 deposit; add small buffer for fees
+        const depositUsd = Math.max(amountUsd * 1.02, 1.02);
         const depositMicro = dollarsToMicroUsd(depositUsd);
-
-        // Optionally calculate contracts for logging
-        const contracts = Math.floor(amountUsd / buyPrice);
-        if (contracts < 1) throw new Error("Amount too small for even 1 contract");
 
         console.log("[Jupiter Order]", {
           marketId,
           isYes: prediction,
-          contracts,
           buyPrice,
           depositMicro,
           amountUsd,
         });
 
         // 1. Request unsigned transaction from Jupiter API
-        // depositAmount + depositMint are REQUIRED per Jupiter docs
-        // maxBuyPriceUsd = 999999 ($0.999999) to accept any price — deposit caps the spend
+        // Only send documented fields: ownerPubkey, marketId, isYes, isBuy, depositAmount, depositMint
         const orderResponse = await createOrder({
           ownerPubkey: wallet.publicKey.toBase58(),
           marketId,
@@ -361,16 +366,16 @@ export function useJupiterPrediction() {
           isBuy: true,
           depositAmount: String(depositMicro),
           depositMint: USDC_MINT_ADDRESS,
-          maxBuyPriceUsd: "999999",
         });
 
         if (!orderResponse.transaction) {
           throw new Error("No transaction returned from Jupiter API");
         }
 
-        // 2. Deserialize the base64 transaction
-        const txBuffer = Buffer.from(orderResponse.transaction, "base64");
-        const transaction = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
+        // 2. Auto-detect legacy vs versioned (same as swap hook — works with Jupiter Mobile)
+        const transaction = deserializeTransaction(orderResponse.transaction);
+        const isLegacy = transaction instanceof Transaction;
+        console.log("[Jupiter Order] Transaction type:", isLegacy ? "legacy" : "versioned");
 
         // 3. Send via wallet adapter, with fallback for mobile wallets
         let signature: string;
@@ -381,14 +386,16 @@ export function useJupiterPrediction() {
             maxRetries: 3,
           });
         } catch (sendErr: any) {
+          // If versioned tx fails on mobile wallet, try signTransaction + sendRawTransaction
           if (
+            !isLegacy &&
             wallet.signTransaction &&
             (sendErr.message?.includes("versioned") ||
              sendErr.message?.includes("VersionedMessage") ||
              sendErr.message?.includes("deserialize"))
           ) {
             console.warn("[Jupiter Order] sendTransaction failed, trying signTransaction fallback");
-            const signedTx = await wallet.signTransaction(transaction);
+            const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
             signature = await connection.sendRawTransaction(signedTx.serialize(), {
               skipPreflight: false,
               preflightCommitment: "confirmed",
@@ -466,8 +473,8 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const txBuffer = Buffer.from(response.transaction, "base64");
-        const transaction = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
+        const transaction = deserializeTransaction(response.transaction);
+        const isLegacy = transaction instanceof Transaction;
 
         let signature: string;
         try {
@@ -477,12 +484,13 @@ export function useJupiterPrediction() {
           });
         } catch (sendErr: any) {
           if (
+            !isLegacy &&
             wallet.signTransaction &&
             (sendErr.message?.includes("versioned") ||
              sendErr.message?.includes("VersionedMessage") ||
              sendErr.message?.includes("deserialize"))
           ) {
-            const signedTx = await wallet.signTransaction(transaction);
+            const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
             signature = await connection.sendRawTransaction(signedTx.serialize(), {
               skipPreflight: false,
               preflightCommitment: "confirmed",
@@ -536,8 +544,8 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const txBuffer = Buffer.from(response.transaction, "base64");
-        const transaction = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
+        const transaction = deserializeTransaction(response.transaction);
+        const isLegacy = transaction instanceof Transaction;
 
         let signature: string;
         try {
@@ -547,12 +555,13 @@ export function useJupiterPrediction() {
           });
         } catch (sendErr: any) {
           if (
+            !isLegacy &&
             wallet.signTransaction &&
             (sendErr.message?.includes("versioned") ||
              sendErr.message?.includes("VersionedMessage") ||
              sendErr.message?.includes("deserialize"))
           ) {
-            const signedTx = await wallet.signTransaction(transaction);
+            const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
             signature = await connection.sendRawTransaction(signedTx.serialize(), {
               skipPreflight: false,
               preflightCommitment: "confirmed",
