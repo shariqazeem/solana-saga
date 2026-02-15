@@ -351,6 +351,7 @@ export function useJupiterPrediction() {
 
         // 1. Request unsigned transaction from Jupiter API
         // depositAmount + depositMint are REQUIRED per Jupiter docs
+        // maxBuyPriceUsd = 999999 ($0.999999) to accept any price — deposit caps the spend
         const orderResponse = await createOrder({
           ownerPubkey: wallet.publicKey.toBase58(),
           marketId,
@@ -358,6 +359,7 @@ export function useJupiterPrediction() {
           isBuy: true,
           depositAmount: String(depositMicro),
           depositMint: USDC_MINT_ADDRESS,
+          maxBuyPriceUsd: "999999",
         });
 
         if (!orderResponse.transaction) {
