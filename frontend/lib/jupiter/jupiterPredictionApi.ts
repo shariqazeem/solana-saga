@@ -117,6 +117,8 @@ export interface JupCreateOrderRequest {
   depositAmount: number | string;
   depositMint: string;
   contracts?: number | string;
+  maxBuyPriceUsd?: number | string;
+  minSellPriceUsd?: number | string;
 }
 
 export interface JupCreateOrderResponse {

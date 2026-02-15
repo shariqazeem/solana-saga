@@ -5,6 +5,7 @@ import {
   Transaction,
   VersionedTransaction,
   TransactionMessage,
+  AddressLookupTableAccount,
 } from "@solana/web3.js";
 import { RPC_ENDPOINT } from "@/lib/solana/config";
 import {
@@ -35,43 +36,59 @@ import {
 const USDC_MINT_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 /**
- * Deserialize a base64 transaction. If it's versioned (v0) and has no address
- * lookup tables, convert it to a legacy Transaction so Jupiter Mobile wallet
- * can handle it. Versioned transactions with lookup tables stay as-is.
+ * Convert a base64 transaction to legacy Transaction for Jupiter Mobile compat.
+ * Jupiter Mobile wallet can't handle VersionedTransaction, so we:
+ * 1. Detect if it's versioned or legacy
+ * 2. If versioned, resolve any address lookup tables from chain
+ * 3. Decompile to legacy Transaction
+ * If conversion fails, returns the versioned tx as fallback.
  */
-function deserializeToLegacyIfPossible(
+async function toLegacyTransaction(
   base64: string,
+  connection: Connection,
   blockhash?: string
-): Transaction | VersionedTransaction {
+): Promise<Transaction | VersionedTransaction> {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
   // Already legacy — return directly
   if ((bytes[0] & 0x80) === 0) {
+    console.log("[Jupiter] Transaction is already legacy");
     return Transaction.from(bytes);
   }
 
-  // Versioned transaction — try to decompile to legacy
+  // Versioned transaction — convert to legacy
   const versioned = VersionedTransaction.deserialize(bytes);
   try {
     const msg = versioned.message;
-    // If no address lookup tables, we can safely convert to legacy
-    if (
-      !("addressTableLookups" in msg) ||
-      (msg as any).addressTableLookups?.length === 0
-    ) {
-      const decompiled = TransactionMessage.decompile(msg);
-      const legacyTx = new Transaction();
-      legacyTx.recentBlockhash = blockhash || decompiled.recentBlockhash;
-      legacyTx.feePayer = decompiled.payerKey;
-      legacyTx.add(...decompiled.instructions);
-      console.log("[Jupiter] Converted versioned tx to legacy for wallet compat");
-      return legacyTx;
+
+    // Resolve address lookup tables from chain if present
+    let lookupTableAccounts: AddressLookupTableAccount[] = [];
+    if ("addressTableLookups" in msg && (msg as any).addressTableLookups?.length > 0) {
+      const lookups = (msg as any).addressTableLookups;
+      console.log(`[Jupiter] Resolving ${lookups.length} address lookup table(s)...`);
+      for (const lookup of lookups) {
+        const result = await connection.getAddressLookupTable(lookup.accountKey);
+        if (result.value) {
+          lookupTableAccounts.push(result.value);
+        }
+      }
     }
+
+    // Decompile versioned message to legacy instructions
+    const decompiled = TransactionMessage.decompile(msg, {
+      addressLookupTableAccounts: lookupTableAccounts,
+    });
+
+    const legacyTx = new Transaction();
+    legacyTx.recentBlockhash = blockhash || decompiled.recentBlockhash;
+    legacyTx.feePayer = decompiled.payerKey;
+    legacyTx.add(...decompiled.instructions);
+    console.log("[Jupiter] Converted versioned tx to legacy for wallet compat");
+    return legacyTx;
   } catch (e) {
     console.warn("[Jupiter] Could not convert to legacy, using versioned:", e);
+    return versioned;
   }
-
-  return versioned;
 }
 
 // ============================================================
@@ -139,14 +156,30 @@ function transformToMarket(market: JupMarket, event: JupEvent): Market {
   const volumeDollars = microUsdToDollars(market.pricing?.volume || 0);
 
   // Build a clear YES/NO question from event + market titles
+  // Examples from Jupiter:
+  //   Event: "Who will Trump nominate as Fed Chair?" Market: "Kevin Warsh"
+  //   Event: "Bitcoin Price" Market: "Bitcoin Above 100000 On March 1?"
+  //   Event: "MicroStrategy sells Bitcoin" Market: "Before March 2026"
   const eventTitle = event.metadata?.title || "";
   const marketTitle = market.metadata?.title || "";
   let question: string;
 
   if (eventTitle && marketTitle && eventTitle !== marketTitle) {
-    // Keep market title as the main question — event title shown as context above
-    // Add "?" if it doesn't end with one, to make YES/NO obvious
-    question = marketTitle.endsWith("?") ? marketTitle : `${marketTitle}?`;
+    const eventIsQuestion = eventTitle.endsWith("?");
+    const marketIsQuestion = marketTitle.endsWith("?");
+
+    if (marketIsQuestion) {
+      // Market already has a clear question — use it directly
+      question = marketTitle;
+    } else if (eventIsQuestion) {
+      // Event is the question, market is an option/answer
+      // e.g. "Who will win?" + "Team A" → "Who will win? — Team A"
+      question = `${eventTitle} — ${marketTitle}`;
+    } else {
+      // Neither is a question — combine naturally
+      // e.g. "MicroStrategy sells Bitcoin" + "Before March 2026"
+      question = `${eventTitle} — ${marketTitle}?`;
+    }
   } else {
     const title = marketTitle || eventTitle || "Untitled Market";
     question = title.endsWith("?") ? title : `${title}?`;
@@ -254,16 +287,20 @@ export function useJupiterPrediction() {
         setEvents(result.data);
 
         // Flatten: each event has multiple markets, create Market for each
-        // Use round-robin interleaving so you see diverse events while swiping
-        // instead of 5 markets from the same event in a row
+        // Limit to top 3 markets per event (by volume) to avoid flooding
+        // e.g. politics events with 20+ candidate markets
+        const MAX_MARKETS_PER_EVENT = 3;
         const marketsByEvent: Market[][] = [];
         for (const event of result.data) {
           if (!event.markets) continue;
           const eventMarkets: Market[] = [];
-          for (const market of event.markets) {
-            if (market.status === "open") {
-              eventMarkets.push(transformToMarket(market, event));
-            }
+          // Sort by volume within event, take top N
+          const openMarkets = event.markets
+            .filter((m) => m.status === "open")
+            .sort((a, b) => (b.pricing?.volume || 0) - (a.pricing?.volume || 0))
+            .slice(0, MAX_MARKETS_PER_EVENT);
+          for (const market of openMarkets) {
+            eventMarkets.push(transformToMarket(market, event));
           }
           if (eventMarkets.length > 0) {
             marketsByEvent.push(eventMarkets);
@@ -391,7 +428,7 @@ export function useJupiterPrediction() {
         });
 
         // 1. Request unsigned transaction from Jupiter API
-        // Only send documented fields: ownerPubkey, marketId, isYes, isBuy, depositAmount, depositMint
+        // maxBuyPriceUsd: API defaults to $0.99 which rejects high-prob markets — set to $1
         const orderResponse = await createOrder({
           ownerPubkey: wallet.publicKey.toBase58(),
           marketId,
@@ -399,30 +436,31 @@ export function useJupiterPrediction() {
           isBuy: true,
           depositAmount: String(depositMicro),
           depositMint: USDC_MINT_ADDRESS,
+          maxBuyPriceUsd: "1000000",
         });
 
         if (!orderResponse.transaction) {
           throw new Error("No transaction returned from Jupiter API");
         }
 
-        // 2. Deserialize — convert to legacy if possible for Jupiter Mobile compat
-        const transaction = deserializeToLegacyIfPossible(
+        // 2. Convert to legacy transaction for Jupiter Mobile wallet compat
+        const transaction = await toLegacyTransaction(
           orderResponse.transaction,
+          connection,
           orderResponse.txMeta?.blockhash
         );
         const isLegacy = transaction instanceof Transaction;
         console.log("[Jupiter Order] Transaction type:", isLegacy ? "legacy" : "versioned");
 
-        // 3. Send via wallet adapter, with fallback for mobile wallets
+        // 3. Send via wallet adapter
         let signature: string;
         try {
           signature = await wallet.sendTransaction(transaction, connection, {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
+            skipPreflight: true,
             maxRetries: 3,
           });
         } catch (sendErr: any) {
-          // If versioned tx fails on mobile wallet, try signTransaction + sendRawTransaction
+          // Last resort fallback for versioned tx on mobile wallet
           if (
             !isLegacy &&
             wallet.signTransaction &&
@@ -433,8 +471,7 @@ export function useJupiterPrediction() {
             console.warn("[Jupiter Order] sendTransaction failed, trying signTransaction fallback");
             const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
             signature = await connection.sendRawTransaction(signedTx.serialize(), {
-              skipPreflight: false,
-              preflightCommitment: "confirmed",
+              skipPreflight: true,
               maxRetries: 3,
             });
           } else {
@@ -509,8 +546,9 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const transaction = deserializeToLegacyIfPossible(
+        const transaction = await toLegacyTransaction(
           response.transaction,
+          connection,
           response.txMeta?.blockhash
         );
         const isLegacy = transaction instanceof Transaction;
@@ -518,8 +556,8 @@ export function useJupiterPrediction() {
         let signature: string;
         try {
           signature = await wallet.sendTransaction(transaction, connection, {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
+            skipPreflight: true,
+            maxRetries: 3,
           });
         } catch (sendErr: any) {
           if (
@@ -531,8 +569,8 @@ export function useJupiterPrediction() {
           ) {
             const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
             signature = await connection.sendRawTransaction(signedTx.serialize(), {
-              skipPreflight: false,
-              preflightCommitment: "confirmed",
+              skipPreflight: true,
+              maxRetries: 3,
             });
           } else {
             throw sendErr;
@@ -583,8 +621,9 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const transaction = deserializeToLegacyIfPossible(
+        const transaction = await toLegacyTransaction(
           response.transaction,
+          connection,
           response.txMeta?.blockhash
         );
         const isLegacy = transaction instanceof Transaction;
@@ -592,8 +631,8 @@ export function useJupiterPrediction() {
         let signature: string;
         try {
           signature = await wallet.sendTransaction(transaction, connection, {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
+            skipPreflight: true,
+            maxRetries: 3,
           });
         } catch (sendErr: any) {
           if (
@@ -605,8 +644,8 @@ export function useJupiterPrediction() {
           ) {
             const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
             signature = await connection.sendRawTransaction(signedTx.serialize(), {
-              skipPreflight: false,
-              preflightCommitment: "confirmed",
+              skipPreflight: true,
+              maxRetries: 3,
             });
           } else {
             throw sendErr;
