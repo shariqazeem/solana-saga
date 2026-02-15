@@ -451,26 +451,15 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned from Jupiter API");
         }
 
-        // 2. Convert versioned tx to legacy for Jupiter Mobile wallet compat
-        let transaction: Transaction | VersionedTransaction;
-        let isLegacy: boolean;
-        try {
-          transaction = await toLegacyTransaction(
-            orderResponse.transaction,
-            connection,
-            orderResponse.txMeta?.blockhash
-          );
-          isLegacy = transaction instanceof Transaction;
-        } catch (convErr) {
-          console.error("[Jupiter Order] Legacy conversion failed:", convErr);
-          // Fall back to versioned
-          const bytes = Uint8Array.from(atob(orderResponse.transaction), (c) => c.charCodeAt(0));
-          transaction = VersionedTransaction.deserialize(bytes);
-          isLegacy = false;
-        }
-        console.log("[Jupiter Order] Transaction type:", isLegacy ? "LEGACY" : "VERSIONED (fallback)");
+        // 2. Deserialize transaction (auto-detect versioned vs legacy)
+        const txBytes = Uint8Array.from(atob(orderResponse.transaction), (c) => c.charCodeAt(0));
+        const isVersioned = (txBytes[0] & 0x80) !== 0;
+        let transaction: Transaction | VersionedTransaction = isVersioned
+          ? VersionedTransaction.deserialize(txBytes)
+          : Transaction.from(txBytes);
+        console.log("[Jupiter Order] Transaction type:", isVersioned ? "versioned" : "legacy");
 
-        // 3. Send via wallet adapter
+        // 3. Send via wallet adapter — try native format first
         let signature: string;
         try {
           signature = await wallet.sendTransaction(transaction, connection, {
@@ -478,20 +467,38 @@ export function useJupiterPrediction() {
             maxRetries: 3,
           });
         } catch (sendErr: any) {
-          // Last resort fallback for versioned tx on mobile wallet
-          if (
-            !isLegacy &&
-            wallet.signTransaction &&
-            (sendErr.message?.includes("versioned") ||
-             sendErr.message?.includes("VersionedMessage") ||
-             sendErr.message?.includes("deserialize"))
-          ) {
-            console.warn("[Jupiter Order] sendTransaction failed, trying signTransaction fallback");
-            const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
-            signature = await connection.sendRawTransaction(signedTx.serialize(), {
-              skipPreflight: true,
-              maxRetries: 3,
-            });
+          const errMsg = sendErr?.message || "";
+          const isVersionedError =
+            errMsg.includes("versioned") ||
+            errMsg.includes("VersionedMessage") ||
+            errMsg.includes("deserialize");
+
+          // If wallet can't handle versioned tx, convert to legacy and retry
+          if (isVersioned && isVersionedError) {
+            console.warn("[Jupiter Order] Wallet can't handle versioned tx, converting to legacy...");
+            try {
+              transaction = await toLegacyTransaction(
+                orderResponse.transaction,
+                connection,
+                orderResponse.txMeta?.blockhash
+              );
+              signature = await wallet.sendTransaction(transaction, connection, {
+                skipPreflight: true,
+                maxRetries: 3,
+              });
+            } catch (legacyErr: any) {
+              // If legacy conversion also fails, try signTransaction as last resort
+              if (wallet.signTransaction) {
+                const vTx = VersionedTransaction.deserialize(txBytes);
+                const signedTx = await wallet.signTransaction(vTx);
+                signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                  skipPreflight: true,
+                  maxRetries: 3,
+                });
+              } else {
+                throw legacyErr;
+              }
+            }
           } else {
             throw sendErr;
           }
@@ -564,12 +571,12 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const transaction = await toLegacyTransaction(
-          response.transaction,
-          connection,
-          response.txMeta?.blockhash
-        );
-        const isLegacy = transaction instanceof Transaction;
+        // Deserialize (auto-detect format)
+        const txBytes = Uint8Array.from(atob(response.transaction), (c) => c.charCodeAt(0));
+        const isVersioned = (txBytes[0] & 0x80) !== 0;
+        let transaction: Transaction | VersionedTransaction = isVersioned
+          ? VersionedTransaction.deserialize(txBytes)
+          : Transaction.from(txBytes);
 
         let signature: string;
         try {
@@ -578,15 +585,14 @@ export function useJupiterPrediction() {
             maxRetries: 3,
           });
         } catch (sendErr: any) {
+          const errMsg = sendErr?.message || "";
           if (
-            !isLegacy &&
-            wallet.signTransaction &&
-            (sendErr.message?.includes("versioned") ||
-             sendErr.message?.includes("VersionedMessage") ||
-             sendErr.message?.includes("deserialize"))
+            isVersioned &&
+            (errMsg.includes("versioned") || errMsg.includes("deserialize"))
           ) {
-            const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
-            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+            // Convert to legacy for mobile wallet compat
+            transaction = await toLegacyTransaction(response.transaction, connection, response.txMeta?.blockhash);
+            signature = await wallet.sendTransaction(transaction, connection, {
               skipPreflight: true,
               maxRetries: 3,
             });
@@ -639,12 +645,12 @@ export function useJupiterPrediction() {
           throw new Error("No transaction returned");
         }
 
-        const transaction = await toLegacyTransaction(
-          response.transaction,
-          connection,
-          response.txMeta?.blockhash
-        );
-        const isLegacy = transaction instanceof Transaction;
+        // Deserialize (auto-detect format)
+        const txBytes = Uint8Array.from(atob(response.transaction), (c) => c.charCodeAt(0));
+        const isVersioned = (txBytes[0] & 0x80) !== 0;
+        let transaction: Transaction | VersionedTransaction = isVersioned
+          ? VersionedTransaction.deserialize(txBytes)
+          : Transaction.from(txBytes);
 
         let signature: string;
         try {
@@ -653,15 +659,14 @@ export function useJupiterPrediction() {
             maxRetries: 3,
           });
         } catch (sendErr: any) {
+          const errMsg = sendErr?.message || "";
           if (
-            !isLegacy &&
-            wallet.signTransaction &&
-            (sendErr.message?.includes("versioned") ||
-             sendErr.message?.includes("VersionedMessage") ||
-             sendErr.message?.includes("deserialize"))
+            isVersioned &&
+            (errMsg.includes("versioned") || errMsg.includes("deserialize"))
           ) {
-            const signedTx = await wallet.signTransaction(transaction as VersionedTransaction);
-            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+            // Convert to legacy for mobile wallet compat
+            transaction = await toLegacyTransaction(response.transaction, connection, response.txMeta?.blockhash);
+            signature = await wallet.sendTransaction(transaction, connection, {
               skipPreflight: true,
               maxRetries: 3,
             });
