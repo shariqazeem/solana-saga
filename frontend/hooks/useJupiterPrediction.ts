@@ -231,10 +231,11 @@ async function pollConfirmation(
  * always VersionedTransaction. Legacy conversion fails (1610 > 1232 bytes).
  *
  * IMPORTANT: Only ONE wallet popup per call. Never fall through to a second
- * signing method — that causes popup spam on mobile wallets (Jupiter Mobile).
+ * signing method — that causes popup spam on mobile wallets.
  *
- * Strategy: Try signTransaction first (1 popup, we control submission).
- * Only try sendTransaction if wallet lacks signTransaction entirely.
+ * Strategy: sendTransaction FIRST (wallet handles VersionedTransaction internally,
+ * avoids WalletConnect deserialization bugs with signTransaction).
+ * Only use signTransaction + sendRaw if sendTransaction is not available.
  */
 async function signAndSendTransaction(
   base64Tx: string,
@@ -247,8 +248,21 @@ async function signAndSendTransaction(
   const transaction = VersionedTransaction.deserialize(txBuffer);
   console.log("[Jupiter] Deserialized VersionedTransaction");
 
-  // Approach 1: signTransaction + sendRawTransaction (Jupiter docs pattern)
-  // One popup. If user approves but send fails, throw — do NOT show another popup.
+  // Approach 1: sendTransaction — wallet handles signing + sending internally.
+  // This is most reliable for mobile wallets (Jupiter Mobile via WalletConnect)
+  // because the wallet handles VersionedTransaction natively without needing
+  // to serialize/deserialize signed bytes over the WalletConnect protocol.
+  if (wallet.sendTransaction) {
+    const sig = await wallet.sendTransaction(transaction, connection, {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      maxRetries: 3,
+    });
+    console.log("[Jupiter] Sent via sendTransaction:", sig);
+    return sig;
+  }
+
+  // Approach 2: signTransaction + sendRaw — only if sendTransaction unavailable
   if (wallet.signTransaction) {
     const signedTx = await wallet.signTransaction(transaction);
     const sig = await connection.sendRawTransaction(signedTx.serialize(), {
@@ -257,16 +271,6 @@ async function signAndSendTransaction(
       maxRetries: 3,
     });
     console.log("[Jupiter] Sent via signTransaction + sendRaw:", sig);
-    return sig;
-  }
-
-  // Approach 2: sendTransaction — only if wallet has no signTransaction
-  if (wallet.sendTransaction) {
-    const sig = await wallet.sendTransaction(transaction, connection, {
-      skipPreflight: true,
-      maxRetries: 3,
-    });
-    console.log("[Jupiter] Sent via sendTransaction:", sig);
     return sig;
   }
 
