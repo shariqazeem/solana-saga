@@ -152,6 +152,40 @@ export interface JupCreateOrderResponse {
   };
 }
 
+export interface JupHistoryEntry {
+  id: number;
+  eventType: string; // "order_created", "order_filled", "order_cancelled", etc.
+  signature: string;
+  slot: string;
+  timestamp: number;
+  orderPubkey: string;
+  positionPubkey: string;
+  marketId: string;
+  ownerPubkey: string;
+  keeperPubkey: string;
+  externalOrderId: string;
+  orderId: string;
+  isBuy: boolean;
+  isYes: boolean;
+  contracts: string;
+  filledContracts: string;
+  contractsSettled: string;
+  maxFillPriceUsd: string;
+  avgFillPriceUsd: string;
+  maxBuyPriceUsd: string | null;
+  minSellPriceUsd: string | null;
+  depositAmountUsd: string;
+  totalCostUsd: string;
+  feeUsd: string | null;
+  grossProceedsUsd: string;
+  netProceedsUsd: string;
+  realizedPnl: string | null;
+  payoutAmountUsd: string;
+  eventId: string;
+  eventMetadata?: JupEventMetadata;
+  marketMetadata?: JupMarketMetadata;
+}
+
 export interface JupOrderStatus {
   orderPubkey: string;
   status: string;
@@ -446,6 +480,20 @@ export async function fetchOrderStatus(orderPubkey: string): Promise<JupOrderSta
   return jupFetch(`/orders/status/${encodeURIComponent(orderPubkey)}`);
 }
 
+export async function fetchHistory(
+  ownerPubkey: string,
+  start?: number,
+  end?: number
+): Promise<{ data: JupHistoryEntry[]; pagination: JupPagination }> {
+  const searchParams = new URLSearchParams();
+  searchParams.set("ownerPubkey", ownerPubkey);
+  if (start !== undefined) searchParams.set("start", String(start));
+  if (end !== undefined) searchParams.set("end", String(end));
+
+  const qs = searchParams.toString();
+  return jupFetch(`/history?${qs}`);
+}
+
 export async function createOrder(
   request: JupCreateOrderRequest
 ): Promise<JupCreateOrderResponse> {
@@ -564,11 +612,26 @@ export async function fetchLeaderboards(
 }
 
 // ============================================================
-// TRADES
+// TRADES & ORDERBOOK
 // ============================================================
 
 export async function fetchTrades(): Promise<{ data: JupTrade[] }> {
   return jupFetch("/trades");
+}
+
+export interface JupOrderbook {
+  yes: [number, number][]; // [price_cents, contracts][]
+  no: [number, number][];
+  yes_dollars: [string, number][];
+  no_dollars: [string, number][];
+}
+
+export async function fetchOrderbook(marketId: string): Promise<JupOrderbook | null> {
+  return jupFetch(`/orderbook/${encodeURIComponent(marketId)}`);
+}
+
+export async function fetchTradingStatus(): Promise<{ trading_active: boolean }> {
+  return jupFetch("/trading-status");
 }
 
 // ============================================================
@@ -589,6 +652,14 @@ export function dollarsToMicroUsd(dollars: number): number {
 /** Convert a price (0-1) to micro USD */
 export function priceToMicroUsd(price: number): number {
   return Math.round(price * 1_000_000);
+}
+
+/** Format volume in dollars to human-readable string */
+export function formatVolume(dollars: number): string {
+  if (dollars >= 1_000_000) return `$${(dollars / 1_000_000).toFixed(1)}M`;
+  if (dollars >= 1_000) return `$${(dollars / 1_000).toFixed(0)}K`;
+  if (dollars >= 1) return `$${dollars.toFixed(0)}`;
+  return `$${dollars.toFixed(2)}`;
 }
 
 /** Calculate time remaining string from unix timestamp */

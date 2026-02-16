@@ -17,6 +17,7 @@ import confetti from "canvas-confetti";
 import { HypeHUD } from "./HypeHUD";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { Market } from "@/hooks/useJupiterPrediction";
+import { formatVolume } from "@/lib/jupiter/jupiterPredictionApi";
 import { usePSG1Mode } from "@/hooks/usePSG1Mode";
 import { useHaptics } from "@/hooks/useHaptics";
 import { PSG1ControllerHints } from "./PSG1ControllerHints";
@@ -346,12 +347,10 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   useEffect(() => {
     // Handle gamepad connection events
     const handleGamepadConnected = (e: GamepadEvent) => {
-      console.log("Gamepad connected:", e.gamepad.id);
       setGamepadConnected(true);
     };
 
     const handleGamepadDisconnected = (e: GamepadEvent) => {
-      console.log("Gamepad disconnected:", e.gamepad.id);
       setGamepadConnected(false);
     };
 
@@ -547,7 +546,13 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                       LIVE
                     </span>
                   )}
-                  {currentMarket.totalVolume > 1000 && (
+                  {currentMarket.totalVolume >= 1_000_000 && (
+                    <span className="flex items-center gap-1 text-[10px] text-yellow-400 font-bold animate-pulse">
+                      <Flame className="w-3 h-3 text-yellow-400" />
+                      <Flame className="w-3 h-3 text-yellow-400 -ml-2" />
+                    </span>
+                  )}
+                  {currentMarket.totalVolume >= 100_000 && currentMarket.totalVolume < 1_000_000 && (
                     <span className="flex items-center gap-1 text-[10px] text-orange-400 font-bold animate-pulse">
                       <Flame className="w-3 h-3" />
                     </span>
@@ -601,22 +606,47 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
               {/* Stats & Volume */}
               <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-2 px-1 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="w-3.5 h-3.5 text-[#00FF88]" />
-                    <span className="text-gray-300 font-mono text-[11px]">${currentMarket.totalVolume.toLocaleString()}</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  {/* Tiered volume badge */}
+                  {currentMarket.totalVolume >= 1_000_000 ? (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/40 animate-pulse">
+                      <Flame className="w-3 h-3 text-yellow-400" />
+                      <span className="text-yellow-300 font-mono font-bold text-[11px]">{formatVolume(currentMarket.totalVolume)}</span>
+                    </div>
+                  ) : currentMarket.totalVolume >= 100_000 ? (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/30">
+                      <TrendingUp className="w-3 h-3 text-[#00FF88]" />
+                      <span className="text-[#00FF88] font-mono font-bold text-[11px]">{formatVolume(currentMarket.totalVolume)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-gray-400 font-mono text-[11px]">{formatVolume(currentMarket.totalVolume)}</span>
+                    </div>
+                  )}
                   {currentMarket.volume24h > 0 && (
                     <div className="flex items-center gap-1">
                       <Zap className="w-3 h-3 text-[#FFD700]" />
-                      <span className="text-gray-400 font-mono text-[10px]">${currentMarket.volume24h.toLocaleString()} 24h</span>
+                      <span className="text-gray-400 font-mono text-[10px]">{formatVolume(currentMarket.volume24h)} 24h</span>
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#c7f83e]/15 border border-[#c7f83e]/30 shadow-[0_0_8px_rgba(199,248,62,0.15)]">
-                  <span className="text-[10px] text-[#c7f83e] font-bold tracking-wide">JUP</span>
+                  <span className="text-[9px] text-[#c7f83e]/60">via</span>
+                  <span className="text-[10px] text-[#c7f83e] font-bold tracking-wide">Jupiter</span>
                 </div>
               </div>
+              {/* Market depth info */}
+              {(currentMarket.openInterest > 0 || currentMarket.liquidityDollars > 0) && (
+                <div className="flex items-center gap-3 text-[10px] text-gray-500 px-1 mb-1 flex-shrink-0">
+                  {currentMarket.openInterest > 0 && (
+                    <span>Pot: {formatVolume(currentMarket.openInterest)}</span>
+                  )}
+                  {currentMarket.liquidityDollars > 0 && (
+                    <span>Liquidity: {formatVolume(currentMarket.liquidityDollars)}</span>
+                  )}
+                </div>
+              )}
 
               {/* Battle Bar with Odds */}
               <div className="flex-shrink-0 mt-auto">

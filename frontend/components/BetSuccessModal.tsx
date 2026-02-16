@@ -72,7 +72,7 @@ Potential ${betData.multiplier} payout! 🎯
 
 Swipe to predict on @playsolanasaga — powered by @JupiterExchange 🔥
 
-https://solana-saga.vercel.app
+https://solanasaga.fun
 
 #Solana #PredictionMarkets #Web3Gaming`;
 

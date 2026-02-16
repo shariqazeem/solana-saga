@@ -21,7 +21,7 @@ class WalletBridge(
 ) {
     companion object {
         private const val TAG = "WalletBridge"
-        private val IDENTITY_URI = Uri.parse("https://frontend-alpha-khaki.vercel.app")
+        private val IDENTITY_URI = Uri.parse("https://www.solanasaga.fun")
         private val ICON_URI = Uri.parse("favicon.ico")
         private const val IDENTITY_NAME = "Solana Saga"
         private val BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".toCharArray()

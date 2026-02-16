@@ -10,7 +10,7 @@ No talking head. No slow explanations. Think **game trailer** meets **product hu
 
 ### Before Recording
 - [ ] Clear browser cache, fresh session
-- [ ] Wallet connected with USDC + SOL
+- [ ] Wallet connected with USDC + SOL on mainnet
 - [ ] At least 2-3 active markets ready
 - [ ] Screen recording at 1080p or 4K
 - [ ] Background music ready (royalty-free synthwave/electronic)
@@ -25,7 +25,7 @@ No talking head. No slow explanations. Think **game trailer** meets **product hu
 ## THE SCRIPT (60-90 seconds)
 
 ### INTRO — The Hook (0:00 - 0:05)
-**[BLACK SCREEN → GLITCH TRANSITION]**
+**[BLACK SCREEN -> GLITCH TRANSITION]**
 
 Text on screen (big, bold, animated):
 ```
@@ -36,7 +36,7 @@ PREDICTION MARKETS ARE BORING
 ---
 
 ### PROBLEM (0:05 - 0:10)
-**[Quick cuts of boring prediction market UIs — Polymarket, Augur dashboards]**
+**[Quick cuts of boring prediction market UIs]**
 
 Text overlay:
 ```
@@ -46,7 +46,7 @@ Complex. Slow. No fun.
 ---
 
 ### SOLUTION REVEAL (0:10 - 0:15)
-**[GLITCH TRANSITION → Your app landing page]**
+**[GLITCH TRANSITION -> Your app landing page]**
 
 Text slam:
 ```
@@ -61,11 +61,12 @@ The Tinder of Prediction Markets
 
 Show in rapid succession:
 1. Card appears with question
-2. **SWIPE RIGHT** → "YES!" text pops → Confetti explodes
+2. **SWIPE RIGHT** -> "YES!" text pops -> Confetti explodes
 3. New card
-4. **SWIPE LEFT** → "NO!" text pops → Confetti
-5. **SWIPE UP** → "SKIP" → Card flies away
+4. **SWIPE LEFT** -> "NO!" text pops -> Confetti
+5. **SWIPE UP** -> "SKIP" -> Card flies away
 6. Streak counter going up: 1... 2... 3... 4... 5...
+7. Session stats toast appears: "5 PREDICTIONS! Streak: 5x"
 
 Text overlay during swipes:
 ```
@@ -76,111 +77,139 @@ THAT'S IT.
 
 ---
 
-### GAMEPAD FEATURE (0:30 - 0:40)
-**[Show controller being connected OR show on-screen indicator]**
+### REAL BET ON-CHAIN (0:30 - 0:40)
+**[Connect wallet -> Place actual bet -> Tx confirms]**
+
+Text:
+```
+REAL USDC ON SOLANA MAINNET
+```
+
+Show:
+- Wallet connect modal
+- Place bet -> Loading spinner -> Success modal
+- Transaction confirmation
+
+---
+
+### JUPITER SWAP (0:40 - 0:48)
+**[Navigate to Swap tab -> Quick SOL to USDC swap]**
+
+Text:
+```
+IN-APP SWAP
+Powered by Jupiter
+```
+
+Show:
+- Quick swap presets ($5, $10, $25)
+- Swap confirms -> USDC balance updates
+
+---
+
+### MY BETS (0:48 - 0:53)
+**[Navigate to My Bets -> Show positions]**
+
+Text:
+```
+MANAGE POSITIONS
+Orders | Sell | Claim
+```
+
+Show:
+- Open orders with status
+- Claimable payouts
+
+---
+
+### GAMEPAD FEATURE (0:53 - 1:03)
+**[Show controller connected OR PSG1 mode]**
 
 Text:
 ```
 HARDWARE-FIRST
-Built for Play Solana
+Built for PSG1
 ```
 
 Show:
-- "Gamepad Connected" indicator appearing
-- Quick cuts of button presses (if you have a controller)
-- OR just show the on-screen mapping: A=YES, B=NO, Y=SKIP
+- "PSG1 DETECTED" banner appearing
+- Controller hints overlay
+- Press START -> Full controls reference shows all pages
+- Button presses with visual feedback: A=YES, B=NO, Y=SKIP
 
 Text overlay:
 ```
-A = YES | B = NO | Y = SKIP
+GAMEPAD CONTROLS ON EVERY PAGE
 ```
 
 ---
 
-### ARCADE MODE (0:40 - 0:50)
-**[Click Settings → Arcade → Game loads]**
+### LEADERBOARD (1:03 - 1:08)
+**[Flash leaderboard page with podium]**
 
 Text:
 ```
-WAITING FOR RESULTS?
-```
-
-Show Moddio game loading and quick gameplay
-
-Text:
-```
-PLAY WHILE YOU WAIT
-Powered by Moddio
-```
-
----
-
-### SOCIAL SHARING (0:50 - 0:55)
-**[Place a bet → Success modal appears → Click "Share on X"]**
-
-Show the tweet composer opening with pre-filled text
-
-Text:
-```
-EVERY BET = MARKETING
-Viral by design
-```
-
----
-
-### LEADERBOARD (0:55 - 1:00)
-**[Quick flash of leaderboard page]**
-
-Text:
-```
-ON-CHAIN RANKINGS
+JUPITER-POWERED RANKINGS
 Real data. Real competition.
 ```
 
 ---
 
-### TECH FLEX (1:00 - 1:10)
-**[Split screen or rapid cuts]**
+### GAMIFICATION (1:08 - 1:15)
+**[Quick cuts of profile page]**
 
 Show:
-- Solana Explorer with your program ID
-- Transaction confirming in ~400ms
-- USDC balance changing
+- Daily missions progress (6 missions)
+- XP bar filling up
+- Achievement toast popping
+- Level up
 
-Text overlays (quick flash each):
+Text:
 ```
-SOLANA DEVNET ✓
-ANCHOR SMART CONTRACTS ✓
-REAL USDC ✓
-~400MS TRANSACTIONS ✓
+6 DAILY MISSIONS
+10 ACHIEVEMENTS
+XP & LEVELS
 ```
 
 ---
 
-### CLOSE — Call to Action (1:10 - 1:20)
+### TECH FLEX (1:15 - 1:22)
+**[Rapid text overlays]**
+
+```
+4 JUPITER APIs ✓
+SOLANA MAINNET ✓
+REAL USDC ✓
+GAMEPAD ON EVERY PAGE ✓
+DAILY MISSIONS ✓
+10 ACHIEVEMENTS ✓
+ANDROID APK ✓
+```
+
+---
+
+### CLOSE — Call to Action (1:22 - 1:30)
 **[Back to main screen, logo animation]**
 
 Text sequence:
 ```
 SWIPE.
-BET.
+PREDICT.
 WIN.
 ```
 
 Final frame:
 ```
 SOLANA SAGA
-[Your Demo URL]
+www.solanasaga.fun
 
-Built for Indie.fun Hackathon
-Powered by Solana | Play Solana | Moddio
+Built for PlaySolana Matrix Hackathon
+Powered by Jupiter | Solana Mainnet
 ```
 
 ---
 
 ## ALTERNATIVE: 30-SECOND SPEED VERSION
-
-If judges have short attention spans:
 
 | Time | What |
 |------|------|
@@ -188,13 +217,13 @@ If judges have short attention spans:
 | 0:03 | "We made Tinder for betting" |
 | 0:05 | Swipe YES (confetti) |
 | 0:07 | Swipe NO (confetti) |
-| 0:09 | Swipe SKIP |
-| 0:11 | "Gamepad ready" + controller icon |
-| 0:14 | "Arcade while you wait" + Moddio flash |
-| 0:17 | "Share every bet" + Twitter modal |
-| 0:20 | "On-chain leaderboard" |
-| 0:23 | "400ms on Solana" |
-| 0:26 | "SWIPE. BET. WIN." |
+| 0:09 | Real USDC bet on mainnet |
+| 0:12 | Jupiter Swap in-app |
+| 0:15 | My Bets: Orders + Claim |
+| 0:18 | "Gamepad ready" + PSG1 controls |
+| 0:21 | Leaderboard + Missions |
+| 0:24 | "4 Jupiter APIs on Mainnet" |
+| 0:27 | "SWIPE. PREDICT. WIN." |
 | 0:30 | Logo + URL |
 
 ---
@@ -206,7 +235,7 @@ If judges have short attention spans:
 Free options:
 - [Uppbeat](https://uppbeat.io/) — Search "synthwave" or "cyberpunk"
 - [Pixabay Music](https://pixabay.com/music/) — Search "electronic"
-- [YouTube Audio Library](https://studio.youtube.com/channel/UCxxxxxx/music) — Filter by "Electronic"
+- [YouTube Audio Library](https://studio.youtube.com/) — Filter by "Electronic"
 
 Paid (better quality):
 - [Epidemic Sound](https://www.epidemicsound.com/) — Search "synthwave"
@@ -234,6 +263,7 @@ Colors to match app:
 - Pink: `#FF00AA`
 - Green: `#00FF88`
 - Gold: `#FFD700`
+- Jupiter: `#c7f83e`
 - Dark BG: `#0a0a0f`
 
 ---
@@ -263,130 +293,10 @@ For Twitter/X:
 
 ---
 
-## SAMPLE STORYBOARD
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ FRAME 1 (0:00-0:05)                                             │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │          PREDICTION MARKETS ARE BORING                     │ │
-│ │                    (white text, black bg)                   │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Bass drop, glitch sound                                  │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 2 (0:05-0:10)                                             │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │  [Polymarket screenshot]  [Augur screenshot]                │ │
-│ │                                                             │ │
-│ │           "Complex. Slow. No fun."                          │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Descending tone, disappointment                          │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 3 (0:10-0:15)                                             │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │                     SOLANA SAGA                             │ │
-│ │            The Tinder of Prediction Markets                 │ │
-│ │                                                             │ │
-│ │              [App landing page behind]                      │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Energy rise, synth stab                                  │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAMES 4-8 (0:15-0:30) — SWIPE MONTAGE                         │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │    [Screen recording: Rapid swipes with confetti]          │ │
-│ │                                                             │ │
-│ │    Text flashes: "SWIPE RIGHT = YES"                       │ │
-│ │                  "SWIPE LEFT = NO"                         │ │
-│ │                  "THAT'S IT."                              │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Driving beat, swipe sounds                               │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 9-10 (0:30-0:40) — GAMEPAD                               │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │    "HARDWARE-FIRST"                                        │ │
-│ │    "Built for Play Solana"                                 │ │
-│ │                                                             │ │
-│ │    [Show gamepad indicator or controller]                  │ │
-│ │    A = YES | B = NO | Y = SKIP                            │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Arcade sounds, button clicks                             │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 11-12 (0:40-0:50) — ARCADE                               │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │    "WAITING FOR RESULTS?"                                  │ │
-│ │    "PLAY WHILE YOU WAIT"                                   │ │
-│ │                                                             │ │
-│ │    [Moddio game loading and gameplay]                      │ │
-│ │    "Powered by Moddio"                                     │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Game sounds, 8-bit vibes                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 13 (0:50-0:55) — SOCIAL                                  │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │    "EVERY BET = MARKETING"                                 │ │
-│ │    [Twitter share modal opening]                           │ │
-│ │    "Viral by design"                                       │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Notification sound, positive chime                       │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 14 (0:55-1:00) — LEADERBOARD                             │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │    "ON-CHAIN RANKINGS"                                     │ │
-│ │    [Leaderboard page with podium]                          │ │
-│ │    "Real data. Real competition."                          │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Achievement sound                                        │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 15 (1:00-1:10) — TECH                                    │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │    SOLANA DEVNET ✓                                         │ │
-│ │    ANCHOR CONTRACTS ✓                                      │ │
-│ │    REAL USDC ✓                                             │ │
-│ │    ~400MS TRANSACTIONS ✓                                   │ │
-│ │                                                             │ │
-│ │    [Solana explorer in background]                         │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Tech sounds, data processing                             │
-├─────────────────────────────────────────────────────────────────┤
-│ FRAME 16-17 (1:10-1:20) — CLOSE                                │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │                                                             │ │
-│ │                      SWIPE.                                │ │
-│ │                       BET.                                 │ │
-│ │                       WIN.                                 │ │
-│ │                                                             │ │
-│ │                   SOLANA SAGA                              │ │
-│ │                   [Demo URL]                               │ │
-│ │                                                             │ │
-│ │    Indie.fun | Solana | Play Solana | Moddio              │ │
-│ │                                                             │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│ Audio: Final hit, fade out                                      │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
 ## GOOD LUCK!
 
 Remember: Judges watch dozens of videos. Yours needs to **grab attention in the first 3 seconds** and **never let go**.
 
 Make it fast. Make it bold. Make it memorable.
 
-**Swipe. Bet. Win.**
+**Swipe. Predict. Win.**

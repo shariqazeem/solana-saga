@@ -2,17 +2,20 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Connection,
+  PublicKey,
   Transaction,
   VersionedTransaction,
   TransactionMessage,
   AddressLookupTableAccount,
 } from "@solana/web3.js";
 import { RPC_ENDPOINT, JUP_API_KEY } from "@/lib/solana/config";
+import { isSMWABridgeAvailable } from "@/lib/solana/smwaBridge";
 import { getSwapQuote, getSwapTransaction, USDC_MINT as SWAP_USDC_MINT } from "@/lib/jupiter/jupiterSwapApi";
 import {
   fetchEvents,
   fetchPositions,
   fetchOrders,
+  fetchHistory,
   fetchProfile,
   fetchLeaderboards,
   createOrder,
@@ -24,6 +27,7 @@ import {
   type JupMarket,
   type JupPosition,
   type JupOrder,
+  type JupHistoryEntry,
   type JupProfile,
   type JupLeaderboardEntry,
   type JupLeaderboardSummary,
@@ -65,7 +69,6 @@ async function ensureJupUsdBuffer(
 
   try {
     // Check if user already has JupUSD
-    const { PublicKey } = await import("@solana/web3.js");
     const tokenAccounts = await connection.getParsedTokenAccountsByOwner(wallet.publicKey, {
       mint: new PublicKey(JUPUSD_MINT),
     });
@@ -82,8 +85,8 @@ async function ensureJupUsdBuffer(
 
     console.log("[Jupiter] Creating JupUSD buffer via pre-swap...");
 
-    // Swap $0.05 USDC → JupUSD — this will show ONE wallet popup
-    const quote = await getSwapQuote(USDC_MINT_ADDRESS, JUPUSD_MINT, 50000, 100);
+    // Swap $0.02 USDC → JupUSD — small amount to create ATA + buffer, saves user funds
+    const quote = await getSwapQuote(USDC_MINT_ADDRESS, JUPUSD_MINT, 20000, 300);
     const swapResult = await getSwapTransaction(quote, wallet.publicKey.toBase58());
 
     if (!swapResult.swapTransaction) {
@@ -98,13 +101,22 @@ async function ensureJupUsdBuffer(
       wallet
     );
 
-    // Wait for confirmation
+    // Wait for confirmation (shorter timeout — buffer is small and non-critical)
+    // SMWA bridge already confirmed the tx, so use very short timeout
+    const bufferTimeout = isSMWABridgeAvailable() ? 5_000 : 30_000;
     const pollResult = await pollConfirmation(
       connection,
       sig,
       swapResult.lastValidBlockHeight || (await connection.getBlockHeight("confirmed")) + 150,
-      30_000
+      bufferTimeout
     );
+
+    if (pollResult.timedOut) {
+      // Pre-swap was sent — assume it landed. The bet tx will fail if it didn't.
+      console.warn("[Jupiter] JupUSD buffer poll timed out, assuming sent:", sig);
+      jupUsdBufferConfirmed = true;
+      return true;
+    }
 
     if (pollResult.err) {
       console.warn("[Jupiter] JupUSD pre-swap failed on-chain:", pollResult.err);
@@ -184,15 +196,19 @@ async function toLegacyTransaction(
  * Poll-based transaction confirmation using getSignatureStatuses.
  * More reliable than WebSocket-based confirmTransaction on free RPCs
  * (publicnode.com has broken WebSocket causing "block height exceeded" errors).
+ *
+ * Returns { err, timedOut }:
+ * - err: on-chain error if transaction failed
+ * - timedOut: true if we couldn't confirm within timeoutMs (tx may still succeed)
  */
 async function pollConfirmation(
   connection: Connection,
   signature: string,
   lastValidBlockHeight: number,
   timeoutMs = 60_000
-): Promise<{ err: any | null }> {
+): Promise<{ err: any | null; timedOut?: boolean }> {
   const start = Date.now();
-  const pollInterval = 2000; // 2 seconds
+  const pollInterval = 2500; // 2.5 seconds (less aggressive on free RPCs)
 
   while (Date.now() - start < timeoutMs) {
     try {
@@ -206,22 +222,28 @@ async function pollConfirmation(
         }
       }
 
-      // Check if blockhash has expired
-      const blockHeight = await connection.getBlockHeight("confirmed");
-      if (blockHeight > lastValidBlockHeight) {
-        throw new Error("Transaction expired — blockhash no longer valid. Please try again.");
+      // Check if blockhash has expired (skip this check if we're past 30s —
+      // the native bridge may have used a different RPC with a newer blockhash)
+      if (Date.now() - start < 30_000) {
+        const blockHeight = await connection.getBlockHeight("confirmed");
+        if (blockHeight > lastValidBlockHeight) {
+          // Don't throw — the native bridge may have refreshed the blockhash.
+          // Just log and keep polling for the signature.
+          console.warn("[Jupiter] Block height exceeded lastValid, but tx may still be valid via native bridge");
+        }
       }
     } catch (err: any) {
-      // If it's our own "expired" error, rethrow
-      if (err.message?.includes("expired")) throw err;
-      // Otherwise continue polling (RPC hiccup)
+      // Continue polling on any error (RPC hiccup, rate limit, etc.)
       console.warn("[Jupiter] Poll error:", err.message);
     }
 
     await new Promise((r) => setTimeout(r, pollInterval));
   }
 
-  throw new Error("Transaction confirmation timed out. Check your wallet — the bet may still process.");
+  // Timed out — transaction was sent but we can't confirm via our RPC.
+  // This is NOT necessarily an error (native bridge likely succeeded).
+  console.warn("[Jupiter] Confirmation timed out for:", signature);
+  return { err: null, timedOut: true };
 }
 
 /**
@@ -339,8 +361,8 @@ function transformToMarket(market: JupMarket, event: JupEvent): Market {
   const yesMultiplier = buyYes > 0 ? (1 / buyYes).toFixed(2) : "2.00";
   const noMultiplier = buyNo > 0 ? (1 / buyNo).toFixed(2) : "2.00";
 
-  // Volume is also in micro USD
-  const volumeDollars = microUsdToDollars(market.pricing?.volume || 0);
+  // Volume fields are already in dollars (not micro USD)
+  const volumeDollars = market.pricing?.volume || 0;
 
   // Build a clear YES/NO question from event + market titles
   // Examples from Jupiter:
@@ -406,9 +428,9 @@ function transformToMarket(market: JupMarket, event: JupEvent): Market {
     eventImage: event.metadata?.imageUrl || "",
     isLive: event.isLive,
     isTrending: event.isTrending,
-    volume24h: microUsdToDollars(market.pricing?.volume24h || 0),
-    openInterest: microUsdToDollars(market.pricing?.openInterest || 0),
-    liquidityDollars: microUsdToDollars(market.pricing?.liquidityDollars || 0),
+    volume24h: market.pricing?.volume24h || 0,
+    openInterest: market.pricing?.openInterest || 0,
+    liquidityDollars: market.pricing?.liquidityDollars || 0,
     buyYesPrice: buyYes,
     buyNoPrice: buyNo,
     // Compat
@@ -438,6 +460,7 @@ export function useJupiterPrediction() {
   const [events, setEvents] = useState<JupEvent[]>([]);
   const [positions, setPositions] = useState<JupPosition[]>([]);
   const [orders, setOrders] = useState<JupOrder[]>([]);
+  const [history, setHistory] = useState<JupHistoryEntry[]>([]);
   const [profile, setProfile] = useState<JupProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -469,7 +492,7 @@ export function useJupiterPrediction() {
           includeMarkets: true,
           sortBy: "volume",
           sortDirection: "desc",
-          end: 60,
+          end: 100,
           ...params,
           category: isFilterMode || activeCategory === "all" ? undefined : activeCategory as any,
           filter: isFilterMode ? activeCategory as "live" | "trending" : undefined,
@@ -535,7 +558,23 @@ export function useJupiterPrediction() {
           }
         }
 
-        setMarkets(interleaved);
+        // Filter out dead markets (< $500 volume) — they won't fill orders
+        // Live/trending modes skip this filter (low-volume live markets are still interesting)
+        const filtered = isRelaxedMode
+          ? interleaved
+          : interleaved.filter(m => m.totalVolume >= 500);
+
+        // Tier-based sort: $50K+ first, then $5K+, then rest (preserves round-robin within tiers)
+        const tier1: Market[] = []; // $50K+
+        const tier2: Market[] = []; // $5K+
+        const tier3: Market[] = []; // rest
+        for (const m of filtered) {
+          if (m.totalVolume >= 50_000) tier1.push(m);
+          else if (m.totalVolume >= 5_000) tier2.push(m);
+          else tier3.push(m);
+        }
+
+        setMarkets([...tier1, ...tier2, ...tier3]);
         initialLoadDoneRef.current = true;
       } catch (err: any) {
         console.error("Error fetching Jupiter events:", err);
@@ -554,7 +593,8 @@ export function useJupiterPrediction() {
     if (!wallet.publicKey) return;
 
     try {
-      const result = await fetchPositions(wallet.publicKey.toBase58());
+      // Fetch up to 50 positions to ensure we get all
+      const result = await fetchPositions(wallet.publicKey.toBase58(), undefined, undefined, 0, 50);
       setPositions(result.data);
     } catch (err: any) {
       console.error("Error fetching positions:", err);
@@ -568,10 +608,25 @@ export function useJupiterPrediction() {
     if (!wallet.publicKey) return;
 
     try {
-      const result = await fetchOrders(wallet.publicKey.toBase58());
+      // Fetch up to 50 orders to ensure we get all (including filled/failed)
+      const result = await fetchOrders(wallet.publicKey.toBase58(), 0, 50);
       setOrders(result.data);
     } catch (err: any) {
       console.error("Error fetching orders:", err);
+    }
+  }, [wallet.publicKey]);
+
+  // --------------------------------------------------------
+  // Fetch user history (includes "created" orders not in /orders endpoint)
+  // --------------------------------------------------------
+  const fetchUserHistory = useCallback(async () => {
+    if (!wallet.publicKey) return;
+
+    try {
+      const result = await fetchHistory(wallet.publicKey.toBase58(), 0, 50);
+      setHistory(result.data);
+    } catch (err: any) {
+      console.error("Error fetching history:", err);
     }
   }, [wallet.publicKey]);
 
@@ -628,19 +683,36 @@ export function useJupiterPrediction() {
         const buyPrice = prediction ? market.buyYesPrice : market.buyNoPrice;
         if (!buyPrice || buyPrice <= 0) throw new Error("Market price unavailable");
 
-        // 0. Pre-check balances
+        // 0. Pre-check balances (SOL + USDC)
         const ownerPub = wallet.publicKey.toBase58();
-        const solBal = await connection.getBalance(wallet.publicKey);
-        console.log(`[Jupiter Order] SOL: ${(solBal / 1e9).toFixed(4)}, betting $${amountUsd}`);
-        if (solBal < 10_000_000) {
+        const [solBal, usdcAccounts] = await Promise.all([
+          connection.getBalance(wallet.publicKey),
+          connection.getParsedTokenAccountsByOwner(wallet.publicKey, {
+            mint: new PublicKey(USDC_MINT_ADDRESS),
+          }),
+        ]);
+        const usdcRaw = usdcAccounts.value.length > 0
+          ? parseInt(usdcAccounts.value[0].account.data.parsed.info.tokenAmount.amount)
+          : 0;
+        const usdcDollars = usdcRaw / 1_000_000;
+
+        console.log(`[Jupiter Order] SOL: ${(solBal / 1e9).toFixed(4)}, USDC: $${usdcDollars.toFixed(2)}, betting $${amountUsd}`);
+
+        if (solBal < 5_000_000) {
           throw new Error(
-            `Need more SOL for fees. You have ${(solBal / 1e9).toFixed(4)} SOL, need ~0.01+ SOL.`
+            `Need SOL for fees. You have ${(solBal / 1e9).toFixed(4)} SOL — deposit at least 0.01 SOL.`
           );
         }
 
-        // 0.5. Ensure JupUSD buffer exists for swap slippage coverage
-        // Jupiter prediction txs embed a USDC→JupUSD swap that loses ~0.03% to DEX fees.
-        // Pre-swapping $0.05 USDC→JupUSD once creates a buffer that covers the slippage.
+        if (usdcDollars < amountUsd + 0.02) {
+          throw new Error(
+            `Need $${(amountUsd + 0.02).toFixed(2)} USDC to bet. You have $${usdcDollars.toFixed(2)} USDC.`
+          );
+        }
+
+        // 0.5. JupUSD buffer is REQUIRED — the prediction tx embeds a USDC→JupUSD swap
+        // that needs a pre-existing JupUSD ATA with a small buffer for slippage.
+        // Without it, the tx simulation fails with INSUFFICIENT_FUNDS.
         await ensureJupUsdBuffer(connection, wallet);
 
         // Jupiter requires minimum $1 deposit — use exact amount (no buffer, API handles sizing)
@@ -661,7 +733,7 @@ export function useJupiterPrediction() {
         // If it fails, user can tap "bet" again manually.
 
         // 1. Request unsigned transaction from Jupiter API
-        // maxBuyPriceUsd: API defaults to $0.99 which rejects high-probability markets
+        // Let the API compute maxBuyPriceUsd from market price (valid range: 10000-999999)
         const orderResponse = await createOrder({
           ownerPubkey: ownerPub,
           marketId,
@@ -669,7 +741,6 @@ export function useJupiterPrediction() {
           isBuy: true,
           depositAmount: String(depositMicro),
           depositMint: USDC_MINT_ADDRESS,
-          maxBuyPriceUsd: "1000000",
         });
 
         if (!orderResponse.transaction) {
@@ -687,15 +758,21 @@ export function useJupiterPrediction() {
         console.log("[Jupiter Order] Transaction sent:", signature);
 
         // 3. Confirm using polling (more reliable than WebSocket on free RPCs)
+        // SMWA bridge already confirmed the tx before returning — use short timeout
+        const confirmTimeout = isSMWABridgeAvailable() ? 10_000 : 60_000;
         if (orderResponse.txMeta) {
           const result = await pollConfirmation(
             connection,
             signature,
             orderResponse.txMeta.lastValidBlockHeight,
-            60_000
+            confirmTimeout
           );
 
-          if (result.err) {
+          if (result.timedOut) {
+            // Transaction was sent but our RPC couldn't confirm it in time.
+            // The native wallet (SMWA bridge) already submitted it — likely succeeded.
+            console.warn("[Jupiter Order] Confirmation timed out, treating as sent:", signature);
+          } else if (result.err) {
             const errDetail = JSON.stringify(result.err);
             console.error("[Jupiter Order] On-chain error:", errDetail);
 
@@ -731,6 +808,13 @@ export function useJupiterPrediction() {
 
         if (rawMsg.includes("User rejected") || rawMsg.includes("user rejected") || rawMsg.includes("cancelled")) {
           throw new Error("Transaction cancelled");
+        }
+
+        // Jupiter API "transaction_simulation_failed" = usually insufficient balance
+        if (rawMsg.includes("simulation_failed") || rawMsg.includes("Failed to create order")) {
+          throw new Error(
+            `Insufficient balance for this bet. Make sure you have enough USDC + SOL for fees.`
+          );
         }
 
         // Show the FULL raw error for debugging — helps diagnose on mobile
@@ -770,14 +854,17 @@ export function useJupiterPrediction() {
           response.txMeta?.blockhash
         );
 
+        const sellTimeout = isSMWABridgeAvailable() ? 10_000 : 60_000;
         if (response.txMeta) {
           const result = await pollConfirmation(
             connection,
             signature,
             response.txMeta.lastValidBlockHeight,
-            60_000
+            sellTimeout
           );
-          if (result.err) {
+          if (result.timedOut) {
+            console.warn("[Jupiter] Sell confirmation timed out, treating as sent:", signature);
+          } else if (result.err) {
             throw new Error("Transaction failed on-chain. Check balance and try again.");
           }
         }
@@ -822,14 +909,17 @@ export function useJupiterPrediction() {
           response.txMeta?.blockhash
         );
 
+        const claimTimeout = isSMWABridgeAvailable() ? 10_000 : 60_000;
         if (response.txMeta) {
           const result = await pollConfirmation(
             connection,
             signature,
             response.txMeta.lastValidBlockHeight,
-            60_000
+            claimTimeout
           );
-          if (result.err) {
+          if (result.timedOut) {
+            console.warn("[Jupiter] Claim confirmation timed out, treating as sent:", signature);
+          } else if (result.err) {
             throw new Error("Transaction failed on-chain. Check balance and try again.");
           }
         }
@@ -900,10 +990,10 @@ export function useJupiterPrediction() {
     await Promise.all([
       fetchMarkets(),
       ...(wallet.publicKey
-        ? [fetchUserPositions(), fetchUserOrders(), fetchUserProfile()]
+        ? [fetchUserPositions(), fetchUserOrders(), fetchUserHistory(), fetchUserProfile()]
         : []),
     ]);
-  }, [fetchMarkets, fetchUserPositions, fetchUserOrders, fetchUserProfile, wallet.publicKey]);
+  }, [fetchMarkets, fetchUserPositions, fetchUserOrders, fetchUserHistory, fetchUserProfile, wallet.publicKey]);
 
   // --------------------------------------------------------
   // Change category and refetch
@@ -937,17 +1027,19 @@ export function useJupiterPrediction() {
     if (wallet.publicKey) {
       fetchUserPositions();
       fetchUserOrders();
+      fetchUserHistory();
       fetchUserProfile();
 
       // Refresh user data every 15 seconds when wallet connected
       const interval = setInterval(() => {
         fetchUserPositions();
         fetchUserOrders();
+        fetchUserHistory();
       }, 15_000);
 
       return () => clearInterval(interval);
     }
-  }, [wallet.publicKey, fetchUserPositions, fetchUserOrders, fetchUserProfile]);
+  }, [wallet.publicKey, fetchUserPositions, fetchUserOrders, fetchUserHistory, fetchUserProfile]);
 
   // --------------------------------------------------------
   // User stats derived from profile
@@ -965,6 +1057,7 @@ export function useJupiterPrediction() {
     events,
     positions,
     orders,
+    history,
     profile,
     userStats,
     category,

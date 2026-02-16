@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Minus, Plus, AlertTriangle, Wallet, X, ArrowDownUp, TrendingUp, Clock, Flame } from "lucide-react";
+import { Zap, Minus, Plus, AlertTriangle, Wallet, X, ArrowDownUp, TrendingUp, Clock, Flame, Gamepad2 } from "lucide-react";
 import { RetroGrid } from "@/components/RetroGrid";
 import { SwipeableMarketStack } from "@/components/SwipeableMarketStack";
 import { GameOverlay } from "@/components/GameOverlay";
@@ -26,6 +26,7 @@ import confetti from "canvas-confetti";
 import { microUsdToDollars } from "@/lib/jupiter/jupiterPredictionApi";
 import { useMissions } from "@/hooks/useMissions";
 import { MissionsPanel } from "@/components/MissionsPanel";
+import { usePSG1Mode } from "@/hooks/usePSG1Mode";
 
 const CATEGORIES: { label: string; value: EventCategory; icon?: string }[] = [
   { label: "ALL", value: "all" },
@@ -65,6 +66,17 @@ export default function ArenaPage() {
 
   const { balance: solBalance } = useSolBalance();
   const { balance: usdcBalance } = useUsdcBalance();
+  const psg1Config = usePSG1Mode();
+
+  // PSG1 detection banner
+  const [showPSG1Banner, setShowPSG1Banner] = useState(false);
+  useEffect(() => {
+    if (psg1Config.isPSG1 && !sessionStorage.getItem("psg1_banner_shown")) {
+      setShowPSG1Banner(true);
+      sessionStorage.setItem("psg1_banner_shown", "true");
+      setTimeout(() => setShowPSG1Banner(false), 4000);
+    }
+  }, [psg1Config.isPSG1]);
 
   // Game state
   const [betAmount, setBetAmount] = useState(1);
@@ -94,6 +106,11 @@ export default function ArenaPage() {
 
   // Arcade modal state
   const [showArcade, setShowArcade] = useState(false);
+
+  // Session stats tracking for toast
+  const [sessionBets, setSessionBets] = useState(0);
+  const [sessionXp, setSessionXp] = useState(0);
+  const [sessionToast, setSessionToast] = useState<{ bets: number; streak: number; xp: number } | null>(null);
 
   // Ref for keyboard controls
   const swipeStackRef = useRef<{
@@ -288,6 +305,18 @@ export default function ArenaPage() {
           return newStreak;
         });
 
+        // Session stats tracking - show toast every 5 bets
+        setSessionBets((prev) => {
+          const newCount = prev + 1;
+          const xpGain = 50 + (streak >= 5 ? 25 : 0);
+          setSessionXp((prevXp) => prevXp + xpGain);
+          if (newCount % 5 === 0) {
+            setSessionToast({ bets: newCount, streak: streak + 1, xp: sessionXp + xpGain });
+            setTimeout(() => setSessionToast(null), 3500);
+          }
+          return newCount;
+        });
+
         confetti({
           particleCount: 50,
           spread: 60,
@@ -352,6 +381,7 @@ export default function ArenaPage() {
       updateProgress,
       setProgress,
       trackDiversify,
+      sessionXp,
     ]
   );
 
@@ -622,7 +652,7 @@ export default function ArenaPage() {
                 </motion.div>
               )}
 
-              {/* Sort Toggle */}
+              {/* Sort Toggle + Mission Progress (single row) */}
               <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
                 <span className="text-[9px] text-gray-600 font-game mr-1">SORT</span>
                 {([
@@ -643,6 +673,22 @@ export default function ArenaPage() {
                     {label}
                   </button>
                 ))}
+
+                {/* Compact mission indicator */}
+                {connected && missions.length > 0 && (
+                  <button
+                    onClick={() => setShowMissions(true)}
+                    className="flex items-center gap-1.5 ml-auto px-2 py-1 rounded-md bg-[#FFD700]/10 border border-[#FFD700]/20 hover:bg-[#FFD700]/15 transition-colors"
+                  >
+                    <div className="w-[32px] h-1 rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-[#FFD700] transition-all"
+                        style={{ width: `${(completedCount / missions.length) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-[8px] text-[#FFD700] font-game whitespace-nowrap">{completedCount}/{missions.length}</span>
+                  </button>
+                )}
               </div>
 
               {/* Bet Amount Selector */}
@@ -830,6 +876,26 @@ export default function ArenaPage() {
       {/* Onboarding Overlay */}
       <OnboardingOverlay />
 
+      {/* PSG1 Detection Banner */}
+      <AnimatePresence>
+        {showPSG1Banner && (
+          <motion.div
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-[80] pointer-events-none"
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+          >
+            <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#00F3FF]/20 to-[#9966FF]/20 border border-[#00F3FF]/50 backdrop-blur-md">
+              <Gamepad2 className="w-5 h-5 text-[#00F3FF]" />
+              <div>
+                <div className="text-[#00F3FF] font-game text-xs">PSG1 DETECTED</div>
+                <div className="text-[10px] text-gray-400">Gamepad controls active</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Achievement Toast */}
       <AchievementToast
         achievementId={achievementToast}
@@ -849,6 +915,28 @@ export default function ArenaPage() {
               <div className="text-center">
                 <div className="text-[#FFD700] font-game text-lg">+{dailyBonusAmount} XP</div>
                 <div className="text-xs text-[#FFD700]/70 font-game">DAILY BONUS</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Session Stats Toast */}
+      <AnimatePresence>
+        {sessionToast && (
+          <motion.div
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[80] pointer-events-none"
+            initial={{ opacity: 0, y: -30, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -30, scale: 0.8 }}
+          >
+            <div className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#00F3FF]/20 to-[#FF00FF]/20 border border-[#00F3FF]/50 backdrop-blur-md">
+              <div className="text-center">
+                <div className="text-[#00F3FF] font-game text-sm">{sessionToast.bets} PREDICTIONS!</div>
+                <div className="flex items-center justify-center gap-3 mt-1">
+                  <span className="text-[10px] text-orange-400 font-game">Streak: {sessionToast.streak}x</span>
+                  <span className="text-[10px] text-[#FFD700] font-game">XP: +{sessionToast.xp}</span>
+                </div>
               </div>
             </div>
           </motion.div>

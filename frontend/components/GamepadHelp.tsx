@@ -2,25 +2,70 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Gamepad2 } from "lucide-react";
 
 const GAMEPAD_START = 9;
 
-interface ControlMapping {
-  button: string;
-  action: string;
+interface PageControls {
+  page: string;
   color: string;
+  mappings: { button: string; action: string }[];
 }
 
-const CONTROLS: ControlMapping[] = [
-  { button: "A", action: "Confirm / Place Bet", color: "#00FF88" },
-  { button: "B", action: "Back / Cancel", color: "#FF0044" },
-  { button: "X", action: "Skip Market", color: "#00F3FF" },
-  { button: "Y", action: "Toggle Sound", color: "#FFD700" },
-  { button: "D-Pad L/R", action: "Swipe YES / NO", color: "#FFFFFF" },
-  { button: "D-Pad U/D", action: "Scroll / Adjust Bet", color: "#FFFFFF" },
-  { button: "SELECT", action: "Cycle Tabs", color: "#9966FF" },
-  { button: "START", action: "This Help Menu", color: "#FF6B00" },
+const PAGE_CONTROLS: PageControls[] = [
+  {
+    page: "ARENA",
+    color: "#00F3FF",
+    mappings: [
+      { button: "A / D→", action: "Vote YES" },
+      { button: "B / D←", action: "Vote NO" },
+      { button: "Y / D↑", action: "Skip" },
+      { button: "R1 / L1", action: "Bet Amount +/-" },
+    ],
+  },
+  {
+    page: "SWAP",
+    color: "#00FF88",
+    mappings: [
+      { button: "A", action: "Confirm Swap" },
+      { button: "B", action: "Cancel" },
+      { button: "D↑ / D↓", action: "Amount +/-" },
+    ],
+  },
+  {
+    page: "MY BETS",
+    color: "#FF00AA",
+    mappings: [
+      { button: "L1 / R1", action: "Switch Tabs" },
+      { button: "A", action: "Select / Claim" },
+      { button: "B", action: "Back" },
+    ],
+  },
+  {
+    page: "MARKETS",
+    color: "#00F3FF",
+    mappings: [
+      { button: "D↑ / D↓", action: "Scroll" },
+      { button: "X", action: "Status Filter" },
+      { button: "Y", action: "Search" },
+    ],
+  },
+  {
+    page: "PROFILE",
+    color: "#FF6B00",
+    mappings: [
+      { button: "D↑ / D↓", action: "Scroll" },
+      { button: "B", action: "Back" },
+    ],
+  },
+  {
+    page: "GLOBAL",
+    color: "#9966FF",
+    mappings: [
+      { button: "SELECT", action: "Cycle Tabs" },
+      { button: "START", action: "This Menu" },
+    ],
+  },
 ];
 
 export function GamepadHelp() {
@@ -64,7 +109,7 @@ export function GamepadHelp() {
           onClick={() => setIsOpen(false)}
         >
           <motion.div
-            className="w-full max-w-sm bg-[#0a0a1a] border border-[#00F3FF]/30 rounded-2xl p-5 shadow-[0_0_60px_rgba(0,243,255,0.15)]"
+            className="w-full max-w-md bg-[#0a0a1a] border border-[#00F3FF]/30 rounded-2xl p-5 shadow-[0_0_60px_rgba(0,243,255,0.15)] max-h-[85vh] overflow-y-auto"
             initial={{ scale: 0.8, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.8, y: 20 }}
@@ -72,13 +117,16 @@ export function GamepadHelp() {
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-white font-game text-sm tracking-wider">
-                  PSG1 CONTROLS
-                </h2>
-                <p className="text-gray-500 text-[10px] mt-0.5">
-                  Gamepad Button Mapping
-                </p>
+              <div className="flex items-center gap-2">
+                <Gamepad2 className="w-5 h-5 text-[#00F3FF]" />
+                <div>
+                  <h2 className="text-white font-game text-sm tracking-wider">
+                    PSG1 CONTROLS
+                  </h2>
+                  <p className="text-gray-500 text-[10px] mt-0.5">
+                    Full Gamepad Mapping
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -88,25 +136,41 @@ export function GamepadHelp() {
               </button>
             </div>
 
-            {/* Controls list */}
-            <div className="space-y-2">
-              {CONTROLS.map((ctrl, i) => (
+            {/* Per-page controls */}
+            <div className="space-y-3">
+              {PAGE_CONTROLS.map((section, si) => (
                 <motion.div
-                  key={ctrl.button}
+                  key={section.page}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-white/5"
+                  transition={{ delay: si * 0.06 }}
                 >
-                  <span
-                    className="font-game text-xs font-bold min-w-[80px] text-center px-2 py-1 rounded-lg bg-black/40 border border-white/10"
-                    style={{ color: ctrl.color }}
+                  <div
+                    className="text-[10px] font-game font-bold tracking-widest mb-1.5 px-1"
+                    style={{ color: section.color }}
                   >
-                    {ctrl.button}
-                  </span>
-                  <span className="text-gray-300 text-xs flex-1">
-                    {ctrl.action}
-                  </span>
+                    {section.page}
+                  </div>
+                  <div className="rounded-xl bg-white/5 border border-white/5 overflow-hidden">
+                    {section.mappings.map((m, mi) => (
+                      <div
+                        key={mi}
+                        className={`flex items-center gap-3 px-3 py-1.5 ${
+                          mi > 0 ? "border-t border-white/5" : ""
+                        }`}
+                      >
+                        <span
+                          className="font-game text-[10px] font-bold min-w-[72px] text-center px-1.5 py-0.5 rounded bg-black/40 border border-white/10"
+                          style={{ color: section.color }}
+                        >
+                          {m.button}
+                        </span>
+                        <span className="text-gray-300 text-[11px] flex-1">
+                          {m.action}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </motion.div>
               ))}
             </div>

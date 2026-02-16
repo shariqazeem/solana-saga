@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Clock, DollarSign, Trophy, Target, ChevronRight,
-  Check, X, Timer, Loader2, Wallet, Gift, Zap, Home, ArrowLeft, TrendingUp, TrendingDown
+  Check, X, Timer, Loader2, Wallet, Gift, Zap, Home, ArrowLeft, TrendingUp, TrendingDown, FileText
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,15 +17,16 @@ import confetti from "canvas-confetti";
 import { updateMissionProgress } from "@/lib/missions";
 
 const TABS = [
+  { id: "orders", name: "Orders", icon: FileText },
   { id: "open", name: "Open", icon: Timer },
   { id: "claimable", name: "Claim", icon: Gift },
   { id: "closed", name: "Closed", icon: Check },
 ];
 
 export default function MyBetsPage() {
-  const [activeTab, setActiveTab] = useState("open");
+  const [activeTab, setActiveTab] = useState("orders");
   const { connected, publicKey } = useWallet();
-  const { positions, orders, loading, sellPosition, claimPosition, refetch } = useJupiterPrediction();
+  const { positions, orders, history, loading, sellPosition, claimPosition, refetch } = useJupiterPrediction();
   const [selling, setSelling] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -59,13 +60,13 @@ export default function MyBetsPage() {
           // L1/R1: switch tabs
           else if (gp.buttons[4]?.pressed) { // L1
             lastGamepadRef.current = now;
-            const tabs = ["open", "claimable", "closed"];
+            const tabs = ["orders", "open", "claimable", "closed"];
             const idx = tabs.indexOf(activeTabRef.current);
             setActiveTab(tabs[Math.max(0, idx - 1)]);
             setSelectedIndex(0);
           } else if (gp.buttons[5]?.pressed) { // R1
             lastGamepadRef.current = now;
-            const tabs = ["open", "claimable", "closed"];
+            const tabs = ["orders", "open", "claimable", "closed"];
             const idx = tabs.indexOf(activeTabRef.current);
             setActiveTab(tabs[Math.min(tabs.length - 1, idx + 1)]);
             setSelectedIndex(0);
@@ -85,15 +86,34 @@ export default function MyBetsPage() {
     return () => cancelAnimationFrame(raf);
   }, [router]);
 
-  // Categorize positions
+  // Categorize positions + orders
+  // Merge /orders (active pending orders) with /history (completed events)
   const categorized = useMemo(() => {
+    // Build a unified order list: active orders first, then history
+    // Active orders from /orders have real-time status ("pending")
+    // History entries from /history have event records ("order_created", "order_filled", etc.)
+    const activeOrderPubkeys = new Set(orders.map(o => o.pubkey));
+
+    // Convert active orders to a display-friendly format
+    const activeOrders = orders.map(o => ({
+      ...o,
+      _source: "orders" as const,
+      _isActive: true,
+    }));
+
+    // History entries that aren't duplicates of active orders
+    const historyEntries = history
+      .filter(h => !activeOrderPubkeys.has(h.orderPubkey))
+      .sort((a, b) => b.timestamp - a.timestamp);
+
+    const allHistory = [...history].sort((a, b) => b.timestamp - a.timestamp);
     const open = positions.filter(p => !p.claimed && p.contracts !== "0");
     const claimable = positions.filter(p => p.claimable && !p.claimed);
     const closed = positions.filter(p => p.claimed || p.contracts === "0");
-    return { open, claimable, closed };
-  }, [positions]);
+    return { activeOrders, historyEntries, allHistory, open, claimable, closed };
+  }, [positions, orders, history]);
 
-  // Portfolio stats
+  // Portfolio stats — include positions + active orders
   const portfolioStats = useMemo(() => {
     let totalInvested = 0;
     let totalValue = 0;
@@ -105,6 +125,13 @@ export default function MyBetsPage() {
       if (pos.pnlUsd) totalPnl += microUsdToDollars(pos.pnlUsd);
     });
 
+    // Add active order deposits (funds locked in pending orders)
+    orders.forEach(order => {
+      if (order.sizeUsd) {
+        totalInvested += parseFloat(order.sizeUsd) / 1_000_000;
+      }
+    });
+
     return {
       totalInvested: totalInvested.toFixed(2),
       totalValue: totalValue.toFixed(2),
@@ -112,8 +139,9 @@ export default function MyBetsPage() {
       pnlPositive: totalPnl >= 0,
       openCount: categorized.open.length,
       claimableCount: categorized.claimable.length,
+      activeOrderCount: categorized.activeOrders.length,
     };
-  }, [positions, categorized]);
+  }, [positions, orders, categorized]);
 
   const handleSell = async (positionPubkey: string) => {
     setSelling(positionPubkey);
@@ -157,12 +185,13 @@ export default function MyBetsPage() {
     }
   };
 
-  const getPositionsForTab = (tabId: string) => {
+  const getTabCount = (tabId: string) => {
     switch (tabId) {
-      case "open": return categorized.open;
-      case "claimable": return categorized.claimable;
-      case "closed": return categorized.closed;
-      default: return [];
+      case "orders": return categorized.activeOrders.length + categorized.historyEntries.length;
+      case "open": return categorized.open.length;
+      case "claimable": return categorized.claimable.length;
+      case "closed": return categorized.closed.length;
+      default: return 0;
     }
   };
 
@@ -196,7 +225,7 @@ export default function MyBetsPage() {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/30">
               <Target className="w-4 h-4 text-[#00FF88]" />
               <span className="text-sm font-numbers font-bold text-white">
-                {positions.length} positions
+                {positions.length + orders.length + history.length} total
               </span>
             </div>
           )}
@@ -308,7 +337,7 @@ export default function MyBetsPage() {
                 className="flex gap-2 mb-6 overflow-x-auto pb-2"
               >
                 {TABS.map((tab) => {
-                  const count = getPositionsForTab(tab.id).length;
+                  const count = getTabCount(tab.id);
                   const isClaimable = tab.id === "claimable" && count > 0;
 
                   return (
@@ -351,6 +380,145 @@ export default function MyBetsPage() {
                   className="space-y-3"
                 >
                   <AnimatePresence mode="wait">
+                    {/* Orders — Active orders + History */}
+                    {activeTab === "orders" && (
+                      <motion.div
+                        key="orders"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="space-y-3"
+                      >
+                        {/* Active pending orders (from /orders endpoint) */}
+                        {categorized.activeOrders.map((order, index) => {
+                          const sizeUsd = order.sizeUsd ? parseFloat(order.sizeUsd) / 1_000_000 : 0;
+                          const maxPrice = order.maxFillPriceUsd ? parseFloat(order.maxFillPriceUsd) / 1_000_000 : 0;
+                          const eventTitle = order.eventMetadata?.title || order.eventId;
+                          const marketTitle = order.marketMetadata?.title || order.marketId;
+                          const createdAgo = Math.round((Date.now() / 1000 - order.createdAt) / 60);
+                          const isPending = order.status === "pending";
+                          const isFilled = order.status === "filled";
+
+                          return (
+                            <motion.div
+                              key={`active-${order.pubkey}`}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className={`game-card p-4 ${isPending ? "border-[#ff00aa]/40 bg-[#ff00aa]/5" : isFilled ? "border-[#00ff88]/30 bg-[#00ff88]/5" : "border-yellow-500/30 bg-yellow-500/5"}`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${isPending ? "bg-[#ff00aa]/20 text-[#ff00aa]" : isFilled ? "bg-[#00ff88]/20 text-[#00ff88]" : "bg-yellow-500/20 text-yellow-400"}`}>
+                                      {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                                      {isFilled && <Check className="w-3 h-3" />}
+                                      {isPending ? "PENDING" : order.status.toUpperCase()}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                      order.isYes ? "bg-[#00ff88]/20 text-[#00ff88]" : "bg-[#ff0044]/20 text-[#ff0044]"
+                                    }`}>
+                                      {order.isYes ? "YES" : "NO"}
+                                    </span>
+                                    {order.isBuy ? (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#00f0ff]/20 text-[#00f0ff]">BUY</span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ff00aa]/20 text-[#ff00aa]">SELL</span>
+                                    )}
+                                  </div>
+                                  <h3 className="font-game text-sm text-white truncate">{eventTitle}</h3>
+                                  <div className="text-xs text-gray-400 truncate">{marketTitle}</div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {createdAgo < 60 ? `${createdAgo}m ago` : createdAgo < 1440 ? `${Math.round(createdAgo / 60)}h ago` : `${Math.round(createdAgo / 1440)}d ago`}
+                                    {isPending && ` • ${order.contracts} contracts • Processing via Jupiter keeper`}
+                                    {maxPrice > 0 && ` • Max $${maxPrice.toFixed(2)}`}
+                                  </div>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <div className="text-xs text-gray-400">Size</div>
+                                  <div className="text-lg font-numbers font-bold text-white">
+                                    ${sizeUsd.toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+
+                        {/* Divider if both active and history exist */}
+                        {categorized.activeOrders.length > 0 && categorized.historyEntries.length > 0 && (
+                          <div className="flex items-center gap-3 py-1">
+                            <div className="flex-1 h-px bg-white/10" />
+                            <span className="text-[10px] text-gray-500 font-game">HISTORY</span>
+                            <div className="flex-1 h-px bg-white/10" />
+                          </div>
+                        )}
+
+                        {/* History entries (from /history endpoint) */}
+                        {categorized.historyEntries.map((entry, index) => {
+                          const depositUsd = entry.depositAmountUsd ? parseFloat(entry.depositAmountUsd) / 1_000_000 : 0;
+                          const filledContracts = entry.filledContracts ? parseInt(entry.filledContracts) : 0;
+                          const avgFillPrice = entry.avgFillPriceUsd ? parseFloat(entry.avgFillPriceUsd) / 1_000_000 : 0;
+                          const maxPrice = entry.maxFillPriceUsd ? parseFloat(entry.maxFillPriceUsd) / 1_000_000 : 0;
+                          const eventTitle = entry.eventMetadata?.title || entry.eventId;
+                          const marketTitle = entry.marketMetadata?.title || entry.marketId;
+                          const createdAgo = Math.round((Date.now() / 1000 - entry.timestamp) / 60);
+
+                          const isCreated = entry.eventType === "order_created";
+                          const isFilled = entry.eventType === "order_filled";
+                          const isCancelled = entry.eventType === "order_cancelled";
+                          const isPayout = entry.eventType === "payout_claimed";
+
+                          return (
+                            <motion.div
+                              key={entry.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: (categorized.activeOrders.length + index) * 0.05 }}
+                              className={`game-card p-4 ${isFilled ? "border-[#00ff88]/30 bg-[#00ff88]/5" : isPayout ? "border-[#FFD700]/30 bg-[#FFD700]/5" : isCancelled ? "border-[#ff0044]/20 bg-[#ff0044]/5" : "border-[#00f0ff]/20 bg-[#00f0ff]/5"}`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${isFilled ? "bg-[#00ff88]/20 text-[#00ff88]" : isPayout ? "bg-[#FFD700]/20 text-[#FFD700]" : isCancelled ? "bg-[#ff0044]/20 text-[#ff0044]" : "bg-[#00f0ff]/20 text-[#00f0ff]"}`}>
+                                      {isFilled && <Check className="w-3 h-3" />}
+                                      {isCancelled && <X className="w-3 h-3" />}
+                                      {isPayout && <Gift className="w-3 h-3" />}
+                                      {isCreated && <Clock className="w-3 h-3" />}
+                                      {isFilled ? "FILLED" : isPayout ? "CLAIMED" : isCancelled ? "CANCELLED" : entry.eventType.replace("order_", "").replace("position_", "").toUpperCase()}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                      entry.isYes ? "bg-[#00ff88]/20 text-[#00ff88]" : "bg-[#ff0044]/20 text-[#ff0044]"
+                                    }`}>
+                                      {entry.isYes ? "YES" : "NO"}
+                                    </span>
+                                    {entry.isBuy ? (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#00f0ff]/20 text-[#00f0ff]">BUY</span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ff00aa]/20 text-[#ff00aa]">SELL</span>
+                                    )}
+                                  </div>
+                                  <h3 className="font-game text-sm text-white truncate">{eventTitle}</h3>
+                                  <div className="text-xs text-gray-400 truncate">{marketTitle}</div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {createdAgo < 60 ? `${createdAgo}m ago` : createdAgo < 1440 ? `${Math.round(createdAgo / 60)}h ago` : `${Math.round(createdAgo / 1440)}d ago`}
+                                    {isFilled && filledContracts > 0 && ` • ${filledContracts} contracts @ $${avgFillPrice.toFixed(2)}`}
+                                    {maxPrice > 0 && ` • Price: $${maxPrice.toFixed(2)}`}
+                                  </div>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <div className="text-xs text-gray-400">Deposit</div>
+                                  <div className="text-lg font-numbers font-bold text-white">
+                                    ${depositUsd.toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+
                     {/* Open Positions */}
                     {activeTab === "open" && (
                       <motion.div
@@ -544,24 +712,28 @@ export default function MyBetsPage() {
                   </AnimatePresence>
 
                   {/* Empty State */}
-                  {getPositionsForTab(activeTab).length === 0 && !loading && (
+                  {getTabCount(activeTab) === 0 && !loading && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       className="text-center py-16"
                     >
                       <div className="text-5xl mb-4">
-                        {activeTab === "claimable" ? "🎁" : activeTab === "closed" ? "📊" : "📭"}
+                        {activeTab === "orders" ? "📋" : activeTab === "claimable" ? "🎁" : activeTab === "closed" ? "📊" : "📭"}
                       </div>
                       <h3 className="text-lg font-game text-white mb-2">
-                        {activeTab === "claimable"
+                        {activeTab === "orders"
+                          ? "No pending orders"
+                          : activeTab === "claimable"
                           ? "No winnings to claim"
                           : activeTab === "closed"
                           ? "No closed positions"
                           : "No open positions"}
                       </h3>
                       <p className="text-gray-400 text-sm mb-6">
-                        {activeTab === "open"
+                        {activeTab === "orders"
+                          ? "Orders waiting for Jupiter keeper will appear here."
+                          : activeTab === "open"
                           ? "Start betting on Jupiter markets!"
                           : "Your positions will appear here."}
                       </p>

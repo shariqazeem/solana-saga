@@ -7,12 +7,17 @@
 ![Solana](https://img.shields.io/badge/Solana-Mainnet-9945FF?style=for-the-badge&logo=solana&logoColor=white)
 ![Jupiter](https://img.shields.io/badge/Jupiter-4%20API%20Integrations-c7f83e?style=for-the-badge)
 ![PSG1](https://img.shields.io/badge/PSG1-Native%20Gamepad-00f0ff?style=for-the-badge)
+![Hackathon](https://img.shields.io/badge/PlaySolana-Matrix%20Hackathon%202026-ff6b00?style=for-the-badge)
 
 **Swipe Right = YES | Swipe Left = NO | Win Real USDC**
 
 [Live App](https://www.solanasaga.fun) | [APK Download](#android-build) | [Video Demo](#)
 
 </div>
+
+---
+
+> **PlaySolana Matrix Hackathon 2026** -- Competing in **PSG1-first** ($6K/$3K/$1K) + **Jupiter Gamification** ($6K/$3K/$1K) tracks. Built with 4 Jupiter APIs on Solana mainnet with real USDC. Full gamepad controls on every page. [View submission details](./HACKATHON_SUBMISSION.md).
 
 ---
 
@@ -208,6 +213,18 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - Token portfolio with live Jupiter Price API valuation
 - Full gamification: XP, levels, achievements, streaks, leaderboard
 - Jupiter Mobile wallet support
+
+---
+
+## Screenshots
+
+| Arena (Swipe to Bet) | Gamepad Mode | My Bets |
+|:---:|:---:|:---:|
+| *Swipe cards with confetti and streak counter* | *PSG1 controller hints with button mapping* | *Orders, open positions, claimable payouts* |
+
+| Leaderboard | Profile & Missions | Jupiter Swap |
+|:---:|:---:|:---:|
+| *Top 3 podium with global rankings* | *XP, achievements, daily missions, portfolio* | *In-app SOL to USDC swap* |
 
 ---
 

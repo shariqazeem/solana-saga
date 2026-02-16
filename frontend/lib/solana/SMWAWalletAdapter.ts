@@ -5,15 +5,75 @@ import {
   WalletConnectionError,
   WalletDisconnectionError,
   WalletSignTransactionError,
+  WalletSendTransactionError,
+  type SendTransactionOptions,
 } from "@solana/wallet-adapter-base";
-import type { Transaction, VersionedTransaction } from "@solana/web3.js";
+import type {
+  Transaction,
+  VersionedTransaction,
+  Connection,
+  TransactionSignature,
+} from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
 import {
   isSMWABridgeAvailable,
   smwaConnect,
   smwaDisconnect,
   smwaSignTransactions,
+  smwaSignAndSendTransactions,
 } from "./smwaBridge";
+
+/**
+ * Extract a valid base58 transaction signature from the bridge result.
+ * The native Android bridge may return results in various formats depending
+ * on how the Java/Kotlin side serializes the callback data.
+ */
+function extractSignature(result: any): string | null {
+  // Case 1: string[] array — most common expected format
+  if (Array.isArray(result) && result.length > 0) {
+    const first = typeof result[0] === "string" ? result[0].trim() : null;
+    if (first && isBase58Signature(first)) return first;
+    // Maybe each element is JSON-encoded?
+    if (first) {
+      try {
+        const parsed = JSON.parse(first);
+        if (typeof parsed === "string" && isBase58Signature(parsed)) return parsed;
+      } catch {}
+    }
+    // Return first string even if it doesn't look like base58 (let RPC validate)
+    if (first) return first;
+  }
+
+  // Case 2: raw string — could be JSON array or single signature
+  if (typeof result === "string") {
+    const trimmed = result.trim();
+    // Try JSON parse (e.g., '["5abc..."]')
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "string") {
+        return parsed[0].trim();
+      }
+      if (typeof parsed === "string") return parsed.trim();
+    } catch {}
+    // Maybe it's a raw signature string
+    if (isBase58Signature(trimmed)) return trimmed;
+    // Return as-is as last resort
+    if (trimmed.length > 10) return trimmed;
+  }
+
+  // Case 3: object with a signature field
+  if (result && typeof result === "object" && !Array.isArray(result)) {
+    const sig = result.signature || result.signatures?.[0] || result.txSignature;
+    if (typeof sig === "string") return sig.trim();
+  }
+
+  return null;
+}
+
+/** Check if a string looks like a valid Solana base58 transaction signature (43-88 chars). */
+function isBase58Signature(s: string): boolean {
+  return /^[1-9A-HJ-NP-Za-km-z]{43,88}$/.test(s);
+}
 
 export class SMWAWalletAdapter extends BaseSignerWalletAdapter {
   name = "Jupiter Mobile" as WalletName;
@@ -68,6 +128,49 @@ export class SMWAWalletAdapter extends BaseSignerWalletAdapter {
     } finally {
       this._publicKey = null;
       this.emit("disconnect");
+    }
+  }
+
+  /**
+   * Override sendTransaction to use the native bridge's signAndSendTransactions.
+   * This bypasses the problematic signTransaction → deserialize flow that causes
+   * "versioned message must be deserialized with VersionedMessage.deserialize()"
+   * errors. The native wallet handles signing + sending internally and returns
+   * just the transaction signature.
+   */
+  async sendTransaction(
+    transaction: Transaction | VersionedTransaction,
+    connection: Connection,
+    _options?: SendTransactionOptions
+  ): Promise<TransactionSignature> {
+    if (!this._publicKey) throw new WalletSendTransactionError("Not connected");
+
+    try {
+      const serialized = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false,
+      } as any);
+
+      const base64 = Buffer.from(serialized).toString("base64");
+      console.log("[SMWA] Sending tx via signAndSendTransactions bridge");
+
+      const result = await smwaSignAndSendTransactions([base64]);
+      console.log("[SMWA] Bridge raw result:", JSON.stringify(result), "type:", typeof result);
+
+      // The native bridge may return results in various formats:
+      // - string[] (array of signature strings)
+      // - string (JSON-encoded array, or single signature)
+      // - object with signatures property
+      const sig = extractSignature(result);
+      if (!sig) {
+        throw new Error(`No valid signature from bridge. Raw: ${JSON.stringify(result)?.slice(0, 200)}`);
+      }
+
+      console.log("[SMWA] Transaction sent, signature:", sig);
+      return sig;
+    } catch (e: any) {
+      if (e instanceof WalletSendTransactionError) throw e;
+      throw new WalletSendTransactionError(e?.message || "Send failed");
     }
   }
 

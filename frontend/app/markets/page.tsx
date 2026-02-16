@@ -11,6 +11,7 @@ import {
   CheckCircle, Timer, ArrowLeft
 } from "lucide-react";
 import { useJupiterPrediction } from "@/hooks/useJupiterPrediction";
+import { formatVolume } from "@/lib/jupiter/jupiterPredictionApi";
 import { RetroGrid } from "@/components/RetroGrid";
 
 const CATEGORIES = [
@@ -323,7 +324,7 @@ export default function MarketsPage() {
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-[#ffd700]" />
             <span className="text-gray-400">
-              <span className="text-white font-numbers font-bold">${totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> total volume
+              <span className="text-white font-numbers font-bold">{formatVolume(totalVolume)}</span> total volume
             </span>
           </div>
         </div>
@@ -357,10 +358,10 @@ export default function MarketsPage() {
                   category={market.category}
                   yesPrice={market.yesPrice}
                   noPrice={market.noPrice}
-                  volume={`$${market.totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                  volume={formatVolume(market.totalVolume)}
                   endsIn={market.endsIn}
                   bettors={market.bettors}
-                  trending={market.totalVolume > 100}
+                  trending={market.totalVolume > 50_000}
                   delay={0}
                   isResolved={market.status === "Resolved"}
                   outcome={market.outcome}

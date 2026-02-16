@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useJupiterPrediction, Market } from "@/hooks/useJupiterPrediction";
+import { formatVolume } from "@/lib/jupiter/jupiterPredictionApi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { BetSuccessModal } from "@/components/BetSuccessModal";
 
@@ -174,7 +175,7 @@ export default function MarketDetailPage() {
                     }`}>
                       {market.category}
                     </span>
-                    {market.totalVolume > 1000 && (
+                    {market.totalVolume >= 100_000 && (
                       <span className="hot-badge">
                         <Flame className="w-3 h-3" />
                         HOT
@@ -246,7 +247,7 @@ export default function MarketDetailPage() {
                 <div className="stat-box">
                   <DollarSign className="w-5 h-5 text-[#00f0ff] mb-2" />
                   <div className="text-xl font-numbers font-bold text-white">
-                    ${market.totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    {formatVolume(market.totalVolume)}
                   </div>
                   <div className="text-xs text-gray-500">Volume</div>
                 </div>
