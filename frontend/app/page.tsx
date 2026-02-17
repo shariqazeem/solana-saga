@@ -93,6 +93,7 @@ export default function ArenaPage() {
     y: number;
     id: number;
   } | null>(null);
+  const [streakFlash, setStreakFlash] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
 
   // Bet success modal state
@@ -333,11 +334,27 @@ export default function ArenaPage() {
             type: "streak",
             message: `${streak + 1} BETS! You're on a roll!`,
           });
+          // Screen flash for milestone spectacle
+          setStreakFlash(true);
+          setTimeout(() => setStreakFlash(false), 300);
+          // Extra confetti burst for milestones
           confetti({
-            particleCount: 150,
-            spread: 100,
-            origin: { y: 0.6 },
-            colors: ["#00FF88", "#00F3FF", "#FF00FF", "#FFD700"],
+            particleCount: 200,
+            spread: 120,
+            origin: { y: 0.5 },
+            colors: ["#00FF88", "#00F3FF", "#FF00FF", "#FFD700", "#FFFFFF"],
+          });
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { x: 0.2, y: 0.4 },
+            colors: ["#FFD700", "#FF8800"],
+          });
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { x: 0.8, y: 0.4 },
+            colors: ["#FFD700", "#FF8800"],
           });
         }
       } catch (error: any) {
@@ -893,6 +910,22 @@ export default function ArenaPage() {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Streak Milestone Screen Flash */}
+      <AnimatePresence>
+        {streakFlash && (
+          <motion.div
+            className="fixed inset-0 z-[90] pointer-events-none"
+            initial={{ opacity: 0.7 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              background: "radial-gradient(circle at center, rgba(255,215,0,0.4) 0%, rgba(255,140,0,0.2) 40%, transparent 70%)",
+            }}
+          />
         )}
       </AnimatePresence>
 

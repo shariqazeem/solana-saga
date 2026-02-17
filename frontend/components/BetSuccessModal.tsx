@@ -95,7 +95,7 @@ https://solanasaga.fun
                         animate={{ scale: 1, opacity: 1, rotateY: 0 }}
                         exit={{ scale: 0.5, opacity: 0, rotateY: 30 }}
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="relative max-w-md w-full"
+                        className="relative max-w-[calc(100%-1rem)] sm:max-w-md w-full"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Holographic Ticket Card */}
@@ -128,7 +128,7 @@ https://solanasaga.fun
                             />
 
                             {/* Main Content */}
-                            <div className="relative bg-[#0a0a0f]/90 backdrop-blur-xl border border-[#00ff88]/30 rounded-3xl p-6">
+                            <div className="relative bg-[#0a0a0f]/90 backdrop-blur-xl border border-[#00ff88]/30 rounded-3xl p-4 sm:p-6">
                                 {/* Close Button */}
                                 <button
                                     onClick={onClose}
@@ -172,7 +172,7 @@ https://solanasaga.fun
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.3 }}
                                     >
-                                        <h2 className="text-2xl font-game text-white mb-1 flex items-center justify-center gap-2">
+                                        <h2 className="text-xl sm:text-2xl font-game text-white mb-1 flex items-center justify-center gap-2">
                                             <Sparkles className="w-5 h-5 text-[#ffd700]" />
                                             BET CONFIRMED
                                             <Sparkles className="w-5 h-5 text-[#ffd700]" />
@@ -199,22 +199,22 @@ https://solanasaga.fun
                                         </div>
 
                                         {/* Bet Details Grid */}
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                                                <p className="text-xs text-gray-500 font-game mb-1">YOUR BET</p>
-                                                <p className={`text-lg font-bold ${betData.side ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
+                                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                                            <div className="p-2 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                                <p className="text-[10px] sm:text-xs text-gray-500 font-game mb-1">YOUR BET</p>
+                                                <p className={`text-base sm:text-lg font-bold ${betData.side ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
                                                     {betData.side ? "YES" : "NO"}
                                                 </p>
                                             </div>
-                                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                                                <p className="text-xs text-gray-500 font-game mb-1">WAGERED</p>
-                                                <p className="text-lg font-numbers font-bold text-white">
+                                            <div className="p-2 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                                <p className="text-[10px] sm:text-xs text-gray-500 font-game mb-1">WAGERED</p>
+                                                <p className="text-base sm:text-lg font-numbers font-bold text-white">
                                                     ${betData.amount}
                                                 </p>
                                             </div>
-                                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                                                <p className="text-xs text-gray-500 font-game mb-1">MULTIPLIER</p>
-                                                <p className="text-lg font-numbers font-bold text-[#ffd700]">
+                                            <div className="p-2 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                                <p className="text-[10px] sm:text-xs text-gray-500 font-game mb-1">MULTIPLIER</p>
+                                                <p className="text-base sm:text-lg font-numbers font-bold text-[#ffd700]">
                                                     {betData.multiplier}
                                                 </p>
                                             </div>

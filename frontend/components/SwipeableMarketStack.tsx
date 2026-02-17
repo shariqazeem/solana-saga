@@ -197,7 +197,12 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       vibrateSwipeYes();
       fireConfetti("yes");
 
-      await controls.start({ x: 500, opacity: 0, rotate: 30, transition: { duration: 0.3 } });
+      // Velocity-based exit: faster swipes = snappier exits
+      const vx = Math.abs(info.velocity.x);
+      const exitDuration = Math.max(0.12, 0.35 - (vx / 3000));
+      const exitRotate = 30 + Math.min(20, vx / 50);
+
+      await controls.start({ x: 500, opacity: 0, rotate: exitRotate, transition: { duration: exitDuration, ease: "easeOut" } });
 
       try {
         await onBet(currentMarket.publicKey, true, betAmount);
@@ -223,7 +228,11 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       vibrateSwipeNo();
       fireConfetti("no");
 
-      await controls.start({ x: -500, opacity: 0, rotate: -30, transition: { duration: 0.3 } });
+      const vx = Math.abs(info.velocity.x);
+      const exitDuration = Math.max(0.12, 0.35 - (vx / 3000));
+      const exitRotate = -(30 + Math.min(20, vx / 50));
+
+      await controls.start({ x: -500, opacity: 0, rotate: exitRotate, transition: { duration: exitDuration, ease: "easeOut" } });
 
       try {
         await onBet(currentMarket.publicKey, false, betAmount);
@@ -242,7 +251,10 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
       playSkip();
       vibrateSkip();
 
-      await controls.start({ y: -500, opacity: 0, transition: { duration: 0.3 } });
+      const vy = Math.abs(info.velocity.y);
+      const exitDuration = Math.max(0.12, 0.35 - (vy / 3000));
+
+      await controls.start({ y: -500, opacity: 0, transition: { duration: exitDuration, ease: "easeOut" } });
 
       setCardHistory([...cardHistory, currentMarket.publicKey]);
       setCurrentIndex((i) => i + 1);
@@ -483,11 +495,20 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
     <div className={`relative w-full h-full flex flex-col ${psg1Config.isPSG1 ? "psg1-mode" : ""}`}>
       {/* Card Stack Container - Flexbox to fill space */}
       <div className="relative flex-1 flex items-center justify-center min-h-0 py-2">
-        {/* Background card (next card preview) */}
+        {/* Background cards (3-deep stack with progressive depth) */}
+        {markets[currentIndex + 2] && (
+          <motion.div
+            className={`absolute ${cardWidth} ${cardMaxWidth} ${cardHeight} ${cardMaxHeight} rounded-3xl bg-[#0a0a0f]/60 border border-white/3`}
+            style={{ scale: 0.88, y: 28 }}
+          />
+        )}
         {nextMarket && (
           <motion.div
+            key={`next-${currentIndex}`}
             className={`absolute ${cardWidth} ${cardMaxWidth} ${cardHeight} ${cardMaxHeight} rounded-3xl bg-[#0a0a0f]/80 border border-white/5`}
-            style={{ scale: 0.95, y: 15 }}
+            initial={{ scale: 0.88, y: 28 }}
+            animate={{ scale: 0.94, y: 14 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
           />
         )}
 
@@ -516,6 +537,18 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         >
           {/* Card content - Obsidian Glass Aesthetic */}
           <div className="relative bg-gradient-to-b from-[#0f1115] to-[#050505] rounded-[2rem] border border-white/5 overflow-hidden h-full flex flex-col shadow-2xl">
+            {/* Interactive glare overlay */}
+            <motion.div
+              className="absolute inset-0 z-30 pointer-events-none rounded-[2rem]"
+              style={{
+                background: useTransform(
+                  [glareX, glareY],
+                  ([gx, gy]: number[]) =>
+                    `radial-gradient(600px circle at ${gx}% ${gy}%, rgba(255,255,255,0.08), transparent 40%)`
+                ),
+              }}
+            />
+
             {/* Event image background */}
             {currentMarket.eventImage && (
               <div className="absolute inset-0 z-0">
