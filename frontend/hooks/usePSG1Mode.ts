@@ -11,7 +11,8 @@ const PSG1_ASPECT_RATIO = PSG1_WIDTH / PSG1_HEIGHT; // ~1.148
 const TOLERANCE = 50;
 
 export interface PSG1Config {
-  isPSG1: boolean;
+  isPSG1: boolean;       // PSG1 features enabled (gamepad hints, banner, controls)
+  isCompact: boolean;    // Actually on a small screen (apply compact sizing)
   isGamepadMode: boolean;
   screenWidth: number;
   screenHeight: number;
@@ -24,6 +25,7 @@ export interface PSG1Config {
 export function usePSG1Mode(): PSG1Config {
   const [config, setConfig] = useState<PSG1Config>({
     isPSG1: false,
+    isCompact: false,
     isGamepadMode: false,
     screenWidth: typeof window !== "undefined" ? window.innerWidth : 1920,
     screenHeight: typeof window !== "undefined" ? window.innerHeight : 1080,
@@ -54,33 +56,38 @@ export function usePSG1Mode(): PSG1Config {
     const gamepads = navigator.getGamepads?.() || [];
     const hasGamepad = Array.from(gamepads).some(gp => gp !== null);
 
-    // PSG1 detection: match dimensions OR user agent, AND be on Android
+    // PSG1 feature detection: match dimensions, user agent, URL param, or Android+gamepad
     const isPSG1 = (widthMatch && heightMatch) || uaMatch ||
-      // Also activate PSG1 mode if URL has ?psg1=true (for testing)
-      new URLSearchParams(window.location.search).get("psg1") === "true";
+      new URLSearchParams(window.location.search).get("psg1") === "true" ||
+      (isAndroid && hasGamepad);
 
-    // Calculate optimal card dimensions for the screen
-    // PSG1 is portrait, so we want taller cards
+    // Compact mode: actual small screen (PSG1 device or mobile)
+    // URL param on desktop does NOT trigger compact — only enables features
+    const isSmallScreen = width <= 640 || height <= 640;
+    const isActualPSG1Device = (widthMatch && heightMatch) || uaMatch || (isAndroid && hasGamepad);
+    const isCompact = isActualPSG1Device || (isPSG1 && isSmallScreen);
+
     const isPortrait = height > width;
 
     let cardMaxWidth = "380px";
     let cardMaxHeight = "500px";
     let buttonSize = "64px";
 
-    if (isPSG1 || (isAndroid && hasGamepad)) {
-      // PSG1 optimized dimensions
+    if (isCompact) {
+      // Actual PSG1 device or small screen with PSG1 mode
       cardMaxWidth = isPortrait ? "90vw" : "45vh";
       cardMaxHeight = isPortrait ? "60vh" : "80vw";
       buttonSize = "72px";
     } else if (width <= 768) {
-      // Mobile
+      // Mobile (non-PSG1)
       cardMaxWidth = "92vw";
       cardMaxHeight = "65vh";
       buttonSize = "56px";
     }
 
     setConfig({
-      isPSG1: isPSG1 || (isAndroid && hasGamepad),
+      isPSG1,
+      isCompact,
       isGamepadMode: hasGamepad,
       screenWidth: width,
       screenHeight: height,
