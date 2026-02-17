@@ -517,7 +517,7 @@ export default function ArenaPage() {
       <main className="relative z-10 flex-1 flex flex-col min-h-0 pt-20 pb-16">
         {/* Category Filter - Always visible (except during initial load) */}
         {!(loading && isFirstLoad) && (
-          <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar flex-shrink-0 px-4 max-w-lg mx-auto w-full">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 overflow-x-auto no-scrollbar flex-shrink-0 px-3 sm:px-4 max-w-lg mx-auto w-full">
             {CATEGORIES.map((cat) => {
               const count = categoryCounts[cat.value] || 0;
               const isActive = category === cat.value;
@@ -527,7 +527,7 @@ export default function ArenaPage() {
                 <button
                   key={cat.value}
                   onClick={() => changeCategory(cat.value)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-game whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-game whitespace-nowrap transition-all ${
                     isActive
                       ? isLive ? "bg-red-500 text-white" : "bg-[#00F3FF] text-black"
                       : isLive ? "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20" : "bg-white/5 text-gray-400 hover:bg-white/10"
@@ -827,7 +827,7 @@ export default function ArenaPage() {
             onClick={() => setShowConnectPrompt(false)}
           >
             <motion.div
-              className="w-full max-w-lg bg-[#0a0a0f] border-t border-[#00F3FF]/30 rounded-t-3xl p-6 pb-10"
+              className="w-full max-w-[calc(100%-1rem)] sm:max-w-lg bg-[#0a0a0f] border-t border-[#00F3FF]/30 rounded-t-3xl p-4 sm:p-6 pb-8 sm:pb-10"
               initial={{ y: 300 }}
               animate={{ y: 0 }}
               exit={{ y: 300 }}

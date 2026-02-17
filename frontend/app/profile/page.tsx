@@ -296,21 +296,21 @@ export default function ProfilePage() {
               ({unlockedAchievements.length}/{ACHIEVEMENT_IDS.length})
             </span>
           </h3>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 sm:gap-2">
             {ACHIEVEMENT_IDS.map((id) => {
               const ach = ACHIEVEMENTS[id];
               const unlocked = unlockedAchievements.includes(id);
               return (
                 <div
                   key={id}
-                  className={`relative p-2 rounded-xl text-center border ${
+                  className={`relative p-1.5 sm:p-2 rounded-xl text-center border ${
                     unlocked
                       ? "bg-[#0a0a1a] border-[#FFD700]/30 shadow-[0_0_10px_rgba(255,215,0,0.15)]"
                       : "bg-[#080810] border-[#1a1a2e]/40 opacity-40"
                   }`}
                 >
-                  <span className="text-2xl block">{unlocked ? ach.icon : "🔒"}</span>
-                  <p className={`text-[8px] mt-1 font-semibold truncate ${unlocked ? "text-[#FFD700]" : "text-gray-600"}`}>
+                  <span className="text-xl sm:text-2xl block">{unlocked ? ach.icon : "🔒"}</span>
+                  <p className={`text-[7px] sm:text-[8px] mt-0.5 sm:mt-1 font-semibold truncate ${unlocked ? "text-[#FFD700]" : "text-gray-600"}`}>
                     {ach.name}
                   </p>
                 </div>
