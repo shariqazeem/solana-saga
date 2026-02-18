@@ -715,9 +715,12 @@ export function useJupiterPrediction() {
         // Without it, the tx simulation fails with INSUFFICIENT_FUNDS.
         await ensureJupUsdBuffer(connection, wallet);
 
-        // Jupiter requires minimum $1 deposit — use exact amount (no buffer, API handles sizing)
+        // Jupiter API requires deposit > $1 after internal fee deductions.
+        // Sending exactly 1000000 micro-USD fails the minimum check because fees
+        // reduce the effective amount below $1. Add 10% buffer — the API only
+        // charges actual orderCost (contracts * price + fees), not the full deposit.
         const depositUsd = Math.max(amountUsd, 1.0);
-        const depositMicro = dollarsToMicroUsd(depositUsd);
+        const depositMicro = dollarsToMicroUsd(depositUsd) + 100_000; // +$0.10 buffer
 
         console.log("[Jupiter Order]", {
           marketId,
