@@ -704,23 +704,23 @@ export function useJupiterPrediction() {
           );
         }
 
-        if (usdcDollars < amountUsd + 0.02) {
+        if (usdcDollars < amountUsd) {
           throw new Error(
-            `Need $${(amountUsd + 0.02).toFixed(2)} USDC to bet. You have $${usdcDollars.toFixed(2)} USDC.`
+            `Need $${amountUsd.toFixed(2)} USDC to bet. You have $${usdcDollars.toFixed(2)} USDC.`
           );
         }
 
-        // 0.5. JupUSD buffer is REQUIRED — the prediction tx embeds a USDC→JupUSD swap
-        // that needs a pre-existing JupUSD ATA with a small buffer for slippage.
-        // Without it, the tx simulation fails with INSUFFICIENT_FUNDS.
-        await ensureJupUsdBuffer(connection, wallet);
-
-        // Jupiter API requires deposit > $1 after internal fee deductions.
-        // Sending exactly 1000000 micro-USD fails the minimum check because fees
-        // reduce the effective amount below $1. Add 10% buffer — the API only
-        // charges actual orderCost (contracts * price + fees), not the full deposit.
+        // Jupiter prediction vault settles directly in USDC (no JupUSD conversion needed).
+        // The API's minimum deposit check accounts for fees, so sending exactly $1.00
+        // (1000000 micro-USD) fails for most markets. Use the full bet amount as deposit
+        // and add a 50% buffer (capped at wallet balance) so the API can buy enough
+        // contracts to meet the $1 effective minimum. The API only charges actual
+        // orderCost (contracts * price + fees), not the full deposit.
         const depositUsd = Math.max(amountUsd, 1.0);
-        const depositMicro = dollarsToMicroUsd(depositUsd) + 100_000; // +$0.10 buffer
+        const depositMicro = Math.min(
+          dollarsToMicroUsd(depositUsd * 1.5),  // 50% buffer for fee headroom
+          usdcRaw                                // never exceed wallet balance
+        );
 
         console.log("[Jupiter Order]", {
           marketId,
@@ -813,10 +813,16 @@ export function useJupiterPrediction() {
           throw new Error("Transaction cancelled");
         }
 
-        // Jupiter API "transaction_simulation_failed" = usually insufficient balance
-        if (rawMsg.includes("simulation_failed") || rawMsg.includes("Failed to create order")) {
+        // Jupiter API simulation errors
+        if (rawMsg.includes("simulation_failed") || rawMsg.includes("Failed to create order") || rawMsg.includes("ANCHOR_")) {
           throw new Error(
-            `Insufficient balance for this bet. Make sure you have enough USDC + SOL for fees.`
+            `Order failed — please try again. If this persists, check you have enough USDC + SOL for fees.`
+          );
+        }
+
+        if (rawMsg.includes("INSUFFICIENT_FUNDS") || rawMsg.includes("Insufficient")) {
+          throw new Error(
+            `Insufficient balance. Need $${amountUsd.toFixed(2)} USDC + SOL for fees.`
           );
         }
 
