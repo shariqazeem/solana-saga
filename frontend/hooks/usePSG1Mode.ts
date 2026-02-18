@@ -56,16 +56,17 @@ export function usePSG1Mode(): PSG1Config {
     const gamepads = navigator.getGamepads?.() || [];
     const hasGamepad = Array.from(gamepads).some(gp => gp !== null);
 
-    // PSG1 feature detection: match dimensions, user agent, URL param, or Android+gamepad
-    const isPSG1 = (widthMatch && heightMatch) || uaMatch ||
-      new URLSearchParams(window.location.search).get("psg1") === "true" ||
-      (isAndroid && hasGamepad);
-
-    // Compact mode: actual small screen (PSG1 device or mobile)
-    // URL param on desktop does NOT trigger compact — only enables features
-    const isSmallScreen = width <= 640 || height <= 640;
+    // Actual PSG1 device: screen dimensions, user agent, or Android+gamepad
     const isActualPSG1Device = (widthMatch && heightMatch) || uaMatch || (isAndroid && hasGamepad);
-    const isCompact = isActualPSG1Device || (isPSG1 && isSmallScreen);
+
+    // URL param only enables gamepad polling — no visual/layout changes
+    const urlParam = new URLSearchParams(window.location.search).get("psg1") === "true";
+
+    // isPSG1: true if actual device OR url param (for gamepad polling)
+    const isPSG1 = isActualPSG1Device || urlParam;
+
+    // Compact mode: ONLY on actual PSG1 device — never from URL param alone
+    const isCompact = isActualPSG1Device;
 
     const isPortrait = height > width;
 
@@ -74,12 +75,12 @@ export function usePSG1Mode(): PSG1Config {
     let buttonSize = "64px";
 
     if (isCompact) {
-      // Actual PSG1 device or small screen with PSG1 mode
+      // Actual PSG1 device — optimized dimensions
       cardMaxWidth = isPortrait ? "90vw" : "45vh";
       cardMaxHeight = isPortrait ? "60vh" : "80vw";
       buttonSize = "72px";
     } else if (width <= 768) {
-      // Mobile (non-PSG1)
+      // Mobile / phone
       cardMaxWidth = "92vw";
       cardMaxHeight = "65vh";
       buttonSize = "56px";
@@ -94,7 +95,8 @@ export function usePSG1Mode(): PSG1Config {
       cardMaxWidth,
       cardMaxHeight,
       buttonSize,
-      showButtonHints: hasGamepad || isPSG1,
+      // Only show visual hints when gamepad actually connected or actual PSG1 device
+      showButtonHints: hasGamepad || isActualPSG1Device,
     });
   }, []);
 
