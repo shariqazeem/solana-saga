@@ -26,13 +26,14 @@ import { detectTokenFromQuestion, formatPrice } from "@/lib/jupiter/jupiterPrice
 
 // Gamepad button mappings (Standard Controller Layout / PSG1)
 const GAMEPAD_BUTTONS = {
-  A_X: 0,           // A (Xbox) / X (PlayStation) - Vote YES
-  B_CIRCLE: 1,      // B (Xbox) / Circle (PlayStation) - Vote NO
-  Y_TRIANGLE: 3,    // Y (Xbox) / Triangle (PlayStation) - Skip
-  L1: 4,            // L1 / LB - Decrease bet
-  R1: 5,            // R1 / RB - Increase bet
-  SELECT: 8,        // Select / Back - Cycle category
-  START: 9,         // Start - Connect wallet / Open settings
+  A_X: 0,           // A (PSG1) - Vote YES
+  B_CIRCLE: 1,      // B (PSG1) - Vote NO
+  X_SQUARE: 2,      // X (PSG1) - Toggle controls overlay
+  Y_TRIANGLE: 3,    // Y (PSG1) - Skip
+  L1: 4,            // L1 - Decrease bet
+  R1: 5,            // R1 - Increase bet
+  SELECT: 8,        // Select - Cycle category
+  START: 9,         // Start - Connect wallet
   DPAD_UP: 12,      // D-Pad Up - Skip
   DPAD_DOWN: 13,    // D-Pad Down - Decrease bet
   DPAD_LEFT: 14,    // D-Pad Left - Vote NO
@@ -77,6 +78,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   const [cardHistory, setCardHistory] = useState<string[]>([]);
   const [gamepadConnected, setGamepadConnected] = useState(false);
   const [gamepadActive, setGamepadActive] = useState<"yes" | "no" | "skip" | null>(null);
+  const [showControlMap, setShowControlMap] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const lastGamepadActionRef = useRef<number>(0);
   const gamepadAnimationRef = useRef<number | null>(null);
@@ -423,6 +425,11 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
             gamepad.buttons[GAMEPAD_BUTTONS.DPAD_DOWN]?.pressed) {
             lastGamepadActionRef.current = now;
             onDecreaseBetRef.current?.();
+          }
+          // X - Toggle controls overlay
+          else if (gamepad.buttons[GAMEPAD_BUTTONS.X_SQUARE]?.pressed) {
+            lastGamepadActionRef.current = now;
+            setShowControlMap(prev => !prev);
           }
           // START - Connect wallet / open settings
           else if (gamepad.buttons[GAMEPAD_BUTTONS.START]?.pressed) {
@@ -823,6 +830,94 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
           <span className="text-[10px] md:text-xs text-gray-500 ml-2">+{markets.length - 10}</span>
         )}
       </div>
+
+      {/* Controls Map Overlay — toggled with X button */}
+      <AnimatePresence>
+        {showControlMap && (
+          <motion.div
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-2xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setShowControlMap(false)}
+          >
+            <motion.div
+              className="w-full max-w-[340px] mx-4"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Gamepad2 className="w-5 h-5 text-[#00F3FF]" />
+                <span className="font-game text-sm text-[#00F3FF] tracking-wider">PSG1 CONTROLS</span>
+              </div>
+
+              {/* Main actions */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {[
+                  { btn: "B", dpad: "←", label: "NO", color: "#FF0044", bg: "bg-[#FF0044]" },
+                  { btn: "Y", dpad: "↑", label: "SKIP", color: "#FFD700", bg: "bg-[#FFD700]" },
+                  { btn: "A", dpad: "→", label: "YES", color: "#00FF88", bg: "bg-[#00FF88]" },
+                ].map((c) => (
+                  <div key={c.label} className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border-2"
+                        style={{ borderColor: c.color, color: c.color }}
+                      >
+                        {c.btn}
+                      </div>
+                      <span className="text-gray-600 text-[10px]">/</span>
+                      <div className="px-1.5 py-0.5 rounded bg-white/10 text-gray-400 text-xs font-mono">
+                        {c.dpad}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-game tracking-wider" style={{ color: c.color }}>
+                      {c.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Secondary controls */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {[
+                  { btns: "L1 / ↓", label: "BET -", color: "#00F3FF" },
+                  { btns: "R1", label: "BET +", color: "#00F3FF" },
+                ].map((c) => (
+                  <div key={c.label} className="flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10">
+                    <span className="text-[10px] font-game" style={{ color: c.color }}>{c.btns}</span>
+                    <span className="text-[10px] text-gray-500">{c.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Utility controls */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[
+                  { btn: "START", label: "WALLET", color: "#FF00FF" },
+                  { btn: "SELECT", label: "NAV", color: "#9966FF" },
+                  { btn: "X", label: "CONTROLS", color: "#00F3FF" },
+                ].map((c) => (
+                  <div key={c.label} className="flex flex-col items-center gap-1 p-1.5 rounded-lg bg-white/5 border border-white/10">
+                    <span className="text-[10px] font-game" style={{ color: c.color }}>{c.btn}</span>
+                    <span className="text-[8px] text-gray-500 font-game">{c.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dismiss hint */}
+              <div className="text-center">
+                <span className="text-[10px] text-gray-600 font-game">
+                  Press <span className="text-[#00F3FF]">X</span> or tap to close
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });

@@ -124,6 +124,7 @@ export function usePSG1Mode(): PSG1Config {
 export const PSG1_BUTTON_LABELS = {
   YES: { button: "A", dpad: "→", color: "#00FF88" },
   NO: { button: "B", dpad: "←", color: "#FF0044" },
+  CONTROLS: { button: "X", dpad: "", color: "#00F3FF" },
   SKIP: { button: "Y", dpad: "↑", color: "#FFD700" },
   BET_UP: { button: "R1", dpad: "", color: "#00F3FF" },
   BET_DOWN: { button: "L1", dpad: "↓", color: "#00F3FF" },
