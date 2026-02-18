@@ -1,139 +1,99 @@
-# Solana Saga — 3-Minute Demo Video Script
+# Solana Saga — Demo Video Script
 
-**Tracks:** PSG1-First + Jupiter Gamification
-**URL:** solanasaga.fun
-
----
-
-## BEFORE RECORDING
-
-1. Clear localStorage: DevTools → Application → Clear `onboarding_seen`
-2. Start with wallet connected, LOW USDC (~$0.50) and ~0.1 SOL
-3. Record on iPhone or Mac browser at solanasaga.fun
-4. Speak naturally while doing actions — don't pause between scenes
+**Setup:** iPhone 16 Pro recording you + Android phone running solana-saga.apk
+**Style:** Natural, talking to camera while showing the Android phone screen
+**Time:** ~3 minutes
 
 ---
 
-## SCENE 1: CINEMATIC ONBOARDING (0:00 - 0:25)
+## Before you start
 
-**[Open solanasaga.fun fresh]**
-
-Boot sequence plays automatically — let it run:
-- "INITIALIZING..." glitch text → SOLANA SAGA logo with neon glow
-- Swipe demo phase: animated card with YES/NO stamps + gamepad button hints
-- Real money phase: spinning USDC coin + "4 JUPITER APIs"
-- Tap **"ENTER THE ARENA"**
-
-**Say:**
-> "Solana Saga — a Tinder-style prediction market arcade on Solana mainnet. Swipe right for YES, left for NO, real USDC bets powered by 4 Jupiter APIs."
+- Install solana-saga.apk on Android phone
+- Clear app data / localStorage so onboarding plays fresh
+- Have wallet with ~$0.50 USDC and ~0.1 SOL (swap more during demo)
+- iPhone 16 Pro recording selfie-style, Android phone held in other hand angled toward camera
 
 ---
 
-## SCENE 2: ARENA + LOW BALANCE (0:25 - 0:45)
+## Flow
 
-**[Arena loads with cards]**
+### 1. Open the app (0:00)
 
-1. Swipe through 2-3 market cards to show the smooth physics
-2. Show category filters — tap CRYPTO, POLITICS, TRENDING
-3. Point out your low USDC balance
+Open solana-saga on the Android phone. Let the boot sequence play — it looks sick so just hold it toward camera.
 
-**Say:**
-> "Each card is a live prediction market from Jupiter's API. Crypto, politics, sports — 8 categories. I've only got 50 cents, so let me swap some SOL for USDC."
+"Hey what's up, this is Solana Saga — we built a swipe-to-bet prediction market game on Solana. Think Tinder but for betting on real events with real USDC. Let me walk you through it."
 
----
+### 2. Onboarding plays through (0:15)
 
-## SCENE 3: JUPITER SWAP (0:45 - 1:10)
+Let all 4 phases play — boot text, swipe demo with the mock card, spinning USDC coin, then tap "Enter the Arena."
 
-**[Tap Swap tab in bottom nav]**
+"So first time you open it you get this cinematic onboarding — shows you swipe right for yes, left for no. Real money, real Solana mainnet, powered by Jupiter."
 
-1. Tap the **$5** quick preset button
-2. Shows estimated SOL cost + exchange rate
-3. Tap **SWAP** → confirm in wallet
-4. Wait for confirmation → confetti burst!
-5. Show updated USDC balance
+### 3. Browse the arena (0:30)
 
-**Say:**
-> "Jupiter Swap built right in — one tap to convert SOL to USDC. That's Jupiter API number one. Now I've got funds to play."
+Swipe through a few cards casually. Tap a category or two — CRYPTO, POLITICS.
 
----
+"These are all live prediction markets pulled from Jupiter's Prediction API. Crypto, politics, sports, whatever. Each card shows the question, the odds, volume, time left."
 
-## SCENE 4: PLACE REAL BETS (1:10 - 1:55)
+### 4. Show low balance + go swap (0:45)
 
-**[Go back to Arena tab]**
+Point out you're low on USDC. Navigate to the Swap tab.
 
-1. Set bet to **$1** using the amount selector
-2. Find a good crypto market → **swipe RIGHT** for YES
-   - Watch: card tilts, green stamp, wallet popup, confirm, confetti!
-3. Next card → **swipe LEFT** for NO
-4. Keep swiping — build up a **streak**
-5. Hit **5-bet streak** → screen flash + multi-burst confetti celebration!
-6. Session toast appears: "5 predictions! +XP"
+"I only have like 50 cents right now so let me get some more USDC — we've got Jupiter Swap built right into the app."
 
-**Say (while swiping):**
-> "Real USDC bets, Solana mainnet, not testnet. Jupiter Prediction Market API — API number two. Every bet earns XP, builds streaks, tracks missions. Watch this streak celebration at 5..."
+### 5. Do a swap (0:55)
 
----
+Tap a preset like $5, hit swap, confirm in wallet. Show the confetti when it goes through.
 
-## SCENE 5: MY BETS (1:55 - 2:15)
+"Boom — SOL to USDC, one tap. That's Jupiter API number one."
 
-**[Tap My Bets tab]**
+### 6. Go back to arena and start betting (1:15)
 
-1. Show **Orders** tab — your pending orders
-2. Switch to **Open** — active positions with live PnL
-3. Briefly show position details: avg price, mark price, current value
+Set bet to $1. Find a market you like, swipe right. Confirm in wallet. Confetti.
 
-**Say:**
-> "All positions tracked in real-time through Jupiter's Orders and Positions APIs — that's API three and four. See live PnL on every bet."
+"Alright now let's place some real bets. One dollar on this one — swipe right for yes — and that's a real USDC transaction on Solana mainnet right there. Jupiter Prediction API, that's API number two."
 
----
+### 7. Keep betting, build a streak (1:35)
 
-## SCENE 6: PROFILE + GAMIFICATION (2:15 - 2:40)
+Swipe on a few more markets fast. Try to get to a 5 streak.
 
-**[Tap Profile tab]**
+"Every bet earns XP, builds your streak. Watch what happens when I hit five in a row..."
 
-1. Show **XP ring** with level
-2. Scroll past stat cards: win rate, bets, volume, PnL, streak
-3. Show **Today's Missions** — progress bars filling up
-4. Show **Achievements** grid — unlocked vs locked
-5. Briefly show token portfolio with USD values
+When the streak celebration fires — screen flash, confetti burst:
 
-**Say:**
-> "Full gamification — XP levels, 6 daily missions, 10 achievements. Missions require real Jupiter interactions: betting, swapping, claiming payouts, diversifying categories."
+"There it is. The app tracks everything — streaks, XP, daily missions."
 
----
+### 8. Show My Bets (2:00)
 
-## SCENE 7: LEADERBOARD + PSG1 + CLOSE (2:40 - 3:00)
+Tap the bets tab. Show the orders, open positions with live PnL.
 
-**[Tap Leaderboard tab]**
+"All my bets right here — pending orders, open positions with live profit and loss. Jupiter Orders API and Positions API — that's three and four Jupiter integrations total."
 
-1. Show the **podium** — top 3 with glowing 1st place
-2. Scroll rankings briefly
+### 9. Show Profile (2:15)
 
-**Say:**
-> "Live leaderboard from Jupiter — top traders ranked by PnL and volume."
+Tap profile. Scroll through stats, missions, achievements.
 
-**[Quick PSG1 mention — optional: connect gamepad or mention]**
+"Profile shows your XP level, stats, daily missions — stuff like place 3 bets, try different categories, claim a payout. There's 10 achievements too."
 
-> "Built PSG1-first — full gamepad controls on every page. A for YES, B for NO, X opens a controls map, START connects wallet. Every screen has gamepad navigation."
+### 10. Show Leaderboard (2:30)
 
-**Closing:**
-> "Solana Saga — 4 Jupiter APIs, real USDC on mainnet, full gamification, native PSG1 gamepad support. Try it at solanasaga.fun."
+Tap leaderboard. Show the podium and rankings.
+
+"Leaderboard pulls real rankings — top traders by profit, volume, win rate."
+
+### 11. Mention PSG1 + close (2:45)
+
+"Oh and the whole thing has full gamepad controls — we built it PSG1-first. A for yes, B for no, X shows a controls map, every single page has gamepad navigation. It's a real arcade experience."
+
+"Solana Saga — four Jupiter APIs, real USDC on mainnet, full gamification, built for PSG1. Check it out at solanasaga.fun."
 
 ---
 
-## TALKING POINT CHECKLIST
+## Key things to hit naturally
 
-- [ ] Say **"Jupiter"** 5+ times
-- [ ] Name all **4 Jupiter APIs**: Swap, Prediction Market, Orders, Positions
-- [ ] Say **"mainnet"** and **"real USDC"** at least twice
-- [ ] Show the **streak celebration** (5-bet streak)
-- [ ] Mention **"every page"** for gamepad support
-- [ ] Show **missions** and **achievements**
-- [ ] Mention **solanasaga.fun** at the end
-
-## RECORDING TIPS
-
-- Talk while doing — swipe while you're talking about swiping
-- Don't sit on any screen for more than 15 seconds
-- If you mess up, keep going — you can trim later
-- Use Loom (instant URL) or QuickTime + YouTube (unlisted)
+- Say "Jupiter" a bunch — swap API, prediction API, orders API, positions API
+- Say "mainnet" and "real USDC" — you're not on testnet
+- Show the streak celebration — it's the most visually impressive moment
+- Mention missions and achievements — that's the gamification track
+- Mention PSG1 gamepad controls on every page
+- End with solanasaga.fun
