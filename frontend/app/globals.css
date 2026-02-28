@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Utility: hide scrollbar while keeping scrollability */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 @layer base {
   :root {
     /* ARENA Gaming Color Palette - Aggressive Neons */
@@ -1092,31 +1096,45 @@
   }
 }
 
-/* ========== PSG1 DEVICE STYLES (1240x1080) ========== */
-/* PSG1 is a portrait device - optimize for taller aspect ratio */
-@media (max-width: 1240px) and (min-height: 900px) {
-  .psg1-mode {
-    /* Full height utilization for PSG1's portrait screen */
-    --card-max-width: 95%;
-    --card-max-height: 70vh;
+/* ========== PSG1 DEVICE STYLES ========== */
+/* PSG1: 3.92" OLED, 1240x1080 physical, ~419 PPI
+   At DPR 3 → CSS viewport: 360x413
+   At DPR 2.5 → CSS viewport: 432x496
+   Target: any small mobile viewport up to 540px wide */
+
+/* PSG1 compact overrides — applied via .psg1-mode class or small viewport */
+@media (max-width: 540px) and (max-height: 620px) {
+  /* Reduce top padding on pages that use pt-20 (80px) */
+  .pt-20 {
+    padding-top: 3rem !important; /* 48px instead of 80px */
   }
 
-  .psg1-mode .psg1-card {
-    max-width: var(--card-max-width);
-    max-height: var(--card-max-height);
-    width: 100%;
+  /* Reduce bottom padding */
+  .pb-24 {
+    padding-bottom: 4.5rem !important; /* 72px instead of 96px */
   }
+}
 
-  /* Larger touch targets for PSG1 hardware buttons */
-  .psg1-mode .psg1-btn {
-    min-width: 72px;
-    min-height: 72px;
-  }
+.psg1-mode {
+  --card-max-width: 96%;
+  --card-max-height: 55vh;
+}
 
-  /* PSG1 button hints */
-  .psg1-mode .psg1-btn-hint {
-    display: flex !important;
-  }
+.psg1-mode .psg1-card {
+  max-width: var(--card-max-width);
+  max-height: var(--card-max-height);
+  width: 100%;
+}
+
+/* Appropriately sized touch targets for PSG1's small screen */
+.psg1-mode .psg1-btn {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* PSG1 button hints */
+.psg1-mode .psg1-btn-hint {
+  display: flex !important;
 }
 
 /* PSG1 Button Hint Styles */

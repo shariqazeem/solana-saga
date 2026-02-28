@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
+import { usePSG1Mode } from "@/hooks/usePSG1Mode";
+import { WalletButton } from "@/components/WalletButton";
 
 // Admin wallets that can access the admin panel
 const ADMIN_WALLETS = [
@@ -56,6 +58,7 @@ export function GameOverlay({
 }: GameOverlayProps) {
   const { connected } = useWallet();
   const wallet = useAnchorWallet();
+  const psg1Config = usePSG1Mode();
   const [displayBalance, setDisplayBalance] = useState(balance);
   const [showSettings, setShowSettings] = useState(false);
   const [performanceMode, setPerformanceMode] = useState<"high" | "lite">("high");
@@ -107,7 +110,7 @@ export function GameOverlay({
   return (
     <>
       {/* Top HUD Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3">
+      <div className={`fixed top-0 left-0 right-0 z-50 ${psg1Config.isCompact ? "px-2 py-1" : "px-4 py-3"}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Left: Logo + Stats */}
           <div className="flex items-center gap-4 md:gap-6">
@@ -117,7 +120,7 @@ export function GameOverlay({
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
             >
-              <Zap className="w-6 h-6 md:w-8 md:h-8 text-[#00F3FF]" />
+              <Zap className={`text-[#00F3FF] ${psg1Config.isCompact ? "w-5 h-5" : "w-6 h-6 md:w-8 md:h-8"}`} />
               <div className="hidden sm:flex flex-col">
                 <div>
                   <span className="font-game text-sm md:text-lg text-[#00F3FF]">SOLANA</span>
@@ -148,7 +151,9 @@ export function GameOverlay({
             {/* Streak Counter */}
             {streak > 0 && (
               <motion.div
-                className="flex items-center gap-1.5 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/50"
+                className={`flex items-center gap-1 md:gap-2 rounded-xl bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/50 ${
+                  psg1Config.isCompact ? "px-1.5 py-1" : "px-2 md:px-4 py-1.5 md:py-2"
+                }`}
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 200 }}
@@ -169,21 +174,38 @@ export function GameOverlay({
               </motion.div>
             )}
 
+            {/* Compact Connect Button — shown in header when wallet not connected on PSG1 */}
+            {!connected && psg1Config.isCompact && (
+              <motion.div
+                className="flex items-center"
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+              >
+                <div className="flex-shrink-0 scale-75 origin-right">
+                  <WalletButton />
+                </div>
+              </motion.div>
+            )}
+
             {/* Level + Balance */}
             {connected && (
               <motion.div
-                className="flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/30"
+                className={`flex items-center gap-1.5 md:gap-3 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/30 ${
+                  psg1Config.isCompact ? "px-1.5 py-1" : "px-2 md:px-4 py-1.5 md:py-2"
+                }`}
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
               >
                 {/* Level Badge */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-gradient-to-br from-[#FFD700] to-[#FF8800] flex items-center justify-center">
-                    <span className="text-black font-game text-xs md:text-sm font-bold">{playerLevel}</span>
+                  <div className={`rounded-lg bg-gradient-to-br from-[#FFD700] to-[#FF8800] flex items-center justify-center ${
+                    psg1Config.isCompact ? "w-6 h-6" : "w-8 h-8 md:w-9 md:h-9"
+                  }`}>
+                    <span className={`text-black font-game font-bold ${psg1Config.isCompact ? "text-[10px]" : "text-xs md:text-sm"}`}>{playerLevel}</span>
                   </div>
                   {/* XP ring */}
-                  <svg className="absolute -inset-0.5 w-9 h-9 md:w-10 md:h-10 -rotate-90" viewBox="0 0 36 36">
+                  <svg className={`absolute -inset-0.5 -rotate-90 ${psg1Config.isCompact ? "w-7 h-7" : "w-9 h-9 md:w-10 md:h-10"}`} viewBox="0 0 36 36">
                     <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,215,0,0.2)" strokeWidth="2" />
                     <circle
                       cx="18" cy="18" r="16" fill="none" stroke="#FFD700" strokeWidth="2"
@@ -234,8 +256,8 @@ export function GameOverlay({
               </div>
             </motion.div>
 
-            {/* Missions Button */}
-            {connected && onOpenMissions && (
+            {/* Missions Button — hidden on compact to save header space */}
+            {connected && onOpenMissions && !psg1Config.isCompact && (
               <motion.button
                 onClick={onOpenMissions}
                 className="relative w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border transition-all bg-[#FFD700]/10 border-[#FFD700]/30 text-[#FFD700] hover:bg-[#FFD700]/20"
@@ -445,8 +467,9 @@ export function GameOverlay({
             <motion.button
               onClick={onToggleSound}
               className={`
-                w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center
+                rounded-full flex items-center justify-center
                 border transition-all
+                ${psg1Config.isCompact ? "w-7 h-7" : "w-9 h-9 md:w-10 md:h-10"}
                 ${soundEnabled
                   ? "bg-[#00F3FF]/10 border-[#00F3FF]/50 text-[#00F3FF]"
                   : "bg-white/5 border-white/20 text-gray-500"
@@ -455,7 +478,7 @@ export function GameOverlay({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4 md:w-5 md:h-5" /> : <VolumeX className="w-4 h-4 md:w-5 md:h-5" />}
+              {soundEnabled ? <Volume2 className={psg1Config.isCompact ? "w-3.5 h-3.5" : "w-4 h-4 md:w-5 md:h-5"} /> : <VolumeX className={psg1Config.isCompact ? "w-3.5 h-3.5" : "w-4 h-4 md:w-5 md:h-5"} />}
             </motion.button>
           </div>
         </div>

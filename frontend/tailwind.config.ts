@@ -8,10 +8,9 @@ export default {
   ],
   theme: {
     extend: {
-      // PSG1 screen: 1240x1080 (portrait, 3.92" OLED)
+      // PSG1 screen: 1240x1080 physical, CSS viewport ~360x413 at DPR 3
       screens: {
-        'psg1': { 'raw': '(max-width: 1240px) and (max-height: 1080px) and (min-height: 900px)' },
-        'psg1-landscape': { 'raw': '(max-width: 1080px) and (max-height: 1240px)' },
+        'psg1': { 'raw': '(max-width: 540px) and (max-height: 620px)' },
       },
       colors: {
         neon: {

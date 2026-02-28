@@ -514,10 +514,12 @@ export default function ArenaPage() {
       </AnimatePresence>
 
       {/* Main Arena Content */}
-      <main className="relative z-10 flex-1 flex flex-col min-h-0 pt-20 pb-16">
+      <main className={`relative z-10 flex-1 flex flex-col min-h-0 pb-16 ${psg1Config.isCompact ? "pt-10" : "pt-20"}`}>
         {/* Category Filter - Always visible (except during initial load) */}
         {!(loading && isFirstLoad) && (
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 overflow-x-auto no-scrollbar flex-shrink-0 px-3 sm:px-4 max-w-lg mx-auto w-full">
+          <div className={`flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar flex-shrink-0 px-2 sm:px-4 w-full ${
+            psg1Config.isCompact ? "mb-0.5" : "mb-1 sm:mb-3 max-w-lg mx-auto"
+          }`}>
             {CATEGORIES.map((cat) => {
               const count = categoryCounts[cat.value] || 0;
               const isActive = category === cat.value;
@@ -527,15 +529,19 @@ export default function ArenaPage() {
                 <button
                   key={cat.value}
                   onClick={() => changeCategory(cat.value)}
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-game whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1 whitespace-nowrap transition-all ${
+                    psg1Config.isCompact
+                      ? "px-1.5 py-0.5 rounded text-[8px] font-game"
+                      : "sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-game"
+                  } ${
                     isActive
                       ? isLive ? "bg-red-500 text-white" : "bg-[#00F3FF] text-black"
                       : isLive ? "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20" : "bg-white/5 text-gray-400 hover:bg-white/10"
                   }`}
                 >
-                  {isLive && <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white" : "bg-red-400"} animate-pulse`} />}
-                  {isFlame && <Flame className="w-3 h-3" />}
-                  {cat.label}{!isLive && !isFlame && count > 0 ? ` (${count})` : ""}
+                  {isLive && <span className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${isActive ? "bg-white" : "bg-red-400"} animate-pulse`} />}
+                  {isFlame && <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                  {cat.label}{!isLive && !isFlame && count > 0 && !psg1Config.isCompact ? ` (${count})` : ""}
                 </button>
               );
             })}
@@ -626,13 +632,13 @@ export default function ArenaPage() {
           ) : (
             <motion.div
               key="arena"
-              className="flex-1 flex flex-col min-h-0 w-full max-w-lg mx-auto px-4"
+              className={`flex-1 flex flex-col min-h-0 w-full mx-auto ${psg1Config.isCompact ? "px-1" : "max-w-lg px-4"}`}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              {/* Connect Wallet Banner */}
-              {!connected && (
+              {/* Connect Wallet Banner — hidden on PSG1 compact */}
+              {!connected && !psg1Config.isCompact && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -648,8 +654,8 @@ export default function ArenaPage() {
                 </motion.div>
               )}
 
-              {/* Low USDC Banner - Quick Swap */}
-              {connected && usdcBalance < 1 && solBalance > 0.05 && (
+              {/* Low USDC Banner - Quick Swap — hidden on PSG1 compact */}
+              {connected && usdcBalance < 1 && solBalance > 0.05 && !psg1Config.isCompact && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -669,106 +675,137 @@ export default function ArenaPage() {
                 </motion.div>
               )}
 
-              {/* Sort Toggle + Mission Progress (single row) */}
-              <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
-                <span className="text-[9px] text-gray-600 font-game mr-1">SORT</span>
-                {([
-                  { id: "default" as const, label: "MIX", Icon: Flame },
-                  { id: "volume" as const, label: "HOT", Icon: TrendingUp },
-                  { id: "ending" as const, label: "SOON", Icon: Clock },
-                ]).map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => setArenaSort(id)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-game transition-all ${
-                      arenaSort === id
-                        ? "bg-[#00F3FF]/20 text-[#00F3FF] border border-[#00F3FF]/30"
-                        : "bg-white/5 text-gray-500 hover:text-gray-300"
-                    }`}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {label}
-                  </button>
-                ))}
-
-                {/* Compact mission indicator */}
-                {connected && missions.length > 0 && (
-                  <button
-                    onClick={() => setShowMissions(true)}
-                    className="flex items-center gap-1.5 ml-auto px-2 py-1 rounded-md bg-[#FFD700]/10 border border-[#FFD700]/20 hover:bg-[#FFD700]/15 transition-colors"
-                  >
-                    <div className="w-[32px] h-1 rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-[#FFD700] transition-all"
-                        style={{ width: `${(completedCount / missions.length) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-[8px] text-[#FFD700] font-game whitespace-nowrap">{completedCount}/{missions.length}</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Bet Amount Selector */}
-              <div className="flex flex-col items-center gap-2 mb-3 flex-shrink-0">
-                <span className="text-xs text-gray-400 font-game">
-                  BET AMOUNT (USD)
-                </span>
-
-                <div className="flex items-center gap-2">
-                  {[1, 5, 10, 25].map((amount) => (
+              {/* Sort Toggle + Mission Progress — hidden on PSG1 compact to save space */}
+              {!psg1Config.isCompact && (
+                <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
+                  <span className="text-[9px] text-gray-600 font-game mr-1">SORT</span>
+                  {([
+                    { id: "default" as const, label: "MIX", Icon: Flame },
+                    { id: "volume" as const, label: "HOT", Icon: TrendingUp },
+                    { id: "ending" as const, label: "SOON", Icon: Clock },
+                  ]).map(({ id, label, Icon }) => (
                     <button
-                      key={amount}
-                      onClick={() => setQuickBet(amount)}
-                      className={`px-3 py-1 rounded-lg text-sm font-numbers font-bold transition-all ${
-                        betAmount === amount
-                          ? "bg-[#00F3FF] text-black"
-                          : "bg-white/10 text-white hover:bg-white/20"
+                      key={id}
+                      onClick={() => setArenaSort(id)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-game transition-all ${
+                        arenaSort === id
+                          ? "bg-[#00F3FF]/20 text-[#00F3FF] border border-[#00F3FF]/30"
+                          : "bg-white/5 text-gray-500 hover:text-gray-300"
                       }`}
                     >
-                      ${amount}
+                      <Icon className="w-3 h-3" />
+                      {label}
                     </button>
                   ))}
+
+                  {/* Compact mission indicator */}
+                  {connected && missions.length > 0 && (
+                    <button
+                      onClick={() => setShowMissions(true)}
+                      className="flex items-center gap-1.5 ml-auto px-2 py-1 rounded-md bg-[#FFD700]/10 border border-[#FFD700]/20 hover:bg-[#FFD700]/15 transition-colors"
+                    >
+                      <div className="w-[32px] h-1 rounded-full bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-[#FFD700] transition-all"
+                          style={{ width: `${(completedCount / missions.length) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-[8px] text-[#FFD700] font-game whitespace-nowrap">{completedCount}/{missions.length}</span>
+                    </button>
+                  )}
                 </div>
+              )}
 
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/10">
-                  <motion.button
-                    className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-30"
-                    whileTap={{ scale: 0.9 }}
-                    onClick={decreaseBet}
-                    disabled={betAmount <= 1}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </motion.button>
+              {/* Bet Amount Selector — compact single row on PSG1, full on desktop */}
+              {psg1Config.isCompact ? (
+                <div className="flex items-center justify-center gap-2 mb-1 flex-shrink-0">
+                  <div className="flex items-center gap-1">
+                    {[1, 5, 10, 25].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => setQuickBet(amount)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-numbers font-bold transition-all ${
+                          betAmount === amount
+                            ? "bg-[#00F3FF] text-black"
+                            : "bg-white/10 text-white"
+                        }`}
+                      >
+                        ${amount}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-black/40 border border-white/10">
+                    <button onClick={decreaseBet} disabled={betAmount <= 1} className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-gray-400 disabled:opacity-30">
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="text-sm font-numbers font-bold text-white min-w-[32px] text-center">${betAmount}</span>
+                    <button onClick={increaseBet} disabled={betAmount >= 100} className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-gray-400 disabled:opacity-30">
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 mb-3 flex-shrink-0">
+                  <span className="text-xs text-gray-400 font-game">
+                    BET AMOUNT (USD)
+                  </span>
 
-                  <div className="min-w-[80px] text-center">
-                    <span className="text-2xl font-numbers font-bold text-white">
-                      ${betAmount}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    {[1, 5, 10, 25].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => setQuickBet(amount)}
+                        className={`px-3 py-1 rounded-lg text-sm font-numbers font-bold transition-all ${
+                          betAmount === amount
+                            ? "bg-[#00F3FF] text-black"
+                            : "bg-white/10 text-white hover:bg-white/20"
+                        }`}
+                      >
+                        ${amount}
+                      </button>
+                    ))}
                   </div>
 
-                  <motion.button
-                    className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-30"
-                    whileTap={{ scale: 0.9 }}
-                    onClick={increaseBet}
-                    disabled={betAmount >= 100}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </motion.button>
-                </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/10">
+                    <motion.button
+                      className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-30"
+                      whileTap={{ scale: 0.9 }}
+                      onClick={decreaseBet}
+                      disabled={betAmount <= 1}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </motion.button>
 
-                {connected && (
-                  <div className="text-xs text-gray-500">
-                    SOL:{" "}
-                    <span className="text-[#00F3FF] font-numbers">
-                      {solBalance.toFixed(4)}
-                    </span>{" "}
-                    | Positions:{" "}
-                    <span className="text-[#00FF88] font-numbers">
-                      {positions.length}
-                    </span>
+                    <div className="min-w-[80px] text-center">
+                      <span className="text-2xl font-numbers font-bold text-white">
+                        ${betAmount}
+                      </span>
+                    </div>
+
+                    <motion.button
+                      className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-30"
+                      whileTap={{ scale: 0.9 }}
+                      onClick={increaseBet}
+                      disabled={betAmount >= 100}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </motion.button>
                   </div>
-                )}
-              </div>
+
+                  {connected && (
+                    <div className="text-xs text-gray-500">
+                      SOL:{" "}
+                      <span className="text-[#00F3FF] font-numbers">
+                        {solBalance.toFixed(4)}
+                      </span>{" "}
+                      | Positions:{" "}
+                      <span className="text-[#00FF88] font-numbers">
+                        {positions.length}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Swipeable Card Stack */}
               <div className="flex-1 min-h-0">
@@ -827,7 +864,7 @@ export default function ArenaPage() {
             onClick={() => setShowConnectPrompt(false)}
           >
             <motion.div
-              className="w-full max-w-[calc(100%-1rem)] sm:max-w-lg bg-[#0a0a0f] border-t border-[#00F3FF]/30 rounded-t-3xl p-4 sm:p-6 pb-8 sm:pb-10"
+              className="w-full max-w-[calc(100%-1rem)] sm:max-w-lg bg-[#0a0a0f] border-t border-[#00F3FF]/30 rounded-t-2xl sm:rounded-t-3xl p-3 sm:p-6 pb-6 sm:pb-10"
               initial={{ y: 300 }}
               animate={{ y: 0 }}
               exit={{ y: 300 }}
@@ -836,21 +873,21 @@ export default function ArenaPage() {
             >
               <button
                 onClick={() => setShowConnectPrompt(false)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-gray-400 hover:text-white"
+                className="absolute top-3 right-3 p-1.5 rounded-full bg-white/10 text-gray-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="flex flex-col items-center gap-5">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#00F3FF]/20 to-[#00FF88]/20 flex items-center justify-center border border-[#00F3FF]/40">
-                  <Wallet className="w-8 h-8 text-[#00F3FF]" />
+              <div className="flex flex-col items-center gap-3 sm:gap-5">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#00F3FF]/20 to-[#00FF88]/20 flex items-center justify-center border border-[#00F3FF]/40">
+                  <Wallet className="w-6 h-6 sm:w-8 sm:h-8 text-[#00F3FF]" />
                 </div>
 
                 <div className="text-center">
-                  <h3 className="text-xl font-game text-white mb-2">
+                  <h3 className="text-lg sm:text-xl font-game text-white mb-1 sm:mb-2">
                     CONNECT TO BET
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-400">
                     Connect your Solana wallet to place real bets on Jupiter
                     Prediction Markets
                   </p>

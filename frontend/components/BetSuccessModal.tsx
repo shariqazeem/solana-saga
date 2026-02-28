@@ -128,22 +128,22 @@ https://solanasaga.fun
                             />
 
                             {/* Main Content */}
-                            <div className="relative bg-[#0a0a0f]/90 backdrop-blur-xl border border-[#00ff88]/30 rounded-3xl p-4 sm:p-6">
+                            <div className="relative bg-[#0a0a0f]/90 backdrop-blur-xl border border-[#00ff88]/30 rounded-3xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
                                 {/* Close Button */}
                                 <button
                                     onClick={onClose}
-                                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                                    className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors z-10"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
 
                                 {/* Header */}
-                                <div className="text-center mb-6">
+                                <div className="text-center mb-3 sm:mb-6">
                                     <motion.div
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ delay: 0.2, type: "spring", stiffness: 400 }}
-                                        className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#00ff88]/30 to-[#00f0ff]/30 flex items-center justify-center border border-[#00ff88]/50 relative"
+                                        className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 rounded-2xl bg-gradient-to-br from-[#00ff88]/30 to-[#00f0ff]/30 flex items-center justify-center border border-[#00ff88]/50 relative"
                                     >
                                         <motion.div
                                             className="absolute inset-0 rounded-2xl"
@@ -156,14 +156,14 @@ https://solanasaga.fun
                                             }}
                                             transition={{ duration: 1.5, repeat: Infinity }}
                                         />
-                                        <Ticket className="w-10 h-10 text-[#00ff88] relative z-10" />
+                                        <Ticket className="w-7 h-7 sm:w-10 sm:h-10 text-[#00ff88] relative z-10" />
                                         <motion.div
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
                                             transition={{ delay: 0.4 }}
-                                            className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-[#00ff88] flex items-center justify-center"
+                                            className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#00ff88] flex items-center justify-center"
                                         >
-                                            <Check className="w-5 h-5 text-black" />
+                                            <Check className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                                         </motion.div>
                                     </motion.div>
 
@@ -172,12 +172,12 @@ https://solanasaga.fun
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.3 }}
                                     >
-                                        <h2 className="text-xl sm:text-2xl font-game text-white mb-1 flex items-center justify-center gap-2">
-                                            <Sparkles className="w-5 h-5 text-[#ffd700]" />
+                                        <h2 className="text-lg sm:text-2xl font-game text-white mb-1 flex items-center justify-center gap-2">
+                                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#ffd700]" />
                                             BET CONFIRMED
-                                            <Sparkles className="w-5 h-5 text-[#ffd700]" />
+                                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#ffd700]" />
                                         </h2>
-                                        <p className="text-gray-400 text-sm">Your prediction is locked in!</p>
+                                        <p className="text-gray-400 text-xs sm:text-sm">Your prediction is locked in!</p>
                                     </motion.div>
                                 </div>
 
@@ -191,44 +191,44 @@ https://solanasaga.fun
                                     {/* Perforated Edge */}
                                     <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent 0px, transparent 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 16px)" }} />
 
-                                    <div className="pt-4 space-y-4">
+                                    <div className="pt-3 sm:pt-4 space-y-2 sm:space-y-4">
                                         {/* Question */}
-                                        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                                            <p className="text-xs text-gray-500 font-game mb-1">PREDICTION</p>
-                                            <p className="text-white font-medium line-clamp-2">{betData.question}</p>
+                                        <div className="p-2.5 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+                                            <p className="text-[9px] sm:text-xs text-gray-500 font-game mb-0.5 sm:mb-1">PREDICTION</p>
+                                            <p className="text-white font-medium text-sm sm:text-base line-clamp-2">{betData.question}</p>
                                         </div>
 
                                         {/* Bet Details Grid */}
-                                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                                            <div className="p-2 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                                                <p className="text-[10px] sm:text-xs text-gray-500 font-game mb-1">YOUR BET</p>
-                                                <p className={`text-base sm:text-lg font-bold ${betData.side ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
+                                        <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+                                            <div className="p-1.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                                <p className="text-[9px] sm:text-xs text-gray-500 font-game mb-0.5">YOUR BET</p>
+                                                <p className={`text-sm sm:text-lg font-bold ${betData.side ? "text-[#00ff88]" : "text-[#ff0044]"}`}>
                                                     {betData.side ? "YES" : "NO"}
                                                 </p>
                                             </div>
-                                            <div className="p-2 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                                                <p className="text-[10px] sm:text-xs text-gray-500 font-game mb-1">WAGERED</p>
-                                                <p className="text-base sm:text-lg font-numbers font-bold text-white">
+                                            <div className="p-1.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                                <p className="text-[9px] sm:text-xs text-gray-500 font-game mb-0.5">WAGERED</p>
+                                                <p className="text-sm sm:text-lg font-numbers font-bold text-white">
                                                     ${betData.amount}
                                                 </p>
                                             </div>
-                                            <div className="p-2 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                                                <p className="text-[10px] sm:text-xs text-gray-500 font-game mb-1">MULTIPLIER</p>
-                                                <p className="text-base sm:text-lg font-numbers font-bold text-[#ffd700]">
+                                            <div className="p-1.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                                <p className="text-[9px] sm:text-xs text-gray-500 font-game mb-0.5">MULTIPLIER</p>
+                                                <p className="text-sm sm:text-lg font-numbers font-bold text-[#ffd700]">
                                                     {betData.multiplier}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Potential Payout */}
-                                        <div className="p-4 rounded-xl bg-gradient-to-r from-[#00ff88]/10 to-[#00f0ff]/10 border border-[#00ff88]/30">
+                                        <div className="p-2.5 sm:p-4 rounded-xl bg-gradient-to-r from-[#00ff88]/10 to-[#00f0ff]/10 border border-[#00ff88]/30">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Trophy className="w-5 h-5 text-[#ffd700]" />
-                                                    <span className="text-gray-300 font-game text-sm">POTENTIAL PAYOUT</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-[#ffd700]" />
+                                                    <span className="text-gray-300 font-game text-[10px] sm:text-sm">PAYOUT</span>
                                                 </div>
                                                 <motion.span
-                                                    className="text-2xl font-numbers font-black text-[#00ff88]"
+                                                    className="text-xl sm:text-2xl font-numbers font-black text-[#00ff88]"
                                                     initial={{ scale: 0.5 }}
                                                     animate={{ scale: 1 }}
                                                     transition={{ delay: 0.6, type: "spring" }}
@@ -245,48 +245,48 @@ https://solanasaga.fun
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5 }}
-                                    className="mt-6 space-y-3"
+                                    className="mt-3 sm:mt-6 space-y-2 sm:space-y-3"
                                 >
                                     {/* Twitter Share - Primary CTA */}
                                     <motion.button
                                         onClick={handleTwitterShare}
-                                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#1DA1F2] text-white font-game text-sm font-bold hover:bg-[#1a8cd8] transition-all"
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3.5 rounded-xl bg-[#1DA1F2] text-white font-game text-xs sm:text-sm font-bold hover:bg-[#1a8cd8] transition-all"
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                                         </svg>
                                         Share on X
                                     </motion.button>
 
                                     {/* Secondary buttons */}
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-2 sm:gap-3">
                                         <motion.button
                                             onClick={handleCopy}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-white/20 text-gray-300 font-game text-sm hover:bg-white/10 transition-all"
+                                            className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-3 rounded-xl bg-white/5 border border-white/20 text-gray-300 font-game text-xs sm:text-sm hover:bg-white/10 transition-all"
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
                                         >
                                             {copied ? (
                                                 <>
-                                                    <Check className="w-4 h-4 text-[#00ff88]" />
+                                                    <Check className="w-3.5 h-3.5 text-[#00ff88]" />
                                                     Copied!
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Copy className="w-4 h-4" />
+                                                    <Copy className="w-3.5 h-3.5" />
                                                     Copy
                                                 </>
                                             )}
                                         </motion.button>
                                         <motion.button
                                             onClick={handleShare}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-[#00ff88] to-[#00f0ff] text-black font-game text-sm font-bold"
+                                            className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-3 rounded-xl bg-gradient-to-r from-[#00ff88] to-[#00f0ff] text-black font-game text-xs sm:text-sm font-bold"
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
                                         >
-                                            <Share2 className="w-4 h-4" />
+                                            <Share2 className="w-3.5 h-3.5" />
                                             Share
                                         </motion.button>
                                     </div>
@@ -297,7 +297,7 @@ https://solanasaga.fun
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.7 }}
-                                    className="text-center text-xs text-gray-500 mt-4"
+                                    className="text-center text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-4"
                                 >
                                     Good luck! May the odds be in your favor.
                                 </motion.p>

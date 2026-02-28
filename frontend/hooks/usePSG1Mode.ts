@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-// PSG1 Screen: 1240x1080 pixels, 3.92" OLED
-const PSG1_WIDTH = 1240;
-const PSG1_HEIGHT = 1080;
-const PSG1_ASPECT_RATIO = PSG1_WIDTH / PSG1_HEIGHT; // ~1.148
-
-// Tolerance for detection (device might report slightly different)
-const TOLERANCE = 50;
+// PSG1 Screen: 1240x1080 physical pixels, 3.92" OLED, ~419 PPI
+// At DPR 3: CSS viewport ≈ 360x413 (portrait: 360w x 413h)
+// At DPR 2.5: CSS viewport ≈ 432x496
+// At DPR 2: CSS viewport ≈ 540x620
+const PSG1_CSS_WIDTH_MAX = 540;  // Upper bound (DPR 2)
+const PSG1_CSS_WIDTH_MIN = 320;  // Lower bound
+const PSG1_CSS_HEIGHT_MAX = 620;
+const PSG1_CSS_HEIGHT_MIN = 360;
 
 export interface PSG1Config {
   isPSG1: boolean;       // PSG1 features enabled (gamepad hints, banner, controls)
@@ -40,11 +41,12 @@ export function usePSG1Mode(): PSG1Config {
 
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const aspectRatio = width / height;
 
-    // Check if dimensions match PSG1 (with tolerance)
-    const widthMatch = Math.abs(width - PSG1_WIDTH) <= TOLERANCE;
-    const heightMatch = Math.abs(height - PSG1_HEIGHT) <= TOLERANCE;
+    // PSG1 WebView reports CSS pixels (not physical).
+    // At ~419 PPI with DPR 2.5-3, CSS viewport is ~360x413 to ~432x496.
+    const cssViewportMatch =
+      width >= PSG1_CSS_WIDTH_MIN && width <= PSG1_CSS_WIDTH_MAX &&
+      height >= PSG1_CSS_HEIGHT_MIN && height <= PSG1_CSS_HEIGHT_MAX;
 
     // Also check for PSG1 in user agent (if they add it)
     const uaMatch = navigator.userAgent.toLowerCase().includes("psg1");
@@ -56,17 +58,18 @@ export function usePSG1Mode(): PSG1Config {
     const gamepads = navigator.getGamepads?.() || [];
     const hasGamepad = Array.from(gamepads).some(gp => gp !== null);
 
-    // Actual PSG1 device: screen dimensions, user agent, or Android+gamepad
-    const isActualPSG1Device = (widthMatch && heightMatch) || uaMatch || (isAndroid && hasGamepad);
-
-    // URL param only enables gamepad polling — no visual/layout changes
+    // URL param — TWA wrapper sends ?psg1=true
     const urlParam = new URLSearchParams(window.location.search).get("psg1") === "true";
 
-    // isPSG1: true if actual device OR url param (for gamepad polling)
+    // Actual PSG1 device: URL param on Android, CSS viewport match, UA match, or Android+gamepad
+    const isActualPSG1Device = (urlParam && isAndroid) || (cssViewportMatch && isAndroid) || uaMatch || (isAndroid && hasGamepad);
+
+    // isPSG1: true if actual device OR url param (for gamepad polling + PSG1 features)
     const isPSG1 = isActualPSG1Device || urlParam;
 
-    // Compact mode: ONLY on actual PSG1 device — never from URL param alone
-    const isCompact = isActualPSG1Device;
+    // Compact mode: actual PSG1 device OR url param (TWA always sends this)
+    // The whole point of ?psg1=true from TWA is to activate PSG1-optimized layout
+    const isCompact = isActualPSG1Device || urlParam;
 
     const isPortrait = height > width;
 
@@ -75,10 +78,11 @@ export function usePSG1Mode(): PSG1Config {
     let buttonSize = "64px";
 
     if (isCompact) {
-      // Actual PSG1 device — optimized dimensions
-      cardMaxWidth = isPortrait ? "90vw" : "45vh";
-      cardMaxHeight = isPortrait ? "60vh" : "80vw";
-      buttonSize = "72px";
+      // PSG1 device — CSS viewport is ~360x413 at DPR 3
+      // Every pixel counts on this tiny screen
+      cardMaxWidth = "96vw";
+      cardMaxHeight = isPortrait ? "55vh" : "70vw";
+      buttonSize = width <= 400 ? "48px" : "56px";
     } else if (width <= 768) {
       // Mobile / phone
       cardMaxWidth = "92vw";

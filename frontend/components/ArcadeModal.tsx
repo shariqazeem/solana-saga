@@ -56,8 +56,8 @@ export function ArcadeModal({ isOpen, onClose }: ArcadeModalProps) {
             className="relative w-[95vw] h-[90vh] max-w-6xl bg-[#0a0a0f] rounded-2xl border border-white/10 overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#ff00aa]/20 to-[#00f0ff]/20 border-b border-white/10">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-[#ff00aa]/20 to-[#00f0ff]/20 border-b border-white/10">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <motion.div
                   animate={{
                     boxShadow: [
@@ -67,18 +67,18 @@ export function ArcadeModal({ isOpen, onClose }: ArcadeModalProps) {
                     ],
                   }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff00aa] to-[#00f0ff] flex items-center justify-center"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#ff00aa] to-[#00f0ff] flex items-center justify-center"
                 >
-                  <Gamepad2 className="w-5 h-5 text-white" />
+                  <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </motion.div>
                 <div>
-                  <h2 className="font-game text-lg text-white flex items-center gap-2">
-                    ARCADE LOUNGE
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#00f0ff]/20 text-[#00f0ff] border border-[#00f0ff]/30">
+                  <h2 className="font-game text-sm sm:text-lg text-white flex items-center gap-2">
+                    ARCADE
+                    <span className="text-[9px] sm:text-xs px-1.5 py-0.5 rounded-full bg-[#00f0ff]/20 text-[#00f0ff] border border-[#00f0ff]/30">
                       MODDIO
                     </span>
                   </h2>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">
                     Waiting for results? Play on Moddio.
                   </p>
                 </div>

@@ -492,16 +492,16 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
   // Display bettors - use totalBetsCount as fallback if uniqueBettors is 0
   const displayBettors = currentMarket.bettors > 0 ? currentMarket.bettors : currentMarket.totalBetsCount;
 
-  // Card dimensions - compact for actual PSG1 device, normal for desktop+PSG1 mode
+  // Card dimensions - compact for PSG1 (~360x413 CSS px), normal for desktop
   const cardWidth = psg1Config.isCompact ? "w-[98%]" : "w-[92%]";
-  const cardMaxWidth = psg1Config.isCompact ? "" : "max-w-[380px]";
-  const cardHeight = "h-[95%]";
+  const cardMaxWidth = psg1Config.isCompact ? "max-w-[360px]" : "max-w-[380px]";
+  const cardHeight = psg1Config.isCompact ? "h-[98%]" : "h-[95%]";
   const cardMaxHeight = "";
 
   return (
     <div className={`relative w-full h-full flex flex-col ${psg1Config.isCompact ? "psg1-mode" : ""}`}>
       {/* Card Stack Container - Flexbox to fill space */}
-      <div className="relative flex-1 flex items-center justify-center min-h-0 py-2">
+      <div className={`relative flex-1 flex items-center justify-center min-h-0 ${psg1Config.isCompact ? "py-0.5" : "py-2"}`}>
         {/* Background cards (3-deep stack with progressive depth) */}
         {markets[currentIndex + 2] && (
           <motion.div
@@ -543,10 +543,12 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
           onMouseLeave={handleMouseLeave}
         >
           {/* Card content - Obsidian Glass Aesthetic */}
-          <div className="relative bg-gradient-to-b from-[#0f1115] to-[#050505] rounded-[2rem] border border-white/5 overflow-hidden h-full flex flex-col shadow-2xl">
+          <div className={`relative bg-gradient-to-b from-[#0f1115] to-[#050505] border border-white/5 overflow-hidden h-full flex flex-col shadow-2xl ${
+            psg1Config.isCompact ? "rounded-2xl" : "rounded-[2rem]"
+          }`}>
             {/* Interactive glare overlay */}
             <motion.div
-              className="absolute inset-0 z-30 pointer-events-none rounded-[2rem]"
+              className={`absolute inset-0 z-30 pointer-events-none ${psg1Config.isCompact ? "rounded-2xl" : "rounded-[2rem]"}`}
               style={{
                 background: useTransform(
                   [glareX, glareY],
@@ -572,30 +574,27 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
             <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/5 blur-[100px] rounded-full pointer-events-none mix-blend-screen opacity-20" />
 
             {/* Content Container */}
-            <div className="relative z-10 flex flex-col h-full p-4 md:p-5">
+            <div className={`relative z-10 flex flex-col h-full md:p-5 ${psg1Config.isCompact ? "p-2" : "p-4"}`}>
 
               {/* Header: Category & Meta */}
-              <div className="flex items-center justify-between mb-2 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase border ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} shadow-[0_0_10px_inset_rgba(255,255,255,0.05)]`}>
+              <div className={`flex items-center justify-between flex-shrink-0 ${psg1Config.isCompact ? "mb-1" : "mb-2"}`}>
+                <div className="flex items-center gap-1.5">
+                  <span className={`px-2 py-0.5 rounded-md font-bold tracking-wider uppercase border ${categoryStyle.bg} ${categoryStyle.border} ${categoryStyle.text} shadow-[0_0_10px_inset_rgba(255,255,255,0.05)] ${
+                    psg1Config.isCompact ? "text-[9px]" : "text-[10px] md:text-xs"
+                  }`}>
                     {currentMarket.category}
                   </span>
                   {currentMarket.isLive && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] text-red-400 font-bold">
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[9px] text-red-400 font-bold">
                       <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
                       LIVE
                     </span>
                   )}
                   {currentMarket.totalVolume >= 1_000_000 && (
-                    <span className="flex items-center gap-1 text-[10px] text-yellow-400 font-bold animate-pulse">
-                      <Flame className="w-3 h-3 text-yellow-400" />
-                      <Flame className="w-3 h-3 text-yellow-400 -ml-2" />
-                    </span>
+                    <Flame className="w-3 h-3 text-yellow-400 animate-pulse" />
                   )}
                   {currentMarket.totalVolume >= 100_000 && currentMarket.totalVolume < 1_000_000 && (
-                    <span className="flex items-center gap-1 text-[10px] text-orange-400 font-bold animate-pulse">
-                      <Flame className="w-3 h-3" />
-                    </span>
+                    <Flame className="w-3 h-3 text-orange-400 animate-pulse" />
                   )}
                   {/* Live token price badge for crypto markets */}
                   {(() => {
@@ -610,102 +609,109 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                   })()}
                 </div>
 
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] md:text-xs font-mono font-bold ${isUrgent ? "bg-red-950/30 border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.2)]" : "bg-white/5 border-white/10 text-gray-400"
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md border font-mono font-bold ${
+                  psg1Config.isCompact ? "text-[9px]" : "text-[10px] md:text-xs"
+                } ${isUrgent ? "bg-red-950/30 border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.2)]" : "bg-white/5 border-white/10 text-gray-400"
                   }`}>
                   <Clock className="w-3 h-3" />
                   <span>{currentMarket.endsIn}</span>
                 </div>
               </div>
 
-              {/* Event context — show when question doesn't already contain it */}
-              {currentMarket.eventTitle && !currentMarket.question.includes(currentMarket.eventTitle) && (
-                <div className={`text-gray-400 font-bold uppercase tracking-wider mb-1 truncate flex-shrink-0 ${
-                  psg1Config.isCompact ? "text-[11px]" : "text-[10px] md:text-[11px]"
-                }`}>
+              {/* Event context — show when question doesn't already contain it (hidden on compact to save space) */}
+              {!psg1Config.isCompact && currentMarket.eventTitle && !currentMarket.question.includes(currentMarket.eventTitle) && (
+                <div className="text-gray-400 font-bold uppercase tracking-wider mb-1 truncate flex-shrink-0 text-[10px] md:text-[11px]">
                   {currentMarket.eventTitle}
                 </div>
               )}
 
               {/* Main Question — clear YES/NO phrasing */}
-              <h2 className={`font-black text-white leading-snug tracking-tight drop-shadow-lg line-clamp-4 flex-shrink-0 mb-2 z-20 ${
-                psg1Config.isCompact ? "text-base" : "text-sm md:text-base"
+              <h2 className={`font-black text-white leading-snug tracking-tight drop-shadow-lg flex-shrink-0 z-20 ${
+                psg1Config.isCompact ? "text-[11px] line-clamp-2 mb-1" : "text-sm md:text-base line-clamp-4 mb-2"
               }`}>
                 {currentMarket.question}
               </h2>
 
-              {/* Embedded Hype Ticker */}
-              <div className="mb-2 flex-shrink-0 z-10 relative">
-                <HypeHUD
-                  yesPool={currentMarket.yesPrice}
-                  noPool={currentMarket.noPrice}
-                  question={currentMarket.question}
-                  volume={currentMarket.totalVolume}
-                  bettors={displayBettors}
-                />
+              {/* Scrollable middle section for compact mode */}
+              <div className={`flex-1 min-h-0 flex flex-col ${psg1Config.isCompact ? "overflow-y-auto no-scrollbar" : ""}`}>
+                {/* Embedded Hype Ticker */}
+                <div className={`flex-shrink-0 z-10 relative ${psg1Config.isCompact ? "mb-1" : "mb-2"}`}>
+                  <HypeHUD
+                    yesPool={currentMarket.yesPrice}
+                    noPool={currentMarket.noPrice}
+                    question={currentMarket.question}
+                    volume={currentMarket.totalVolume}
+                    bettors={displayBettors}
+                  />
+                </div>
+
+                {/* Stats & Volume */}
+                <div className={`flex items-center justify-between font-medium text-gray-400 px-1 flex-shrink-0 ${
+                  psg1Config.isCompact ? "text-[10px] mb-1" : "text-xs mb-2"
+                }`}>
+                  <div className="flex items-center gap-1.5">
+                    {/* Tiered volume badge */}
+                    {currentMarket.totalVolume >= 1_000_000 ? (
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/40 animate-pulse">
+                        <Flame className="w-3 h-3 text-yellow-400" />
+                        <span className="text-yellow-300 font-mono font-bold text-[10px]">{formatVolume(currentMarket.totalVolume)}</span>
+                      </div>
+                    ) : currentMarket.totalVolume >= 100_000 ? (
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/30">
+                        <TrendingUp className="w-3 h-3 text-[#00FF88]" />
+                        <span className="text-[#00FF88] font-mono font-bold text-[10px]">{formatVolume(currentMarket.totalVolume)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3 text-gray-500" />
+                        <span className="text-gray-400 font-mono text-[10px]">{formatVolume(currentMarket.totalVolume)}</span>
+                      </div>
+                    )}
+                    {currentMarket.volume24h > 0 && !psg1Config.isCompact && (
+                      <div className="flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-[#FFD700]" />
+                        <span className="text-gray-400 font-mono text-[10px]">{formatVolume(currentMarket.volume24h)} 24h</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className={`flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#c7f83e]/15 border border-[#c7f83e]/30 shadow-[0_0_8px_rgba(199,248,62,0.15)] ${
+                    psg1Config.isCompact ? "text-[8px]" : ""
+                  }`}>
+                    <span className="text-[9px] text-[#c7f83e]/60">via</span>
+                    <span className="text-[10px] text-[#c7f83e] font-bold tracking-wide">Jupiter</span>
+                  </div>
+                </div>
+                {/* Market depth info */}
+                {(currentMarket.openInterest > 0 || currentMarket.liquidityDollars > 0) && (
+                  <div className="flex items-center gap-3 text-[10px] text-gray-500 px-1 mb-1 flex-shrink-0">
+                    {currentMarket.openInterest > 0 && (
+                      <span>Pot: {formatVolume(currentMarket.openInterest)}</span>
+                    )}
+                    {currentMarket.liquidityDollars > 0 && (
+                      <span>Liquidity: {formatVolume(currentMarket.liquidityDollars)}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Stats & Volume */}
-              <div className="flex items-center justify-between text-xs font-medium text-gray-400 mb-2 px-1 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  {/* Tiered volume badge */}
-                  {currentMarket.totalVolume >= 1_000_000 ? (
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/40 animate-pulse">
-                      <Flame className="w-3 h-3 text-yellow-400" />
-                      <span className="text-yellow-300 font-mono font-bold text-[11px]">{formatVolume(currentMarket.totalVolume)}</span>
-                    </div>
-                  ) : currentMarket.totalVolume >= 100_000 ? (
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#00FF88]/10 border border-[#00FF88]/30">
-                      <TrendingUp className="w-3 h-3 text-[#00FF88]" />
-                      <span className="text-[#00FF88] font-mono font-bold text-[11px]">{formatVolume(currentMarket.totalVolume)}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <TrendingUp className="w-3.5 h-3.5 text-gray-500" />
-                      <span className="text-gray-400 font-mono text-[11px]">{formatVolume(currentMarket.totalVolume)}</span>
-                    </div>
-                  )}
-                  {currentMarket.volume24h > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Zap className="w-3 h-3 text-[#FFD700]" />
-                      <span className="text-gray-400 font-mono text-[10px]">{formatVolume(currentMarket.volume24h)} 24h</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#c7f83e]/15 border border-[#c7f83e]/30 shadow-[0_0_8px_rgba(199,248,62,0.15)]">
-                  <span className="text-[9px] text-[#c7f83e]/60">via</span>
-                  <span className="text-[10px] text-[#c7f83e] font-bold tracking-wide">Jupiter</span>
-                </div>
-              </div>
-              {/* Market depth info */}
-              {(currentMarket.openInterest > 0 || currentMarket.liquidityDollars > 0) && (
-                <div className="flex items-center gap-3 text-[10px] text-gray-500 px-1 mb-1 flex-shrink-0">
-                  {currentMarket.openInterest > 0 && (
-                    <span>Pot: {formatVolume(currentMarket.openInterest)}</span>
-                  )}
-                  {currentMarket.liquidityDollars > 0 && (
-                    <span>Liquidity: {formatVolume(currentMarket.liquidityDollars)}</span>
-                  )}
-                </div>
-              )}
-
-              {/* Battle Bar with Odds */}
+              {/* Battle Bar with Odds — always visible at bottom */}
               <div className="flex-shrink-0 mt-auto">
                 {/* Odds Display */}
-                <div className="flex justify-between items-center mb-2 px-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[#00FF88] text-xs font-bold">YES</span>
-                    <span className="text-white text-sm font-black">{currentMarket.yesMultiplier}</span>
-                    <span className="text-[10px] text-gray-500">({currentMarket.yesPrice}%)</span>
+                <div className={`flex justify-between items-center px-1 ${psg1Config.isCompact ? "mb-1" : "mb-2"}`}>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[#00FF88] font-bold ${psg1Config.isCompact ? "text-[10px]" : "text-xs"}`}>YES</span>
+                    <span className={`text-white font-black ${psg1Config.isCompact ? "text-xs" : "text-sm"}`}>{currentMarket.yesMultiplier}</span>
+                    <span className="text-[9px] text-gray-500">({currentMarket.yesPrice}%)</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-500">({currentMarket.noPrice}%)</span>
-                    <span className="text-white text-sm font-black">{currentMarket.noMultiplier}</span>
-                    <span className="text-[#FF0044] text-xs font-bold">NO</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-gray-500">({currentMarket.noPrice}%)</span>
+                    <span className={`text-white font-black ${psg1Config.isCompact ? "text-xs" : "text-sm"}`}>{currentMarket.noMultiplier}</span>
+                    <span className={`text-[#FF0044] font-bold ${psg1Config.isCompact ? "text-[10px]" : "text-xs"}`}>NO</span>
                   </div>
                 </div>
 
                 {/* Battle Bar - Slim Neon */}
-                <div className="relative h-2 rounded-full bg-white/5 overflow-hidden">
+                <div className={`relative rounded-full bg-white/5 overflow-hidden ${psg1Config.isCompact ? "h-1.5" : "h-2"}`}>
                   <motion.div
                     className="absolute left-0 top-0 bottom-0 bg-[#00FF88] shadow-[0_0_10px_#00FF88]"
                     initial={{ width: 0 }}
@@ -743,11 +749,11 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
 
       {/* Action Buttons - Fixed at bottom of card stack */}
       {/* PSG1 mode: larger buttons for hardware controls */}
-      <div className={`flex items-center justify-center gap-3 md:gap-4 py-3 flex-shrink-0 ${psg1Config.isCompact ? "gap-6" : ""}`}>
+      <div className={`flex items-center justify-center gap-3 md:gap-4 flex-shrink-0 ${psg1Config.isCompact ? "gap-3 py-1" : "py-3"}`}>
         {/* NO Button */}
         <motion.button
           className={`rounded-full bg-[#FF0044]/20 border-2 border-[#FF0044] flex items-center justify-center text-[#FF0044] font-game hover:bg-[#FF0044]/30 transition-colors disabled:opacity-50 ${
-            psg1Config.isCompact ? "w-[72px] h-[72px] text-2xl" : "w-14 h-14 md:w-16 md:h-16 text-lg md:text-xl"
+            psg1Config.isCompact ? "w-12 h-12 text-lg" : "w-14 h-14 md:w-16 md:h-16 text-lg md:text-xl"
           } ${gamepadActive === "no" ? "scale-90 bg-[#FF0044]/40" : ""}`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -761,7 +767,7 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         {/* Skip Button */}
         <motion.button
           className={`rounded-full bg-white/10 border border-white/30 flex items-center justify-center text-gray-400 hover:bg-white/20 transition-colors disabled:opacity-50 ${
-            psg1Config.isCompact ? "w-14 h-14" : "w-10 h-10 md:w-12 md:h-12"
+            psg1Config.isCompact ? "w-9 h-9" : "w-10 h-10 md:w-12 md:h-12"
           } ${gamepadActive === "skip" ? "scale-90 bg-[#FFD700]/40 border-[#FFD700]" : ""}`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -769,13 +775,13 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
           disabled={isAnimating}
           animate={gamepadActive === "skip" ? { scale: [1, 0.9, 1] } : {}}
         >
-          <SkipForward className={psg1Config.isCompact ? "w-6 h-6" : "w-4 h-4 md:w-5 md:h-5"} />
+          <SkipForward className={psg1Config.isCompact ? "w-4 h-4" : "w-4 h-4 md:w-5 md:h-5"} />
         </motion.button>
 
         {/* YES Button */}
         <motion.button
           className={`rounded-full bg-[#00FF88]/20 border-2 border-[#00FF88] flex items-center justify-center text-[#00FF88] font-game hover:bg-[#00FF88]/30 transition-colors disabled:opacity-50 ${
-            psg1Config.isCompact ? "w-[72px] h-[72px] text-2xl" : "w-14 h-14 md:w-16 md:h-16 text-lg md:text-xl"
+            psg1Config.isCompact ? "w-12 h-12 text-lg" : "w-14 h-14 md:w-16 md:h-16 text-lg md:text-xl"
           } ${gamepadActive === "yes" ? "scale-90 bg-[#00FF88]/40" : ""}`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -787,9 +793,9 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
         </motion.button>
       </div>
 
-      {/* PSG1/Gamepad Controller Hints */}
+      {/* PSG1/Gamepad Controller Hints — hidden on compact to save space, shown on desktop+gamepad */}
       <AnimatePresence>
-        {(gamepadConnected || psg1Config.showButtonHints) && (
+        {(gamepadConnected || psg1Config.showButtonHints) && !psg1Config.isCompact && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -803,18 +809,17 @@ export const SwipeableMarketStack = forwardRef<SwipeableMarketStackRef, Swipeabl
                 {psg1Config.isPSG1 ? "PSG1 MODE" : "CONTROLLER CONNECTED"}
               </span>
             </div>
-            {/* Button hints - full size only on compact PSG1, compact otherwise */}
             <PSG1ControllerHints
               show={true}
               activeButton={gamepadActive}
-              compact={!psg1Config.isCompact}
+              compact={true}
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Progress indicator */}
-      <div className="flex items-center justify-center gap-1.5 md:gap-2 pb-2 flex-shrink-0">
+      {/* Progress indicator — hidden on PSG1 compact */}
+      <div className={`flex items-center justify-center gap-1.5 md:gap-2 flex-shrink-0 ${psg1Config.isCompact ? "hidden" : "pb-2"}`}>
         {markets.slice(0, 10).map((_, i) => (
           <div
             key={i}

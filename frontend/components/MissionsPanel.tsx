@@ -36,7 +36,7 @@ export function MissionsPanel({
 
           {/* Panel */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-[71] max-h-[80vh] overflow-y-auto rounded-t-3xl bg-[#0a0a14]/98 border-t-2 border-[#00F3FF]/30 shadow-[0_-4px_40px_rgba(0,243,255,0.15)]"
+            className="fixed bottom-0 left-0 right-0 z-[71] max-h-[85vh] overflow-y-auto rounded-t-2xl sm:rounded-t-3xl bg-[#0a0a14]/98 border-t-2 border-[#00F3FF]/30 shadow-[0_-4px_40px_rgba(0,243,255,0.15)]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -47,14 +47,14 @@ export function MissionsPanel({
               <div className="w-10 h-1 rounded-full bg-gray-600" />
             </div>
 
-            <div className="px-4 pb-6">
+            <div className="px-3 sm:px-4 pb-4 sm:pb-6">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div>
-                  <h2 className="font-game text-lg text-white tracking-wider">
+                  <h2 className="font-game text-sm sm:text-lg text-white tracking-wider">
                     DAILY MISSIONS
                   </h2>
-                  <p className="text-gray-400 text-xs mt-0.5">
+                  <p className="text-gray-400 text-[10px] sm:text-xs mt-0.5">
                     {allComplete
                       ? "ALL COMPLETE! +500 XP BONUS"
                       : `${completedCount}/${totalMissions} completed`}
@@ -62,8 +62,8 @@ export function MissionsPanel({
                 </div>
 
                 {/* Progress ring */}
-                <div className="relative w-12 h-12">
-                  <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                  <svg className="w-10 h-10 sm:w-12 sm:h-12 -rotate-90" viewBox="0 0 48 48">
                     <circle
                       cx="24"
                       cy="24"
@@ -86,7 +86,7 @@ export function MissionsPanel({
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span
-                      className={`text-xs font-bold ${
+                      className={`text-[10px] sm:text-xs font-bold ${
                         allComplete ? "text-[#FFD700]" : "text-[#00F3FF]"
                       }`}
                     >
@@ -113,14 +113,14 @@ export function MissionsPanel({
               )}
 
               {/* Mission cards */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {missions.map((mission, i) => (
                   <motion.div
                     key={mission.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className={`flex items-center gap-3 p-3 rounded-xl border ${
+                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border ${
                       mission.completed
                         ? "bg-[#00FF88]/5 border-[#00FF88]/30"
                         : "bg-[#0f0f1a] border-[#1a1a3e]/60"
@@ -128,7 +128,7 @@ export function MissionsPanel({
                   >
                     {/* Icon */}
                     <div
-                      className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
+                      className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-base sm:text-xl ${
                         mission.completed
                           ? "bg-[#00FF88]/20"
                           : "bg-[#1a1a3e]"
