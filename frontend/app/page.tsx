@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletName } from "@solana/wallet-adapter-base";
+import { isSMWABridgeAvailable } from "@/lib/solana/smwaBridge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Minus, Plus, AlertTriangle, Wallet, X, ArrowDownUp, TrendingUp, Clock, Flame, Gamepad2 } from "lucide-react";
 import { RetroGrid } from "@/components/RetroGrid";
@@ -50,7 +52,7 @@ interface Notification {
 
 export default function ArenaPage() {
   const router = useRouter();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, select, wallet, connect } = useWallet();
   const {
     markets,
     loading,
@@ -136,6 +138,21 @@ export default function ArenaPage() {
   const { missions, completedCount, allComplete, updateProgress, setProgress, trackDiversify } = useMissions(walletAddress);
   const [showMissions, setShowMissions] = useState(false);
   const missionsRemaining = missions.length - completedCount;
+
+  // PSG1 direct connect state
+  const [psg1Connecting, setPsg1Connecting] = useState(false);
+  const [psg1ConnectError, setPsg1ConnectError] = useState<string | null>(null);
+  const [psg1WalletSelected, setPsg1WalletSelected] = useState(false);
+  const [smwaAvailable, setSmwaAvailable] = useState(false);
+
+  // Detect SMWA bridge after mount (bridge may not be ready during SSR/first render)
+  useEffect(() => {
+    const check = () => setSmwaAvailable(isSMWABridgeAvailable());
+    check();
+    // Re-check after a short delay in case bridge injects late
+    const t = setTimeout(check, 500);
+    return () => clearTimeout(t);
+  }, []);
 
   // Derive XP and Level from Jupiter profile + local game data
   const { playerLevel, playerXp, xpForNextLevel, xpProgress } = useMemo(() => {
@@ -236,8 +253,56 @@ export default function ArenaPage() {
 
   // Auto-dismiss connect prompt when wallet connects
   useEffect(() => {
-    if (connected) setShowConnectPrompt(false);
+    if (connected) {
+      setShowConnectPrompt(false);
+      setPsg1Connecting(false);
+      setPsg1ConnectError(null);
+      setPsg1WalletSelected(false);
+    }
   }, [connected]);
+
+  // Listen for custom wallet modal event from useWalletModalCompat (PSG1)
+  useEffect(() => {
+    const handler = () => {
+      if (!connected) setShowConnectPrompt(true);
+    };
+    window.addEventListener('solana-saga:show-wallet-modal', handler);
+    return () => window.removeEventListener('solana-saga:show-wallet-modal', handler);
+  }, [connected]);
+
+  // PSG1: After wallet is selected, trigger connect
+  useEffect(() => {
+    if (!psg1WalletSelected || !wallet) return;
+    setPsg1WalletSelected(false);
+
+    const doConnect = async () => {
+      try {
+        await connect();
+      } catch (e: any) {
+        console.error("[PSG1] Connect error:", e);
+        setPsg1Connecting(false);
+        const msg = e?.message || "Connection failed";
+        if (msg.includes("No compatible wallet") || msg.includes("not installed")) {
+          setPsg1ConnectError("Jupiter Mobile wallet not found. Please install it from the Play Store.");
+        } else if (msg.includes("timeout") || msg.includes("Timeout")) {
+          setPsg1ConnectError("Connection timed out. Please try again.");
+        } else if (msg.includes("cancelled") || msg.includes("rejected")) {
+          setPsg1ConnectError("Connection was cancelled.");
+        } else {
+          setPsg1ConnectError(msg.length > 100 ? msg.slice(0, 100) + "..." : msg);
+        }
+      }
+    };
+    doConnect();
+  }, [psg1WalletSelected, wallet, connect]);
+
+  // PSG1 direct connect handler
+  const handlePsg1Connect = useCallback(() => {
+    setPsg1ConnectError(null);
+    setPsg1Connecting(true);
+    select("Jupiter Mobile" as WalletName);
+    setPsg1WalletSelected(true);
+  }, [select]);
 
   // Handle real bet placement via Jupiter API
   const handleBet = useCallback(
@@ -649,7 +714,16 @@ export default function ArenaPage() {
                     Connect wallet to place real bets
                   </span>
                   <div className="flex-shrink-0 scale-90">
-                    <WalletButton />
+                    {smwaAvailable ? (
+                      <button
+                        onClick={() => setShowConnectPrompt(true)}
+                        className="px-3 py-1.5 rounded-lg bg-[#00F3FF]/20 border border-[#00F3FF]/40 text-[#00F3FF] text-xs font-game hover:bg-[#00F3FF]/30 transition-colors"
+                      >
+                        CONNECT
+                      </button>
+                    ) : (
+                      <WalletButton />
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -893,8 +967,68 @@ export default function ArenaPage() {
                   </p>
                 </div>
 
-                <div className="w-full flex justify-center">
-                  <WalletButton />
+                <div className="w-full flex flex-col items-center gap-3">
+                  {smwaAvailable ? (
+                    <>
+                      {psg1ConnectError ? (
+                        <div className="w-full flex flex-col items-center gap-2">
+                          <div className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center">
+                            {psg1ConnectError}
+                          </div>
+                          <button
+                            onClick={handlePsg1Connect}
+                            className="w-full max-w-[280px] py-3 rounded-xl bg-[#00F3FF]/20 border border-[#00F3FF]/40 text-[#00F3FF] font-game text-sm hover:bg-[#00F3FF]/30 transition-colors"
+                          >
+                            RETRY CONNECTION
+                          </button>
+                          <button
+                            onClick={() => setShowConnectPrompt(false)}
+                            className="text-xs text-gray-500 hover:text-gray-300 transition-colors py-1"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : psg1Connecting ? (
+                        <div className="flex flex-col items-center gap-3 py-2">
+                          <motion.div
+                            className="w-10 h-10 border-3 border-[#00F3FF] border-t-transparent rounded-full"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          />
+                          <p className="text-xs text-gray-400 font-game animate-pulse">
+                            CONNECTING...
+                          </p>
+                          <button
+                            onClick={() => {
+                              setPsg1Connecting(false);
+                              setPsg1WalletSelected(false);
+                              setShowConnectPrompt(false);
+                            }}
+                            className="text-xs text-gray-500 hover:text-gray-300 transition-colors py-1"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={handlePsg1Connect}
+                            className="w-full max-w-[280px] py-3 rounded-xl bg-gradient-to-r from-[#00F3FF]/20 to-[#00FF88]/20 border border-[#00F3FF]/40 text-[#00F3FF] font-game text-sm hover:from-[#00F3FF]/30 hover:to-[#00FF88]/30 transition-all"
+                          >
+                            CONNECT VIA JUPITER MOBILE
+                          </button>
+                          <button
+                            onClick={() => setShowConnectPrompt(false)}
+                            className="text-xs text-gray-500 hover:text-gray-300 transition-colors py-1"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <WalletButton />
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4 text-[10px] text-gray-500">

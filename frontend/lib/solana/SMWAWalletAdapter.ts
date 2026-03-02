@@ -104,7 +104,6 @@ export class SMWAWalletAdapter extends BaseSignerWalletAdapter {
     if (this._publicKey) return;
 
     this._connecting = true;
-    this.emit("connect", this._publicKey!);
 
     try {
       const result = await smwaConnect();
@@ -112,6 +111,7 @@ export class SMWAWalletAdapter extends BaseSignerWalletAdapter {
       this.emit("connect", this._publicKey);
     } catch (e: any) {
       this._publicKey = null;
+      this.emit("error", e);
       throw new WalletConnectionError(e?.message || "SMWA connection failed");
     } finally {
       this._connecting = false;

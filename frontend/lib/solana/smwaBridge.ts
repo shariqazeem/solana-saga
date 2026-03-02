@@ -22,7 +22,7 @@ declare global {
   }
 }
 
-const TIMEOUT_MS = 120_000;
+const TIMEOUT_MS = 30_000;
 
 const pendingCallbacks = new Map<
   string,
